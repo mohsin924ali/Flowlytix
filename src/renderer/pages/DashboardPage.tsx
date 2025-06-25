@@ -1,394 +1,495 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+/**
+ * Dashboard Page Component
+ * Main dashboard after successful authentication
+ * Following Atomic Design principles with stunning animations and professional styling
+ */
+
+import React, { useState, useEffect } from 'react';
 import {
+  Box,
   Container,
   Grid,
+  Paper,
+  Typography,
+  Avatar,
+  IconButton,
+  Chip,
   Card,
   CardContent,
-  Typography,
-  Button,
-  Box,
-  AppBar,
-  Toolbar,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControlLabel,
-  Switch,
-  Alert,
-  Chip,
-  Paper,
+  LinearProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
-import { ExitToApp, Add, Business, Storage, CheckCircle, Error } from '@mui/icons-material';
+import {
+  Dashboard,
+  TrendingUp,
+  People,
+  Inventory,
+  ShoppingCart,
+  Notifications,
+  Settings,
+  ExitToApp,
+  WavingHand,
+} from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuthStore } from '../store/auth.store';
+import { Logo } from '../components/atoms';
+import { APP_CONFIG } from '../constants/app.constants';
 
 /**
- * Agency creation form schema
+ * Dashboard stats interface
  */
-const agencySchema = z.object({
-  name: z
-    .string()
-    .min(2, 'Agency name must be at least 2 characters')
-    .max(100, 'Agency name cannot exceed 100 characters'),
-  contactPerson: z.string().optional(),
-  email: z.string().email('Please enter a valid email').optional().or(z.literal('')),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  allowCreditSales: z.boolean().default(false),
-  defaultCreditDays: z.number().min(1).max(180).default(30),
-  maxCreditLimit: z.number().min(0).default(10000),
-  currency: z.string().default('USD'),
-  taxRate: z.number().min(0).max(1).default(0.08),
-});
-
-type AgencyFormData = z.infer<typeof agencySchema>;
-
-interface DashboardPageProps {
-  user: any;
-  onLogout: () => void;
+interface DashboardStat {
+  id: string;
+  title: string;
+  value: string;
+  change: string;
+  trend: 'up' | 'down' | 'neutral';
+  icon: React.ElementType;
+  color: string;
 }
 
-interface AgencyCreationResult {
-  success: boolean;
-  agencyId?: string;
-  databasePath?: string;
-  error?: string;
-}
+/**
+ * Animation variants
+ */
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: 'easeOut',
+    },
+  },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.4,
+      ease: 'easeOut',
+    },
+  },
+  hover: {
+    scale: 1.05,
+    y: -5,
+    transition: {
+      duration: 0.2,
+    },
+  },
+};
+
+/**
+ * Floating elements animation
+ */
+const FloatingElements: React.FC = () => (
+  <Box
+    sx={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: 'hidden',
+      pointerEvents: 'none',
+      zIndex: 0,
+    }}
+  >
+    {[...Array(4)].map((_, i) => (
+      <motion.div
+        key={i}
+        style={{
+          position: 'absolute',
+          width: Math.random() * 100 + 50,
+          height: Math.random() * 100 + 50,
+          borderRadius: '50%',
+          background: `linear-gradient(135deg, rgba(25, 118, 210, ${Math.random() * 0.1 + 0.05}) 0%, rgba(66, 165, 245, ${Math.random() * 0.1 + 0.03}) 100%)`,
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+        }}
+        initial={{
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+        }}
+        animate={{
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+        }}
+        transition={{
+          duration: Math.random() * 30 + 20,
+          repeat: Infinity,
+          repeatType: 'reverse',
+          ease: 'linear',
+        }}
+      />
+    ))}
+  </Box>
+);
 
 /**
  * Dashboard Page Component
- * Main interface for testing agency creation
  */
-const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) => {
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [creationResult, setCreationResult] = useState<AgencyCreationResult | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+export const DashboardPage: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { user, logout } = useAuthStore();
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    watch,
-  } = useForm<AgencyFormData>({
-    resolver: zodResolver(agencySchema),
-    defaultValues: {
-      name: '',
-      contactPerson: '',
-      email: '',
-      phone: '',
-      address: '',
-      allowCreditSales: false,
-      defaultCreditDays: 30,
-      maxCreditLimit: 10000,
-      currency: 'USD',
-      taxRate: 0.08,
+  // Update time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Mock dashboard stats
+  const dashboardStats: DashboardStat[] = [
+    {
+      id: 'orders',
+      title: 'Total Orders',
+      value: '1,234',
+      change: '+12.5%',
+      trend: 'up',
+      icon: ShoppingCart,
+      color: '#1976d2',
     },
-  });
+    {
+      id: 'customers',
+      title: 'Active Customers',
+      value: '856',
+      change: '+8.2%',
+      trend: 'up',
+      icon: People,
+      color: '#2e7d32',
+    },
+    {
+      id: 'inventory',
+      title: 'Inventory Items',
+      value: '2,145',
+      change: '-3.1%',
+      trend: 'down',
+      icon: Inventory,
+      color: '#ed6c02',
+    },
+    {
+      id: 'revenue',
+      title: 'Monthly Revenue',
+      value: '$45,678',
+      change: '+15.7%',
+      trend: 'up',
+      icon: TrendingUp,
+      color: '#9c27b0',
+    },
+  ];
 
-  const allowCreditSales = watch('allowCreditSales');
-
-  /**
-   * Handle agency creation
-   */
-  const onSubmit = async (data: AgencyFormData) => {
+  const handleLogout = async () => {
     try {
-      setIsCreating(true);
-      setCreationResult(null);
-
-      // Generate database path
-      const databasePath = `./databases/${data.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.db`;
-
-      // Call agency creation via IPC
-      const result = await window.electronAPI.agency.createAgency({
-        name: data.name,
-        databasePath,
-        contactPerson: data.contactPerson || null,
-        email: data.email || null,
-        phone: data.phone || null,
-        address: data.address || null,
-        createdBy: user.id,
-        settings: {
-          allowCreditSales: data.allowCreditSales,
-          defaultCreditDays: data.defaultCreditDays,
-          maxCreditLimit: data.maxCreditLimit,
-          requireApprovalForOrders: false,
-          enableInventoryTracking: true,
-          taxRate: data.taxRate,
-          currency: data.currency,
-          businessHours: {
-            start: '09:00',
-            end: '17:00',
-            timezone: 'UTC',
-          },
-        },
-      });
-
-      setCreationResult({
-        success: result.success,
-        agencyId: result.agencyId,
-        databasePath: result.databasePath,
-        error: result.error,
-      });
-
-      if (result.success) {
-        reset(); // Clear form on success
-      }
+      await logout();
     } catch (error) {
-      console.error('Agency creation error:', error);
-      setCreationResult({
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to create agency',
-      });
-    } finally {
-      setIsCreating(false);
+      console.error('Logout error:', error);
     }
   };
 
-  /**
-   * Handle dialog close
-   */
-  const handleCloseDialog = () => {
-    setCreateDialogOpen(false);
-    setCreationResult(null);
-    reset();
-  };
-
   return (
-    <>
-      {/* App Bar */}
-      <AppBar position='static'>
-        <Toolbar>
-          <Business sx={{ mr: 2 }} />
-          <Typography variant='h6' component='div' sx={{ flexGrow: 1 }}>
-            Flowlytix Dashboard
-          </Typography>
-          <Chip label={`${user.firstName} ${user.lastName}`} color='secondary' size='small' sx={{ mr: 2 }} />
-          <IconButton color='inherit' onClick={onLogout}>
-            <ExitToApp />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: `
+          radial-gradient(circle at 10% 20%, rgba(25, 118, 210, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 90% 80%, rgba(66, 165, 245, 0.1) 0%, transparent 50%),
+          linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)
+        `,
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <FloatingElements />
+
+      {/* Header */}
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            background: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(20px)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+            position: 'relative',
+            zIndex: 10,
+          }}
+        >
+          <Container maxWidth='xl'>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                py: 2,
+              }}
+            >
+              {/* Logo and Brand */}
+              <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Logo variant='text' size='small' />
+                  <Chip
+                    label='Dashboard'
+                    icon={<Dashboard />}
+                    sx={{
+                      background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                      color: 'white',
+                      fontWeight: 'bold',
+                    }}
+                  />
+                </Box>
+              </motion.div>
+
+              {/* User Section */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <IconButton>
+                    <Notifications />
+                  </IconButton>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <IconButton>
+                    <Settings />
+                  </IconButton>
+                </motion.div>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Avatar
+                    sx={{
+                      bgcolor: 'primary.main',
+                      width: 40,
+                      height: 40,
+                    }}
+                  >
+                    {user?.email?.[0]?.toUpperCase() || 'A'}
+                  </Avatar>
+                  {!isMobile && (
+                    <Box>
+                      <Typography variant='body2' fontWeight='bold'>
+                        {user?.email || 'Admin User'}
+                      </Typography>
+                      <Typography variant='caption' color='text.secondary'>
+                        Administrator
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <IconButton onClick={handleLogout} color='error'>
+                    <ExitToApp />
+                  </IconButton>
+                </motion.div>
+              </Box>
+            </Box>
+          </Container>
+        </Paper>
+      </motion.div>
 
       {/* Main Content */}
-      <Container maxWidth='lg' sx={{ py: 4 }}>
-        <Grid container spacing={3}>
-          {/* Welcome Card */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant='h4' gutterBottom>
-                  Welcome to Flowlytix Distribution System
+      <Container maxWidth='xl' sx={{ py: 4, position: 'relative', zIndex: 1 }}>
+        <motion.div variants={containerVariants} initial='hidden' animate='visible'>
+          {/* Welcome Section */}
+          <motion.div variants={itemVariants}>
+            <Box sx={{ mb: 4 }}>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
+                <Typography
+                  variant='h3'
+                  sx={{
+                    fontWeight: 'bold',
+                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    mb: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}
+                >
+                  <motion.div
+                    animate={{ rotate: [0, 15, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                  >
+                    <WavingHand sx={{ color: '#ffd700' }} />
+                  </motion.div>
+                  Welcome back!
                 </Typography>
-                <Typography variant='body1' color='text.secondary'>
-                  Multi-tenant distribution management system. Test agency creation below.
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+              >
+                <Typography variant='h6' color='text.secondary'>
+                  {currentTime.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
                 </Typography>
-              </CardContent>
-            </Card>
+              </motion.div>
+            </Box>
+          </motion.div>
+
+          {/* Stats Grid */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {dashboardStats.map((stat, index) => (
+              <Grid item xs={12} sm={6} lg={3} key={stat.id}>
+                <motion.div variants={cardVariants} whileHover='hover' custom={index}>
+                  <Card
+                    sx={{
+                      background: 'rgba(255, 255, 255, 0.7)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: 3,
+                      overflow: 'hidden',
+                      position: 'relative',
+                      '&:before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 4,
+                        background: `linear-gradient(90deg, ${stat.color}, ${stat.color}aa)`,
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ p: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 48,
+                            height: 48,
+                            borderRadius: 2,
+                            background: `linear-gradient(135deg, ${stat.color}20, ${stat.color}10)`,
+                            mr: 2,
+                          }}
+                        >
+                          <stat.icon sx={{ color: stat.color, fontSize: 24 }} />
+                        </Box>
+                        <Box>
+                          <Typography variant='h4' fontWeight='bold'>
+                            {stat.value}
+                          </Typography>
+                          <Typography variant='body2' color='text.secondary'>
+                            {stat.title}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Chip
+                          label={stat.change}
+                          size='small'
+                          sx={{
+                            backgroundColor: stat.trend === 'up' ? '#e8f5e8' : '#fff3e0',
+                            color: stat.trend === 'up' ? '#2e7d32' : '#ed6c02',
+                            fontWeight: 'bold',
+                          }}
+                        />
+                        <Typography variant='caption' color='text.secondary' sx={{ ml: 1 }}>
+                          vs last month
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </Grid>
+            ))}
           </Grid>
 
-          {/* Agency Creation Card */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Business sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography variant='h6'>Agency Management</Typography>
-                </Box>
-                <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
-                  Create new agencies with dedicated databases for multi-tenant operations.
+          {/* Coming Soon Section */}
+          <motion.div variants={itemVariants}>
+            <Paper
+              sx={{
+                p: 4,
+                background: 'rgba(255, 255, 255, 0.7)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: 3,
+                textAlign: 'center',
+                position: 'relative',
+                overflow: 'hidden',
+                '&:before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 1,
+                  background: 'linear-gradient(90deg, transparent, rgba(25, 118, 210, 0.5), transparent)',
+                },
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.8 }}
+              >
+                <Typography
+                  variant='h4'
+                  sx={{
+                    fontWeight: 'bold',
+                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    mb: 2,
+                  }}
+                >
+                  🚀 More Features Coming Soon!
                 </Typography>
-                <Button variant='contained' startIcon={<Add />} onClick={() => setCreateDialogOpen(true)} fullWidth>
-                  Create New Agency
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* System Info Card */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Storage sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography variant='h6'>System Information</Typography>
-                </Box>
-                <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
-                  User: {user.email}
+                <Typography variant='body1' color='text.secondary' sx={{ mb: 3 }}>
+                  We're working hard to bring you advanced features including product management, customer management,
+                  order processing, analytics, and much more.
                 </Typography>
-                <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
-                  Role: {user.role}
+                <LinearProgress
+                  variant='determinate'
+                  value={75}
+                  sx={{
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                    '& .MuiLinearProgress-bar': {
+                      background: 'linear-gradient(90deg, #1976d2, #42a5f5)',
+                      borderRadius: 4,
+                    },
+                  }}
+                />
+                <Typography variant='caption' color='text.secondary' sx={{ mt: 1, display: 'block' }}>
+                  Development Progress: 75%
                 </Typography>
-                <Typography variant='body2' color='text.secondary'>
-                  Permissions: {user.permissions?.length || 0} active
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Creation Result Display */}
-          {creationResult && (
-            <Grid item xs={12}>
-              <Paper sx={{ p: 3 }}>
-                {creationResult.success ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <CheckCircle color='success' sx={{ mr: 1 }} />
-                    <Typography variant='h6' color='success.main'>
-                      Agency Created Successfully!
-                    </Typography>
-                  </Box>
-                ) : (
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Error color='error' sx={{ mr: 1 }} />
-                    <Typography variant='h6' color='error.main'>
-                      Agency Creation Failed
-                    </Typography>
-                  </Box>
-                )}
-
-                {creationResult.success && (
-                  <Box>
-                    <Typography variant='body2' color='text.secondary'>
-                      Agency ID: {creationResult.agencyId}
-                    </Typography>
-                    <Typography variant='body2' color='text.secondary'>
-                      Database Path: {creationResult.databasePath}
-                    </Typography>
-                    <Alert severity='success' sx={{ mt: 2 }}>
-                      ✅ Agency successfully created
-                      <br />✅ Dedicated database created with complete schema replica
-                    </Alert>
-                  </Box>
-                )}
-
-                {!creationResult.success && (
-                  <Alert severity='error' sx={{ mt: 2 }}>
-                    {creationResult.error}
-                  </Alert>
-                )}
-              </Paper>
-            </Grid>
-          )}
-        </Grid>
+              </motion.div>
+            </Paper>
+          </motion.div>
+        </motion.div>
       </Container>
-
-      {/* Create Agency Dialog */}
-      <Dialog open={createDialogOpen} onClose={handleCloseDialog} maxWidth='md' fullWidth>
-        <DialogTitle>Create New Agency</DialogTitle>
-        <DialogContent>
-          <Box component='form' sx={{ mt: 1 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  {...register('name')}
-                  fullWidth
-                  label='Agency Name *'
-                  error={!!errors.name}
-                  helperText={errors.name?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  {...register('contactPerson')}
-                  fullWidth
-                  label='Contact Person'
-                  error={!!errors.contactPerson}
-                  helperText={errors.contactPerson?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  {...register('email')}
-                  fullWidth
-                  label='Email'
-                  type='email'
-                  error={!!errors.email}
-                  helperText={errors.email?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  {...register('phone')}
-                  fullWidth
-                  label='Phone'
-                  error={!!errors.phone}
-                  helperText={errors.phone?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  {...register('currency')}
-                  fullWidth
-                  label='Currency'
-                  error={!!errors.currency}
-                  helperText={errors.currency?.message}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  {...register('address')}
-                  fullWidth
-                  label='Address'
-                  multiline
-                  rows={2}
-                  error={!!errors.address}
-                  helperText={errors.address?.message}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <FormControlLabel control={<Switch {...register('allowCreditSales')} />} label='Allow Credit Sales' />
-              </Grid>
-              {allowCreditSales && (
-                <>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      {...register('defaultCreditDays', { valueAsNumber: true })}
-                      fullWidth
-                      label='Default Credit Days'
-                      type='number'
-                      error={!!errors.defaultCreditDays}
-                      helperText={errors.defaultCreditDays?.message}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      {...register('maxCreditLimit', { valueAsNumber: true })}
-                      fullWidth
-                      label='Max Credit Limit'
-                      type='number'
-                      error={!!errors.maxCreditLimit}
-                      helperText={errors.maxCreditLimit?.message}
-                    />
-                  </Grid>
-                </>
-              )}
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  {...register('taxRate', { valueAsNumber: true })}
-                  fullWidth
-                  label='Tax Rate (0-1)'
-                  type='number'
-                  step='0.01'
-                  error={!!errors.taxRate}
-                  helperText={errors.taxRate?.message}
-                />
-              </Grid>
-            </Grid>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit(onSubmit)} variant='contained' disabled={isCreating}>
-            {isCreating ? 'Creating...' : 'Create Agency'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
+    </Box>
   );
 };
-
-export default DashboardPage;

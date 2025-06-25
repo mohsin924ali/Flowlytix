@@ -9,6 +9,7 @@ export default defineConfig({
   plugins: [react()],
   root: '.',
   base: './',
+  publicDir: 'public',
   build: {
     outDir: 'dist/renderer',
     emptyOutDir: true,
@@ -19,6 +20,8 @@ export default defineConfig({
       input: resolve(__dirname, 'index.html'),
     },
     chunkSizeWarningLimit: 2000,
+    assetsDir: 'assets',
+    copyPublicDir: true,
   },
   resolve: {
     alias: {
@@ -37,4 +40,5 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify('1.0.0'),
     __DEV__: JSON.stringify(process.env.NODE_ENV === 'development'),
   },
+  assetsInclude: ['**/*.svg', '**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.ico'],
 });
