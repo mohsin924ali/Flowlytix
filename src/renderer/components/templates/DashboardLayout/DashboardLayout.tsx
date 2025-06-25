@@ -96,7 +96,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {showSidebar && (
         <Sidebar
           navigationItems={allNavigationItems}
-          isOpen={sidebarOpen}
+          isOpen={true}
           isCollapsed={collapsed}
           activeRoute={activeRoute}
           onToggle={toggleSidebar}
@@ -122,7 +122,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <Header
             sidebarOpen={sidebarOpen}
             sidebarCollapsed={collapsed}
-            onToggleSidebar={toggleSidebar}
+            onToggleSidebar={toggleCollapsed}
             data-testid='dashboard-header'
           />
         )}

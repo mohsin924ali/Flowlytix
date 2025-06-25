@@ -327,6 +327,26 @@ export const Header: React.FC<HeaderProps> = ({
           </IconButton>
         )}
 
+        {/* Desktop Sidebar Toggle */}
+        {!isMobile && (
+          <IconButton
+            edge='start'
+            color='inherit'
+            aria-label='toggle sidebar'
+            onClick={onToggleSidebar}
+            sx={{
+              mr: 2,
+              color: theme.palette.text.primary,
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                color: theme.palette.primary.main,
+              },
+            }}
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
+
         {/* Breadcrumbs */}
         <Box
           sx={{

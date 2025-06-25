@@ -16,7 +16,9 @@ export interface LogoProps {
   /** Logo variant */
   variant?: 'text' | 'image' | 'combined';
   /** Logo size */
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'compact' | 'medium' | 'large' | 'xlarge';
+  /** Make logo circular */
+  circular?: boolean;
   /** Image source for image variant */
   src?: string;
   /** Alt text for image */
@@ -36,17 +38,27 @@ const SIZE_CONFIG = {
   small: {
     fontSize: '1.5rem',
     textFontSize: '1.2rem',
-    imageSize: 32,
+    imageSize: 40,
+  },
+  compact: {
+    fontSize: '1.75rem',
+    textFontSize: '1.4rem',
+    imageSize: 56,
   },
   medium: {
     fontSize: '2rem',
     textFontSize: '1.6rem',
-    imageSize: 48,
+    imageSize: 72,
   },
   large: {
     fontSize: '2.5rem',
     textFontSize: '2rem',
-    imageSize: 64,
+    imageSize: 80,
+  },
+  xlarge: {
+    fontSize: '3rem',
+    textFontSize: '2.4rem',
+    imageSize: 120,
   },
 } as const;
 
@@ -59,6 +71,7 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
     {
       variant = 'text',
       size = 'medium',
+      circular = false,
       src,
       alt = A11Y_CONFIG.ARIA_LABELS.LOGO,
       sx,
@@ -69,6 +82,14 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
     ref
   ) => {
     const sizeConfig = SIZE_CONFIG[size];
+
+    // Debug logging
+    console.log(`🏷️ Logo component rendered:`);
+    console.log(`  Variant: ${variant}`);
+    console.log(`  Size: ${size}`);
+    console.log(`  Circular: ${circular}`);
+    console.log(`  Src: ${src}`);
+    console.log(`  Alt: ${alt}`);
 
     /**
      * Text logo component with animation
@@ -122,30 +143,58 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
      * Image logo component with animation
      */
     const ImageLogo = src && (
-      <motion.div
-        initial={{ opacity: 0, rotate: -10, scale: 0.8 }}
-        animate={{ opacity: 1, rotate: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        whileHover={{ scale: 1.05, rotate: 2 }}
+      <Box
+        sx={{
+          width: sizeConfig.imageSize,
+          height: sizeConfig.imageSize,
+          borderRadius: circular ? '50%' : 0,
+          background: circular
+            ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)'
+            : 'transparent',
+          padding: circular ? '8px' : 0,
+          border: circular ? '2px solid rgba(25, 118, 210, 0.15)' : 'none',
+          boxShadow: circular ? '0 4px 20px rgba(25, 118, 210, 0.1)' : 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease-in-out',
+          '&:hover': circular
+            ? {
+                boxShadow: '0 8px 32px rgba(25, 118, 210, 0.2)',
+                border: '2px solid rgba(25, 118, 210, 0.3)',
+                transform: 'scale(1.05)',
+              }
+            : {},
+        }}
       >
-        <Box
-          component='img'
-          src={src}
-          alt={alt}
-          sx={{
-            width: sizeConfig.imageSize,
-            height: sizeConfig.imageSize,
-            objectFit: 'contain',
-            filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1))',
-            transition: 'all 0.3s ease-in-out',
-            '&:hover': {
-              filter: 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15))',
-            },
-            ...sx,
+        <motion.div
+          initial={{ opacity: 0, rotate: -10, scale: 0.8 }}
+          animate={{ opacity: 1, rotate: 0, scale: 1 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          whileHover={{
+            rotate: circular ? 5 : 2,
           }}
-          data-testid={`${testId}-image`}
-        />
-      </motion.div>
+        >
+          <Box
+            component='img'
+            src={src}
+            alt={alt}
+            onLoad={() => console.log(`Logo loaded successfully: ${src}`)}
+            onError={(e) => console.error(`Logo failed to load: ${src}`, e)}
+            sx={{
+              width: circular ? sizeConfig.imageSize - 32 : sizeConfig.imageSize,
+              height: circular ? sizeConfig.imageSize - 32 : sizeConfig.imageSize,
+              objectFit: 'cover',
+              borderRadius: circular ? '50%' : 'none',
+              filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1))',
+              transition: 'all 0.3s ease-in-out',
+              ...sx,
+            }}
+            data-testid={`${testId}-image`}
+          />
+        </motion.div>
+      </Box>
     );
 
     /**

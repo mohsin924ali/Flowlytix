@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { Logo } from '../../atoms';
 import { LoginForm } from '../../molecules/LoginForm/LoginForm';
 import { APP_CONFIG } from '../../../constants/app.constants';
+import logoMainSrc from '../../../assets/images/logo-main.svg';
 
 /**
  * LoginPage props interface
@@ -238,7 +239,8 @@ const LogoBrandingSection: React.FC<{ logoSrc?: string | undefined }> = ({ logoS
               <Logo
                 variant='image'
                 src={logoSrc}
-                size='large'
+                size='xlarge'
+                circular={true}
                 sx={{
                   filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.1))',
                 }}
@@ -389,7 +391,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Use the correct path for the built assets
-  const defaultLogoSrc = './logo-main.svg';
+  const defaultLogoSrc = logoMainSrc;
   const finalLogoSrc = logoSrc || defaultLogoSrc;
 
   console.log('LoginPage: Using logo source:', finalLogoSrc);

@@ -8,12 +8,13 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ProtectedRoute } from './ProtectedRoute';
-import { LoginPage } from '../organisms';
+import { LoginPage } from '../organisms/LoginPage/LoginPage';
 import { DashboardPage } from '../../pages/DashboardPage';
 import { UsersPage } from '../../pages/UsersPage';
 import { AgenciesPage } from '../../pages/AgenciesPage';
 import { ROUTES } from '../../constants/navigation.constants';
 import { useAuthStore } from '../../store/auth.store';
+import logoMainSrc from '../../assets/images/logo-main.svg';
 
 /**
  * Page transition variants
@@ -115,7 +116,7 @@ export const AppRouter: React.FC = () => {
         {/* Public Routes */}
         <Route
           path='/login'
-          element={<LoginPage showDevMode={true} onLoginSuccess={handleLoginSuccess} logoSrc='./logo-main.svg' />}
+          element={<LoginPage showDevMode={true} onLoginSuccess={handleLoginSuccess} logoSrc={logoMainSrc} />}
         />
 
         {/* Protected Routes */}

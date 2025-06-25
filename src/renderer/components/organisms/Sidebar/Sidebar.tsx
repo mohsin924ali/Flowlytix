@@ -25,6 +25,7 @@ import { ChevronLeft, ChevronRight, ExpandLess, ExpandMore } from '@mui/icons-ma
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '../../atoms';
 import type { NavigationRoute } from '../../../types/navigation.types';
+import logoSrc from '../../../assets/images/logo-main.svg';
 
 /**
  * Sidebar Component Props
@@ -315,7 +316,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 transition={{ duration: 0.2 }}
                 style={{ display: 'flex', alignItems: 'center', gap: 12 }}
               >
-                <Logo variant='image' size='small' src='./logo-main.svg' />
+                <Logo variant='image' size='medium' circular={true} src={logoSrc} />
                 <Typography
                   variant='h6'
                   sx={{
@@ -332,25 +333,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </AnimatePresence>
 
-          {isCollapsed && <Logo variant='image' size='small' src='./logo-main.svg' />}
-
-          {!isMobile && (
-            <Tooltip title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'} arrow>
-              <IconButton
-                onClick={onCollapse}
-                size='small'
-                sx={{
-                  color: 'text.secondary',
-                  '&:hover': {
-                    color: 'primary.main',
-                    background: 'rgba(25, 118, 210, 0.08)',
-                  },
-                }}
-              >
-                {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
-              </IconButton>
-            </Tooltip>
-          )}
+          {isCollapsed && <Logo variant='image' size='compact' circular={true} src={logoSrc} />}
         </Box>
 
         {/* Navigation Menu */}
