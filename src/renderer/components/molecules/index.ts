@@ -4,3 +4,4 @@
  */
 
 export { LoginForm, type LoginFormProps } from './LoginForm/LoginForm';
+export { AgencySwitcher, type AgencySwitcherProps } from './AgencySwitcher';

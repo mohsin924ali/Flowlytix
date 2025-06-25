@@ -16,10 +16,24 @@ import {
   useTheme,
   Box,
   Paper,
+  Avatar,
+  Divider,
 } from '@mui/material';
-import { TrendingUp, People, Inventory, ShoppingCart, WavingHand } from '@mui/icons-material';
+import {
+  TrendingUp,
+  People,
+  Inventory,
+  ShoppingCart,
+  WavingHand,
+  Business,
+  LocationOn,
+  Phone,
+  Email,
+} from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { DashboardLayout } from '../components/templates';
+import { useAuthStore } from '../store/auth.store';
+import { useAgencyStore } from '../store/agency.store';
 
 /**
  * Dashboard stats interface
@@ -77,6 +91,154 @@ const cardVariants = {
       duration: 0.2,
     },
   },
+};
+
+/**
+ * Professional Welcome Component
+ */
+const WelcomeSection: React.FC = () => {
+  const theme = useTheme();
+  const { user } = useAuthStore();
+  const { currentAgency } = useAgencyStore();
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return theme.palette.success.main;
+      case 'inactive':
+        return theme.palette.warning.main;
+      case 'suspended':
+        return theme.palette.error.main;
+      default:
+        return theme.palette.grey[500];
+    }
+  };
+
+  return (
+    <motion.div variants={itemVariants}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          mb: 4,
+          background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(66, 165, 245, 0.05) 100%)',
+          border: '1px solid rgba(25, 118, 210, 0.1)',
+          borderRadius: 2,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Avatar
+            sx={{
+              bgcolor: theme.palette.primary.main,
+              width: 56,
+              height: 56,
+              fontSize: '1.5rem',
+              fontWeight: 600,
+            }}
+          >
+            {user?.firstName?.charAt(0) || 'U'}
+          </Avatar>
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant='h4'
+              sx={{
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                mb: 0.5,
+              }}
+            >
+              {getGreeting()}, {user?.firstName || 'User'}! <WavingHand sx={{ color: '#ffa726', ml: 1 }} />
+            </Typography>
+            <Typography variant='body1' color='text.secondary'>
+              Welcome back to your distribution management dashboard
+            </Typography>
+          </Box>
+        </Box>
+
+        {currentAgency && (
+          <>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Business color='primary' />
+                <Typography variant='h6' sx={{ fontWeight: 600 }}>
+                  {currentAgency.name}
+                </Typography>
+                <Chip
+                  label={currentAgency.status}
+                  size='small'
+                  sx={{
+                    height: 24,
+                    fontWeight: 500,
+                    textTransform: 'capitalize',
+                    backgroundColor: `${getStatusColor(currentAgency.status)}20`,
+                    color: getStatusColor(currentAgency.status),
+                    border: `1px solid ${getStatusColor(currentAgency.status)}40`,
+                  }}
+                />
+              </Box>
+            </Box>
+
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              {currentAgency.contactPerson && (
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <People fontSize='small' color='action' />
+                    <Typography variant='body2' color='text.secondary'>
+                      Contact: {currentAgency.contactPerson}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
+
+              {currentAgency.email && (
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Email fontSize='small' color='action' />
+                    <Typography variant='body2' color='text.secondary'>
+                      {currentAgency.email}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
+
+              {currentAgency.phone && (
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Phone fontSize='small' color='action' />
+                    <Typography variant='body2' color='text.secondary'>
+                      {currentAgency.phone}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
+
+              {currentAgency.address && (
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <LocationOn fontSize='small' color='action' />
+                    <Typography variant='body2' color='text.secondary'>
+                      {currentAgency.address}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
+            </Grid>
+          </>
+        )}
+      </Paper>
+    </motion.div>
+  );
 };
 
 /**
@@ -185,189 +347,142 @@ export const DashboardPage: React.FC = () => {
     <DashboardLayout title='Dashboard'>
       <Container maxWidth='xl' sx={{ py: 2 }}>
         <motion.div variants={containerVariants} initial='hidden' animate='visible'>
-          {/* Welcome Section */}
-          <motion.div variants={itemVariants}>
-            <Box sx={{ mb: 4 }}>
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-              >
-                <Typography
-                  variant='h3'
-                  sx={{
-                    fontWeight: 'bold',
-                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    mb: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                  }}
-                >
-                  <motion.div
-                    animate={{ rotate: [0, 15, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                  >
-                    <WavingHand sx={{ color: '#ffd700' }} />
-                  </motion.div>
-                  Welcome back!
-                </Typography>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-              >
-                <Typography variant='h6' color='text.secondary'>
-                  {currentTime.toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </Typography>
-              </motion.div>
-            </Box>
-          </motion.div>
+          {/* Professional Welcome Section with Agency Info */}
+          <WelcomeSection />
 
-          {/* Stats Grid */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            {dashboardStats.map((stat, index) => (
-              <Grid item xs={12} sm={6} lg={3} key={stat.id}>
-                <motion.div variants={cardVariants} whileHover='hover' custom={index}>
-                  <Card
-                    sx={{
-                      background: 'rgba(255, 255, 255, 0.7)',
-                      backdropFilter: 'blur(20px)',
-                      border: '1px solid rgba(255, 255, 255, 0.3)',
-                      borderRadius: 3,
-                      overflow: 'hidden',
-                      position: 'relative',
-                      '&:before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: 4,
-                        background: `linear-gradient(90deg, ${stat.color}, ${stat.color}aa)`,
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ p: 3 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: 48,
-                            height: 48,
-                            borderRadius: 2,
-                            background: `linear-gradient(135deg, ${stat.color}20, ${stat.color}10)`,
-                            mr: 2,
-                          }}
-                        >
-                          <stat.icon sx={{ color: stat.color, fontSize: 24 }} />
-                        </Box>
-                        <Box>
-                          <Typography variant='h4' fontWeight='bold'>
+          {/* Dashboard Stats */}
+          <motion.div variants={itemVariants}>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              {dashboardStats.map((stat) => {
+                const IconComponent = stat.icon;
+                return (
+                  <Grid item xs={12} sm={6} md={3} key={stat.id}>
+                    <motion.div variants={cardVariants} whileHover='hover'>
+                      <Card
+                        elevation={0}
+                        sx={{
+                          height: '100%',
+                          background: 'rgba(255, 255, 255, 0.8)',
+                          backdropFilter: 'blur(20px)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: 2,
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            background: 'rgba(255, 255, 255, 0.9)',
+                            borderColor: stat.color,
+                            boxShadow: `0 8px 32px ${stat.color}20`,
+                          },
+                        }}
+                      >
+                        <CardContent sx={{ p: 3 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                            <IconComponent sx={{ fontSize: 40, color: stat.color }} />
+                            <Chip
+                              label={stat.change}
+                              size='small'
+                              sx={{
+                                backgroundColor:
+                                  stat.trend === 'up' ? '#e8f5e8' : stat.trend === 'down' ? '#ffeaea' : '#f0f0f0',
+                                color: stat.trend === 'up' ? '#2e7d32' : stat.trend === 'down' ? '#d32f2f' : '#666',
+                                fontWeight: 600,
+                              }}
+                            />
+                          </Box>
+                          <Typography variant='h4' sx={{ fontWeight: 'bold', color: stat.color, mb: 1 }}>
                             {stat.value}
                           </Typography>
                           <Typography variant='body2' color='text.secondary'>
                             {stat.title}
                           </Typography>
-                        </Box>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Chip
-                          label={stat.change}
-                          size='small'
-                          sx={{
-                            backgroundColor: stat.trend === 'up' ? '#e8f5e8' : '#fff3e0',
-                            color: stat.trend === 'up' ? '#2e7d32' : '#ed6c02',
-                            fontWeight: 'bold',
-                          }}
-                        />
-                        <Typography variant='caption' color='text.secondary' sx={{ ml: 1 }}>
-                          vs last month
-                        </Typography>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </Grid>
-            ))}
-          </Grid>
+                          <LinearProgress
+                            variant='determinate'
+                            value={75}
+                            sx={{
+                              mt: 2,
+                              height: 4,
+                              borderRadius: 2,
+                              backgroundColor: `${stat.color}20`,
+                              '& .MuiLinearProgress-bar': {
+                                backgroundColor: stat.color,
+                              },
+                            }}
+                          />
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </motion.div>
 
-          {/* Coming Soon Section */}
+          {/* Recent Activity Section */}
           <motion.div variants={itemVariants}>
-            <Paper
-              sx={{
-                p: 4,
-                background: 'rgba(255, 255, 255, 0.7)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                borderRadius: 3,
-                textAlign: 'center',
-                position: 'relative',
-                overflow: 'hidden',
-                '&:before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 1,
-                  background: 'linear-gradient(90deg, transparent, rgba(25, 118, 210, 0.5), transparent)',
-                },
-              }}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.8 }}
-              >
-                <Typography
-                  variant='h4'
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={8}>
+                <Card
+                  elevation={0}
                   sx={{
-                    fontWeight: 'bold',
-                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    mb: 2,
+                    height: 400,
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: 2,
                   }}
                 >
-                  🚀 More Features Coming Soon!
-                </Typography>
-                <Typography variant='body1' color='text.secondary' sx={{ mb: 3 }}>
-                  We're working hard to bring you advanced features including product management, customer management,
-                  order processing, analytics, and much more.
-                </Typography>
-                <LinearProgress
-                  variant='determinate'
-                  value={75}
+                  <CardContent sx={{ p: 3, height: '100%' }}>
+                    <Typography variant='h6' sx={{ fontWeight: 'bold', mb: 2 }}>
+                      Recent Activity
+                    </Typography>
+                    <Box
+                      sx={{
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'text.secondary',
+                      }}
+                    >
+                      <Typography>Activity chart will be implemented here</Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card
+                  elevation={0}
                   sx={{
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: 'rgba(25, 118, 210, 0.1)',
-                    '& .MuiLinearProgress-bar': {
-                      background: 'linear-gradient(90deg, #1976d2, #42a5f5)',
-                      borderRadius: 4,
-                    },
+                    height: 400,
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: 2,
                   }}
-                />
-                <Typography variant='caption' color='text.secondary' sx={{ mt: 1, display: 'block' }}>
-                  Development Progress: 75%
-                </Typography>
-              </motion.div>
-            </Paper>
+                >
+                  <CardContent sx={{ p: 3, height: '100%' }}>
+                    <Typography variant='h6' sx={{ fontWeight: 'bold', mb: 2 }}>
+                      Quick Actions
+                    </Typography>
+                    <Box
+                      sx={{
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'text.secondary',
+                      }}
+                    >
+                      <Typography>Quick actions will be implemented here</Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
           </motion.div>
         </motion.div>
+
+        {/* Floating Background Elements */}
+        <FloatingElements />
       </Container>
     </DashboardLayout>
   );

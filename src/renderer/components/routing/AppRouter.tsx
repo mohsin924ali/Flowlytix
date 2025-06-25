@@ -11,6 +11,7 @@ import { ProtectedRoute } from './ProtectedRoute';
 import { LoginPage } from '../organisms';
 import { DashboardPage } from '../../pages/DashboardPage';
 import { UsersPage } from '../../pages/UsersPage';
+import { AgenciesPage } from '../../pages/AgenciesPage';
 import { ROUTES } from '../../constants/navigation.constants';
 import { useAuthStore } from '../../store/auth.store';
 
@@ -234,10 +235,7 @@ export const AppRouter: React.FC = () => {
           path='/agencies'
           element={
             <ProtectedRoute>
-              <PlaceholderPage
-                title='Agency Management'
-                description='Manage business relationships with distribution agencies, track performance, and coordinate operations.'
-              />
+              <AgenciesPage />
             </ProtectedRoute>
           }
         />

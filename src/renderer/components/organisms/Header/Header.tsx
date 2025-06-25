@@ -39,6 +39,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../../store/auth.store';
 import { useNavigationStore } from '../../../store/navigation.store';
+import { useAgencyStore } from '../../../store/agency.store';
+import { AgencySwitcher } from '../../molecules';
 import { NAVIGATION_CONFIG } from '../../../constants/navigation.constants';
 
 /**
@@ -84,6 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
   // Store hooks
   const { user, logout } = useAuthStore();
   const { getRouteByPath } = useNavigationStore();
+  const { currentAgency, switchToAgency, setCurrentAgency } = useAgencyStore();
 
   // Local state
   const [userMenuAnchor, setUserMenuAnchor] = React.useState<null | HTMLElement>(null);
@@ -188,6 +191,38 @@ export const Header: React.FC<HeaderProps> = ({
   const handleBreadcrumbClick = (path: string): void => {
     navigate(path);
   };
+
+  /**
+   * Handle agency selection
+   */
+  const handleAgencySelect = async (agency: any): Promise<void> => {
+    try {
+      await switchToAgency(agency);
+      // Optionally show success message or refresh data
+    } catch (error) {
+      console.error('Failed to switch agency:', error);
+      // Optionally show error message
+    }
+  };
+
+  /**
+   * Handle create agency navigation
+   */
+  const handleCreateAgency = (): void => {
+    navigate('/agencies/create');
+  };
+
+  /**
+   * Check if user is super admin (flexible role checking)
+   */
+  const isSuperAdmin = React.useMemo(() => {
+    if (!user?.role) return false;
+
+    const role = user.role.toLowerCase();
+    return role === 'super_admin' || role === 'superadmin' || role === 'admin';
+  }, [user?.role]);
+
+  // Note: Debug logging removed - agency switcher is working correctly
 
   // Calculate header height and sidebar width for positioning
   const sidebarWidth = sidebarCollapsed ? NAVIGATION_CONFIG.SIDEBAR_COLLAPSED_WIDTH : NAVIGATION_CONFIG.SIDEBAR_WIDTH;
@@ -308,6 +343,18 @@ export const Header: React.FC<HeaderProps> = ({
             ))}
           </motion.div>
         </Box>
+
+        {/* Agency Switcher - Only for Super Admins */}
+        {isSuperAdmin && (
+          <Box sx={{ mx: 2 }}>
+            <AgencySwitcher
+              currentAgencyId={currentAgency?.id}
+              onAgencySelect={handleAgencySelect}
+              onCreateAgency={handleCreateAgency}
+              data-testid='header-agency-switcher'
+            />
+          </Box>
+        )}
 
         {/* Search Bar */}
         <Box
