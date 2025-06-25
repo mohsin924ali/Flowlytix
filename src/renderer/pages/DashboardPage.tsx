@@ -1,394 +1,489 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+/**
+ * Dashboard Page Component
+ * Main dashboard after successful authentication
+ * Following Atomic Design principles with stunning animations and professional styling
+ */
+
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Grid,
+  Typography,
+  Chip,
   Card,
   CardContent,
-  Typography,
-  Button,
+  LinearProgress,
+  useTheme,
   Box,
-  AppBar,
-  Toolbar,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControlLabel,
-  Switch,
-  Alert,
-  Chip,
   Paper,
+  Avatar,
+  Divider,
 } from '@mui/material';
-import { ExitToApp, Add, Business, Storage, CheckCircle, Error } from '@mui/icons-material';
+import {
+  TrendingUp,
+  People,
+  Inventory,
+  ShoppingCart,
+  WavingHand,
+  Business,
+  LocationOn,
+  Phone,
+  Email,
+} from '@mui/icons-material';
+import { motion } from 'framer-motion';
+import { DashboardLayout } from '../components/templates';
+import { useAuthStore } from '../store/auth.store';
+import { useAgencyStore } from '../store/agency.store';
 
 /**
- * Agency creation form schema
+ * Dashboard stats interface
  */
-const agencySchema = z.object({
-  name: z
-    .string()
-    .min(2, 'Agency name must be at least 2 characters')
-    .max(100, 'Agency name cannot exceed 100 characters'),
-  contactPerson: z.string().optional(),
-  email: z.string().email('Please enter a valid email').optional().or(z.literal('')),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  allowCreditSales: z.boolean().default(false),
-  defaultCreditDays: z.number().min(1).max(180).default(30),
-  maxCreditLimit: z.number().min(0).default(10000),
-  currency: z.string().default('USD'),
-  taxRate: z.number().min(0).max(1).default(0.08),
-});
-
-type AgencyFormData = z.infer<typeof agencySchema>;
-
-interface DashboardPageProps {
-  user: any;
-  onLogout: () => void;
-}
-
-interface AgencyCreationResult {
-  success: boolean;
-  agencyId?: string;
-  databasePath?: string;
-  error?: string;
+interface DashboardStat {
+  id: string;
+  title: string;
+  value: string;
+  change: string;
+  trend: 'up' | 'down' | 'neutral';
+  icon: React.ElementType;
+  color: string;
 }
 
 /**
- * Dashboard Page Component
- * Main interface for testing agency creation
+ * Animation variants
  */
-const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) => {
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [creationResult, setCreationResult] = useState<AgencyCreationResult | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    watch,
-  } = useForm<AgencyFormData>({
-    resolver: zodResolver(agencySchema),
-    defaultValues: {
-      name: '',
-      contactPerson: '',
-      email: '',
-      phone: '',
-      address: '',
-      allowCreditSales: false,
-      defaultCreditDays: 30,
-      maxCreditLimit: 10000,
-      currency: 'USD',
-      taxRate: 0.08,
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
     },
-  });
+  },
+};
 
-  const allowCreditSales = watch('allowCreditSales');
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: 'easeOut',
+    },
+  },
+};
 
-  /**
-   * Handle agency creation
-   */
-  const onSubmit = async (data: AgencyFormData) => {
-    try {
-      setIsCreating(true);
-      setCreationResult(null);
+const cardVariants = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.4,
+      ease: 'easeOut',
+    },
+  },
+  hover: {
+    scale: 1.05,
+    y: -5,
+    transition: {
+      duration: 0.2,
+    },
+  },
+};
 
-      // Generate database path
-      const databasePath = `./databases/${data.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.db`;
+/**
+ * Professional Welcome Component
+ */
+const WelcomeSection: React.FC = () => {
+  const theme = useTheme();
+  const { user } = useAuthStore();
+  const { currentAgency } = useAgencyStore();
 
-      // Call agency creation via IPC
-      const result = await window.electronAPI.agency.createAgency({
-        name: data.name,
-        databasePath,
-        contactPerson: data.contactPerson || null,
-        email: data.email || null,
-        phone: data.phone || null,
-        address: data.address || null,
-        createdBy: user.id,
-        settings: {
-          allowCreditSales: data.allowCreditSales,
-          defaultCreditDays: data.defaultCreditDays,
-          maxCreditLimit: data.maxCreditLimit,
-          requireApprovalForOrders: false,
-          enableInventoryTracking: true,
-          taxRate: data.taxRate,
-          currency: data.currency,
-          businessHours: {
-            start: '09:00',
-            end: '17:00',
-            timezone: 'UTC',
-          },
-        },
-      });
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
 
-      setCreationResult({
-        success: result.success,
-        agencyId: result.agencyId,
-        databasePath: result.databasePath,
-        error: result.error,
-      });
-
-      if (result.success) {
-        reset(); // Clear form on success
-      }
-    } catch (error) {
-      console.error('Agency creation error:', error);
-      setCreationResult({
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to create agency',
-      });
-    } finally {
-      setIsCreating(false);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return theme.palette.success.main;
+      case 'inactive':
+        return theme.palette.warning.main;
+      case 'suspended':
+        return theme.palette.error.main;
+      default:
+        return theme.palette.grey[500];
     }
   };
 
-  /**
-   * Handle dialog close
-   */
-  const handleCloseDialog = () => {
-    setCreateDialogOpen(false);
-    setCreationResult(null);
-    reset();
-  };
-
   return (
-    <>
-      {/* App Bar */}
-      <AppBar position='static'>
-        <Toolbar>
-          <Business sx={{ mr: 2 }} />
-          <Typography variant='h6' component='div' sx={{ flexGrow: 1 }}>
-            Flowlytix Dashboard
-          </Typography>
-          <Chip label={`${user.firstName} ${user.lastName}`} color='secondary' size='small' sx={{ mr: 2 }} />
-          <IconButton color='inherit' onClick={onLogout}>
-            <ExitToApp />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
-
-      {/* Main Content */}
-      <Container maxWidth='lg' sx={{ py: 4 }}>
-        <Grid container spacing={3}>
-          {/* Welcome Card */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant='h4' gutterBottom>
-                  Welcome to Flowlytix Distribution System
-                </Typography>
-                <Typography variant='body1' color='text.secondary'>
-                  Multi-tenant distribution management system. Test agency creation below.
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Agency Creation Card */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Business sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography variant='h6'>Agency Management</Typography>
-                </Box>
-                <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
-                  Create new agencies with dedicated databases for multi-tenant operations.
-                </Typography>
-                <Button variant='contained' startIcon={<Add />} onClick={() => setCreateDialogOpen(true)} fullWidth>
-                  Create New Agency
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* System Info Card */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Storage sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography variant='h6'>System Information</Typography>
-                </Box>
-                <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
-                  User: {user.email}
-                </Typography>
-                <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
-                  Role: {user.role}
-                </Typography>
-                <Typography variant='body2' color='text.secondary'>
-                  Permissions: {user.permissions?.length || 0} active
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Creation Result Display */}
-          {creationResult && (
-            <Grid item xs={12}>
-              <Paper sx={{ p: 3 }}>
-                {creationResult.success ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <CheckCircle color='success' sx={{ mr: 1 }} />
-                    <Typography variant='h6' color='success.main'>
-                      Agency Created Successfully!
-                    </Typography>
-                  </Box>
-                ) : (
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Error color='error' sx={{ mr: 1 }} />
-                    <Typography variant='h6' color='error.main'>
-                      Agency Creation Failed
-                    </Typography>
-                  </Box>
-                )}
-
-                {creationResult.success && (
-                  <Box>
-                    <Typography variant='body2' color='text.secondary'>
-                      Agency ID: {creationResult.agencyId}
-                    </Typography>
-                    <Typography variant='body2' color='text.secondary'>
-                      Database Path: {creationResult.databasePath}
-                    </Typography>
-                    <Alert severity='success' sx={{ mt: 2 }}>
-                      ✅ Agency successfully created
-                      <br />✅ Dedicated database created with complete schema replica
-                    </Alert>
-                  </Box>
-                )}
-
-                {!creationResult.success && (
-                  <Alert severity='error' sx={{ mt: 2 }}>
-                    {creationResult.error}
-                  </Alert>
-                )}
-              </Paper>
-            </Grid>
-          )}
-        </Grid>
-      </Container>
-
-      {/* Create Agency Dialog */}
-      <Dialog open={createDialogOpen} onClose={handleCloseDialog} maxWidth='md' fullWidth>
-        <DialogTitle>Create New Agency</DialogTitle>
-        <DialogContent>
-          <Box component='form' sx={{ mt: 1 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  {...register('name')}
-                  fullWidth
-                  label='Agency Name *'
-                  error={!!errors.name}
-                  helperText={errors.name?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  {...register('contactPerson')}
-                  fullWidth
-                  label='Contact Person'
-                  error={!!errors.contactPerson}
-                  helperText={errors.contactPerson?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  {...register('email')}
-                  fullWidth
-                  label='Email'
-                  type='email'
-                  error={!!errors.email}
-                  helperText={errors.email?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  {...register('phone')}
-                  fullWidth
-                  label='Phone'
-                  error={!!errors.phone}
-                  helperText={errors.phone?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  {...register('currency')}
-                  fullWidth
-                  label='Currency'
-                  error={!!errors.currency}
-                  helperText={errors.currency?.message}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  {...register('address')}
-                  fullWidth
-                  label='Address'
-                  multiline
-                  rows={2}
-                  error={!!errors.address}
-                  helperText={errors.address?.message}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <FormControlLabel control={<Switch {...register('allowCreditSales')} />} label='Allow Credit Sales' />
-              </Grid>
-              {allowCreditSales && (
-                <>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      {...register('defaultCreditDays', { valueAsNumber: true })}
-                      fullWidth
-                      label='Default Credit Days'
-                      type='number'
-                      error={!!errors.defaultCreditDays}
-                      helperText={errors.defaultCreditDays?.message}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      {...register('maxCreditLimit', { valueAsNumber: true })}
-                      fullWidth
-                      label='Max Credit Limit'
-                      type='number'
-                      error={!!errors.maxCreditLimit}
-                      helperText={errors.maxCreditLimit?.message}
-                    />
-                  </Grid>
-                </>
-              )}
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  {...register('taxRate', { valueAsNumber: true })}
-                  fullWidth
-                  label='Tax Rate (0-1)'
-                  type='number'
-                  step='0.01'
-                  error={!!errors.taxRate}
-                  helperText={errors.taxRate?.message}
-                />
-              </Grid>
-            </Grid>
+    <motion.div variants={itemVariants}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          mb: 4,
+          background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(66, 165, 245, 0.05) 100%)',
+          border: '1px solid rgba(25, 118, 210, 0.1)',
+          borderRadius: 2,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Avatar
+            sx={{
+              bgcolor: theme.palette.primary.main,
+              width: 56,
+              height: 56,
+              fontSize: '1.5rem',
+              fontWeight: 600,
+            }}
+          >
+            {user?.firstName?.charAt(0) || 'U'}
+          </Avatar>
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant='h4'
+              sx={{
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                mb: 0.5,
+              }}
+            >
+              {getGreeting()}, {user?.firstName || 'User'}! <WavingHand sx={{ color: '#ffa726', ml: 1 }} />
+            </Typography>
+            <Typography variant='body1' color='text.secondary'>
+              Welcome back to your distribution management dashboard
+            </Typography>
           </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit(onSubmit)} variant='contained' disabled={isCreating}>
-            {isCreating ? 'Creating...' : 'Create Agency'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
+        </Box>
+
+        {currentAgency && (
+          <>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Business color='primary' />
+                <Typography variant='h6' sx={{ fontWeight: 600 }}>
+                  {currentAgency.name}
+                </Typography>
+                <Chip
+                  label={currentAgency.status}
+                  size='small'
+                  sx={{
+                    height: 24,
+                    fontWeight: 500,
+                    textTransform: 'capitalize',
+                    backgroundColor: `${getStatusColor(currentAgency.status)}20`,
+                    color: getStatusColor(currentAgency.status),
+                    border: `1px solid ${getStatusColor(currentAgency.status)}40`,
+                  }}
+                />
+              </Box>
+            </Box>
+
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              {currentAgency.contactPerson && (
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <People fontSize='small' color='action' />
+                    <Typography variant='body2' color='text.secondary'>
+                      Contact: {currentAgency.contactPerson}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
+
+              {currentAgency.email && (
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Email fontSize='small' color='action' />
+                    <Typography variant='body2' color='text.secondary'>
+                      {currentAgency.email}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
+
+              {currentAgency.phone && (
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Phone fontSize='small' color='action' />
+                    <Typography variant='body2' color='text.secondary'>
+                      {currentAgency.phone}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
+
+              {currentAgency.address && (
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <LocationOn fontSize='small' color='action' />
+                    <Typography variant='body2' color='text.secondary'>
+                      {currentAgency.address}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
+            </Grid>
+          </>
+        )}
+      </Paper>
+    </motion.div>
   );
 };
 
-export default DashboardPage;
+/**
+ * Floating elements animation
+ */
+const FloatingElements: React.FC = () => (
+  <Box
+    sx={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: 'hidden',
+      pointerEvents: 'none',
+      zIndex: 0,
+    }}
+  >
+    {[...Array(4)].map((_, i) => (
+      <motion.div
+        key={i}
+        style={{
+          position: 'absolute',
+          width: Math.random() * 100 + 50,
+          height: Math.random() * 100 + 50,
+          borderRadius: '50%',
+          background: `linear-gradient(135deg, rgba(25, 118, 210, ${Math.random() * 0.1 + 0.05}) 0%, rgba(66, 165, 245, ${Math.random() * 0.1 + 0.03}) 100%)`,
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+        }}
+        initial={{
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+        }}
+        animate={{
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+        }}
+        transition={{
+          duration: Math.random() * 30 + 20,
+          repeat: Infinity,
+          repeatType: 'reverse',
+          ease: 'linear',
+        }}
+      />
+    ))}
+  </Box>
+);
+
+/**
+ * Dashboard Page Component
+ */
+export const DashboardPage: React.FC = () => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Mock dashboard stats
+  const dashboardStats: DashboardStat[] = [
+    {
+      id: 'orders',
+      title: 'Total Orders',
+      value: '1,234',
+      change: '+12.5%',
+      trend: 'up',
+      icon: ShoppingCart,
+      color: '#1976d2',
+    },
+    {
+      id: 'customers',
+      title: 'Active Customers',
+      value: '856',
+      change: '+8.2%',
+      trend: 'up',
+      icon: People,
+      color: '#2e7d32',
+    },
+    {
+      id: 'inventory',
+      title: 'Inventory Items',
+      value: '2,145',
+      change: '-3.1%',
+      trend: 'down',
+      icon: Inventory,
+      color: '#ed6c02',
+    },
+    {
+      id: 'revenue',
+      title: 'Monthly Revenue',
+      value: '$45,678',
+      change: '+15.7%',
+      trend: 'up',
+      icon: TrendingUp,
+      color: '#9c27b0',
+    },
+  ];
+
+  return (
+    <DashboardLayout title='Dashboard'>
+      <Container maxWidth='xl' sx={{ py: 2 }}>
+        <motion.div variants={containerVariants} initial='hidden' animate='visible'>
+          {/* Professional Welcome Section with Agency Info */}
+          <WelcomeSection />
+
+          {/* Dashboard Stats */}
+          <motion.div variants={itemVariants}>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              {dashboardStats.map((stat) => {
+                const IconComponent = stat.icon;
+                return (
+                  <Grid item xs={12} sm={6} md={3} key={stat.id}>
+                    <motion.div variants={cardVariants} whileHover='hover'>
+                      <Card
+                        elevation={0}
+                        sx={{
+                          height: '100%',
+                          background: 'rgba(255, 255, 255, 0.8)',
+                          backdropFilter: 'blur(20px)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: 2,
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            background: 'rgba(255, 255, 255, 0.9)',
+                            borderColor: stat.color,
+                            boxShadow: `0 8px 32px ${stat.color}20`,
+                          },
+                        }}
+                      >
+                        <CardContent sx={{ p: 3 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                            <IconComponent sx={{ fontSize: 40, color: stat.color }} />
+                            <Chip
+                              label={stat.change}
+                              size='small'
+                              sx={{
+                                backgroundColor:
+                                  stat.trend === 'up' ? '#e8f5e8' : stat.trend === 'down' ? '#ffeaea' : '#f0f0f0',
+                                color: stat.trend === 'up' ? '#2e7d32' : stat.trend === 'down' ? '#d32f2f' : '#666',
+                                fontWeight: 600,
+                              }}
+                            />
+                          </Box>
+                          <Typography variant='h4' sx={{ fontWeight: 'bold', color: stat.color, mb: 1 }}>
+                            {stat.value}
+                          </Typography>
+                          <Typography variant='body2' color='text.secondary'>
+                            {stat.title}
+                          </Typography>
+                          <LinearProgress
+                            variant='determinate'
+                            value={75}
+                            sx={{
+                              mt: 2,
+                              height: 4,
+                              borderRadius: 2,
+                              backgroundColor: `${stat.color}20`,
+                              '& .MuiLinearProgress-bar': {
+                                backgroundColor: stat.color,
+                              },
+                            }}
+                          />
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </motion.div>
+
+          {/* Recent Activity Section */}
+          <motion.div variants={itemVariants}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={8}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    height: 400,
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: 2,
+                  }}
+                >
+                  <CardContent sx={{ p: 3, height: '100%' }}>
+                    <Typography variant='h6' sx={{ fontWeight: 'bold', mb: 2 }}>
+                      Recent Activity
+                    </Typography>
+                    <Box
+                      sx={{
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'text.secondary',
+                      }}
+                    >
+                      <Typography>Activity chart will be implemented here</Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    height: 400,
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: 2,
+                  }}
+                >
+                  <CardContent sx={{ p: 3, height: '100%' }}>
+                    <Typography variant='h6' sx={{ fontWeight: 'bold', mb: 2 }}>
+                      Quick Actions
+                    </Typography>
+                    <Box
+                      sx={{
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'text.secondary',
+                      }}
+                    >
+                      <Typography>Quick actions will be implemented here</Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </motion.div>
+        </motion.div>
+
+        {/* Floating Background Elements */}
+        <FloatingElements />
+      </Container>
+    </DashboardLayout>
+  );
+};

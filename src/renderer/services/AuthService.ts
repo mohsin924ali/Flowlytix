@@ -27,10 +27,16 @@ export class AuthService {
    */
   static async authenticate(credentials: LoginCredentials): Promise<AuthResult> {
     try {
+      console.log('🔑 AuthService.authenticate called with:');
+      console.log('- Email:', credentials.email);
+      console.log('- Password length:', credentials.password.length);
+
       // Check if electron API is available
       if (!window.electronAPI) {
         throw new Error('Electron API not available');
       }
+
+      console.log('🔗 Calling electronAPI.auth.authenticateUser...');
 
       // Call the main process via IPC
       const result = await window.electronAPI.auth.authenticateUser({
@@ -38,26 +44,32 @@ export class AuthService {
         password: credentials.password,
       });
 
-      if (result.success && result.user) {
+      console.log('📡 IPC Response received:', result);
+
+      if (result.success && result.data?.user) {
+        console.log('✅ Authentication successful, user:', result.data.user);
+
+        // Use the user data from the IPC response
         return {
           success: true,
           user: {
-            id: result.user.id,
-            email: result.user.email,
-            firstName: result.user.firstName,
-            lastName: result.user.lastName,
-            role: result.user.role,
-            permissions: result.user.permissions || [],
+            id: result.data.user.id,
+            email: result.data.user.email,
+            firstName: result.data.user.firstName,
+            lastName: result.data.user.lastName,
+            role: result.data.user.role,
+            permissions: result.data.user.permissions || [],
           },
         };
       } else {
+        console.log('❌ Authentication failed:', result.error);
         return {
           success: false,
           error: result.error || 'Authentication failed',
         };
       }
     } catch (error) {
-      console.error('Authentication service error:', error);
+      console.error('💥 Authentication service error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Authentication failed',

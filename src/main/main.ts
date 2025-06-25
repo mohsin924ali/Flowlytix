@@ -1,23 +1,38 @@
-import { app, BrowserWindow, Menu, shell, dialog } from 'electron';
 import { join } from 'node:path';
 import { isDev } from './utils/environment';
-import { registerIpcHandlers } from './ipc/ipcHandlers';
+
+// Safely import Electron modules
+let app: Electron.App;
+let BrowserWindow: typeof Electron.BrowserWindow;
+let Menu: typeof Electron.Menu;
+let shell: Electron.Shell;
+let dialog: Electron.Dialog;
+
+try {
+  const electron = require('electron');
+  app = electron.app;
+  BrowserWindow = electron.BrowserWindow;
+  Menu = electron.Menu;
+  shell = electron.shell;
+  dialog = electron.dialog;
+} catch (error) {
+  console.error('Electron not available:', error);
+  process.exit(1);
+}
 
 class ElectronApp {
-  private mainWindow: BrowserWindow | null = null;
+  private mainWindow: InstanceType<typeof BrowserWindow> | null = null;
 
   constructor() {
     this.initializeApp();
   }
 
   private initializeApp(): void {
-    // Set app user model ID for Windows
-    if (process.platform === 'win32') {
-      app.setAppUserModelId('com.flowlytix.distribution-system');
+    // Ensure app is available before using it
+    if (!app) {
+      console.error('Electron app is not available');
+      return;
     }
-
-    // Security: Disable node integration globally
-    app.commandLine.appendSwitch('--disable-features', 'VizDisplayCompositor');
 
     // Handle certificate errors
     app.on('certificate-error', (event, _webContents, _url, _error, _certificate, callback) => {
@@ -35,11 +50,28 @@ class ElectronApp {
     this.setupAppEventHandlers();
 
     // Register IPC handlers
-    registerIpcHandlers();
+    this.registerIpcHandlers();
+  }
+
+  private registerIpcHandlers(): void {
+    try {
+      const { registerIpcHandlers } = require('./ipc/ipcHandlers');
+      registerIpcHandlers();
+    } catch (error) {
+      console.error('Failed to register IPC handlers:', error);
+    }
   }
 
   private setupAppEventHandlers(): void {
     app.whenReady().then(() => {
+      // Set app user model ID for Windows
+      if (process.platform === 'win32') {
+        app.setAppUserModelId('com.flowlytix.distribution-system');
+      }
+
+      // Security: Disable features (done after app is ready)
+      console.log('Electron app is ready, initializing...');
+
       this.createMainWindow();
       this.setupApplicationMenu();
     });
@@ -76,6 +108,13 @@ class ElectronApp {
 
   private createMainWindow(): void {
     // Create the browser window with security settings
+    // In both dev and production, main.js is at dist/main/src/main/main.js
+    // and preload.js is at dist/main/src/preload/preload.js
+    const preloadPath = join(__dirname, '../preload/preload.js');
+
+    console.log('Preload script path:', preloadPath);
+    console.log('Preload script exists:', require('fs').existsSync(preloadPath));
+
     const windowOptions: Electron.BrowserWindowConstructorOptions = {
       width: 1400,
       height: 900,
@@ -89,9 +128,7 @@ class ElectronApp {
         allowRunningInsecureContent: false,
         webSecurity: true,
         sandbox: false, // Required for preload script
-        preload: isDev()
-          ? join(__dirname, '../preload/preload.js') // Development path
-          : join(__dirname, '../preload/preload.js'), // Production path (same for now)
+        preload: preloadPath,
         spellcheck: true,
         devTools: isDev(),
       },
@@ -109,11 +146,16 @@ class ElectronApp {
       void this.mainWindow.loadURL('http://localhost:3000');
       this.mainWindow.webContents.openDevTools();
     } else {
-      void this.mainWindow.loadFile(join(__dirname, '../../../../renderer/index.html'));
+      // Fixed path - going from dist/main/src/main/ to dist/renderer/
+      const htmlPath = join(__dirname, '../../../renderer/index.html');
+      console.log('Loading HTML file from:', htmlPath);
+      console.log('HTML file exists:', require('fs').existsSync(htmlPath));
+      void this.mainWindow.loadFile(htmlPath);
     }
 
     // Show window when ready
     this.mainWindow.once('ready-to-show', () => {
+      console.log('Main window is ready to show');
       this.mainWindow?.show();
 
       if (isDev()) {
@@ -126,8 +168,20 @@ class ElectronApp {
       this.mainWindow = null;
     });
 
+    // Add error handling for debugging
+    this.mainWindow.webContents.on(
+      'did-fail-load',
+      (event: any, errorCode: any, errorDescription: any, validatedURL: any) => {
+        console.error('Failed to load:', validatedURL, 'Error:', errorDescription);
+      }
+    );
+
+    this.mainWindow.webContents.on('did-finish-load', () => {
+      console.log('Renderer process loaded successfully');
+    });
+
     // Security: Handle external links
-    this.mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    this.mainWindow.webContents.setWindowOpenHandler(({ url }: { url: string }) => {
       void shell.openExternal(url);
       return { action: 'deny' };
     });

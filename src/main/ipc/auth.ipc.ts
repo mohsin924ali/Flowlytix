@@ -19,6 +19,7 @@ import { CreateUserHandler, IUserRepository } from '../../application/handlers/a
 import { AuthenticateUserHandler } from '../../application/handlers/auth/authenticate-user.handler';
 import { GetUserByEmailHandler } from '../../application/handlers/auth/get-user-by-email.handler';
 import { GetUserPermissionsHandler } from '../../application/handlers/auth/get-user-permissions.handler';
+import { ListUsersHandler } from '../../application/handlers/auth/list-users.handler';
 import {
   CreateUserCommand,
   CreateUserCommandValidationError,
@@ -38,11 +39,22 @@ import {
   UserPermissionsResult,
   GetUserPermissionsQueryValidationError,
 } from '../../application/queries/auth/get-user-permissions.query';
+import {
+  ListUsersQuery,
+  ListUsersQueryResult,
+  UserListItem,
+  ListUsersQueryValidationError,
+} from '../../application/queries/auth/list-users.query';
 
 /**
  * Authentication operation types for IPC
  */
-export type AuthOperation = 'create-user' | 'authenticate-user' | 'get-user-by-email' | 'get-user-permissions';
+export type AuthOperation =
+  | 'create-user'
+  | 'authenticate-user'
+  | 'get-user-by-email'
+  | 'get-user-permissions'
+  | 'list-users';
 
 /**
  * Input validation schemas using Zod for security
@@ -71,6 +83,20 @@ const GetUserByEmailRequestSchema = z.object({
 const GetUserPermissionsRequestSchema = z.object({
   userId: z.string().uuid('Invalid user ID format'),
   requesterId: z.string().uuid('Invalid requester ID format'),
+});
+
+const ListUsersRequestSchema = z.object({
+  requestedBy: z.string().uuid('Invalid requester ID format'),
+  limit: z.number().int().min(1).max(1000).default(50),
+  offset: z.number().int().min(0).default(0),
+  sortBy: z.enum(['firstName', 'lastName', 'email', 'role', 'status', 'createdAt', 'lastLoginAt']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  role: z.string().optional(),
+  status: z.string().optional(),
+  search: z.string().max(255).optional(),
+  createdAfter: z.string().datetime().optional(),
+  createdBefore: z.string().datetime().optional(),
+  isLocked: z.boolean().optional(),
 });
 
 /**
@@ -130,6 +156,16 @@ export interface GetUserPermissionsResponse {
   readonly hierarchyLevel: number;
 }
 
+export interface ListUsersResponse {
+  readonly success: boolean;
+  readonly users: readonly UserListItem[];
+  readonly total: number;
+  readonly limit: number;
+  readonly offset: number;
+  readonly hasMore: boolean;
+  readonly error?: string;
+}
+
 /**
  * Authentication IPC error hierarchy
  */
@@ -177,11 +213,13 @@ export class AuthIpcHandler {
   private readonly authenticateUserHandler: AuthenticateUserHandler;
   private readonly getUserByEmailHandler: GetUserByEmailHandler;
   private readonly getUserPermissionsHandler: GetUserPermissionsHandler;
+  private readonly listUsersHandler: ListUsersHandler;
   private readonly allowedChannels: readonly string[] = [
     'auth:create-user',
     'auth:authenticate-user',
     'auth:get-user-by-email',
     'auth:get-user-permissions',
+    'auth:list-users',
   ] as const;
 
   /**
@@ -198,6 +236,7 @@ export class AuthIpcHandler {
     this.authenticateUserHandler = new AuthenticateUserHandler(userRepository);
     this.getUserByEmailHandler = new GetUserByEmailHandler(userRepository);
     this.getUserPermissionsHandler = new GetUserPermissionsHandler(userRepository);
+    this.listUsersHandler = new ListUsersHandler(userRepository);
   }
 
   /**
@@ -210,6 +249,7 @@ export class AuthIpcHandler {
       ipcMain.handle('auth:authenticate-user', this.handleAuthenticateUser.bind(this));
       ipcMain.handle('auth:get-user-by-email', this.handleGetUserByEmail.bind(this));
       ipcMain.handle('auth:get-user-permissions', this.handleGetUserPermissions.bind(this));
+      ipcMain.handle('auth:list-users', this.handleListUsers.bind(this));
     } catch (error) {
       throw new AuthIpcError(
         'Failed to register authentication IPC handlers',
@@ -450,6 +490,59 @@ export class AuthIpcHandler {
   }
 
   /**
+   * Handles list users IPC request
+   * @private
+   */
+  private async handleListUsers(
+    event: IpcMainInvokeEvent,
+    request: unknown
+  ): Promise<AuthIpcResponse<ListUsersResponse>> {
+    const startTime = Date.now();
+
+    try {
+      // Input validation with Zod schema
+      const validatedInput = ListUsersRequestSchema.parse(request);
+
+      // Create query object for application layer
+      const query: ListUsersQuery = {
+        requestedBy: validatedInput.requestedBy,
+        limit: validatedInput.limit,
+        offset: validatedInput.offset,
+        sortBy: validatedInput.sortBy,
+        sortOrder: validatedInput.sortOrder,
+        ...(validatedInput.role && { role: validatedInput.role }),
+        ...(validatedInput.status && { status: validatedInput.status }),
+        ...(validatedInput.search && { search: validatedInput.search }),
+        ...(validatedInput.createdAfter && { createdAfter: new Date(validatedInput.createdAfter) }),
+        ...(validatedInput.createdBefore && { createdBefore: new Date(validatedInput.createdBefore) }),
+        ...(validatedInput.isLocked !== undefined && { isLocked: validatedInput.isLocked }),
+      };
+
+      // Execute query through application layer
+      const result = await this.listUsersHandler.handle(query);
+
+      // Convert domain result to IPC response format
+      const responseData: ListUsersResponse = {
+        success: result.success,
+        users: result.users,
+        total: result.total,
+        limit: result.limit,
+        offset: result.offset,
+        hasMore: result.hasMore,
+        ...(result.error && { error: result.error }),
+      };
+
+      return {
+        success: true,
+        data: responseData,
+        timestamp: Date.now(),
+      };
+    } catch (error) {
+      return this.handleError(error, 'list-users', Date.now() - startTime);
+    }
+  }
+
+  /**
    * Handles errors and returns appropriate IPC response
    * Implements security-first error handling - no sensitive data exposed
    * @private
@@ -475,7 +568,8 @@ export class AuthIpcHandler {
       error instanceof CreateUserCommandValidationError ||
       error instanceof AuthenticateUserCommandValidationError ||
       error instanceof GetUserByEmailQueryValidationError ||
-      error instanceof GetUserPermissionsQueryValidationError
+      error instanceof GetUserPermissionsQueryValidationError ||
+      error instanceof ListUsersQueryValidationError
     ) {
       return {
         success: false,

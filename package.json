@@ -12,9 +12,11 @@
     "npm": ">=8.0.0"
   },
   "scripts": {
-    "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
+    "start": "concurrently \"npm run dev:renderer\" \"wait-on http://localhost:3000 && npm run electron:dev\"",
+    "dev": "concurrently \"npm run dev:renderer\" \"wait-on http://localhost:3000 && npm run electron:dev\"",
     "dev:renderer": "vite --config vite.renderer.config.ts",
-    "dev:main": "tsx watch src/main/main.ts",
+    "dev:main": "npm run build:main && npm run electron:dev",
+    "dev:minimal": "npm run build && npm run electron",
     "build": "npm run build:renderer && npm run build:main",
     "build:renderer": "vite build --config vite.renderer.config.ts",
     "build:main": "tsc --project tsconfig.main.json",
@@ -121,6 +123,7 @@
     "tsx": "^4.4.0",
     "typescript": "^5.3.2",
     "vite": "^5.0.0",
+    "wait-on": "^8.0.3",
     "webpack-bundle-analyzer": "^4.10.1"
   },
   "build": {

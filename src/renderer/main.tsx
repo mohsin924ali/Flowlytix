@@ -1,21 +1,24 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-// Temporarily commenting out MUI imports to fix build issues
-// import { ThemeProvider, createTheme } from '@mui/material/styles';
-// import CssBaseline from '@mui/material/CssBaseline';
-import App from './App';
-
 /**
- * Main React Application Bootstrap
- * Simplified version without MUI to fix build issues
+ * Main Entry Point for React Application
+ * Initializes React app with proper error boundaries
  */
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { App } from './App';
+
+// Get the root element
+const container = document.getElementById('root');
+
+if (!container) {
+  throw new Error('Root element not found');
+}
+
+// Create root and render app
+const root = createRoot(container);
 
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <App />
   </React.StrictMode>
 );
