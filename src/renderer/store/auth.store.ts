@@ -16,7 +16,7 @@ import { AuthService } from '../services/AuthService';
 const initialState = {
   user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true, // Start with loading true, will be set to false after session check
   error: null,
 };
 
@@ -50,6 +50,7 @@ export const useAuthStore = create<AuthStore>()(
             const result = await AuthService.authenticate(credentials);
 
             if (result.success && result.user) {
+              // Update state synchronously
               set((state) => {
                 state.user = result.user!;
                 state.isAuthenticated = true;
@@ -65,6 +66,12 @@ export const useAuthStore = create<AuthStore>()(
                   timestamp: Date.now(),
                 })
               );
+
+              // Log successful state update
+              console.log('✅ Authentication state updated:', {
+                isAuthenticated: true,
+                user: result.user.email,
+              });
             } else {
               throw new Error(result.error || ERROR_MESSAGES.AUTHENTICATION_FAILED);
             }
@@ -112,29 +119,61 @@ export const useAuthStore = create<AuthStore>()(
          */
         checkSession: async (): Promise<void> => {
           try {
-            const sessionData = localStorage.getItem(AUTH_CONFIG.SESSION_STORAGE_KEY);
+            console.log('🔍 checkSession: Starting session check...');
 
-            if (!sessionData) {
-              return;
+            // Check if we have persisted auth state from Zustand
+            const currentState = get();
+            console.log(
+              '🔍 checkSession: Current state:',
+              JSON.stringify(
+                {
+                  isAuthenticated: currentState.isAuthenticated,
+                  hasUser: !!currentState.user,
+                  userEmail: currentState.user?.email,
+                  isLoading: currentState.isLoading,
+                },
+                null,
+                2
+              )
+            );
+
+            if (currentState.user && currentState.isAuthenticated) {
+              console.log('🔍 checkSession: Found persisted auth state');
+
+              // We have persisted state, but let's also check localStorage for session timestamp
+              const sessionData = localStorage.getItem(AUTH_CONFIG.SESSION_STORAGE_KEY);
+
+              if (sessionData) {
+                const { timestamp } = JSON.parse(sessionData);
+                const now = Date.now();
+
+                // Check if session is expired
+                if (now - timestamp > AUTH_CONFIG.SESSION_TIMEOUT) {
+                  console.log('⚠️ checkSession: Session expired, logging out');
+                  get().logout();
+                  return;
+                }
+                console.log('✅ checkSession: Session is valid');
+              }
+
+              // Session is valid, just ensure loading is false
+              set((state) => {
+                state.isLoading = false;
+                state.error = null;
+              });
+
+              console.log('✅ checkSession: Authentication state confirmed');
+            } else {
+              console.log('🔍 checkSession: No persisted auth state found');
+
+              // No persisted state, ensure we're in logged out state
+              set((state) => {
+                state.isLoading = false;
+                state.error = null;
+              });
             }
-
-            const { user, timestamp } = JSON.parse(sessionData);
-            const now = Date.now();
-
-            // Check if session is expired
-            if (now - timestamp > AUTH_CONFIG.SESSION_TIMEOUT) {
-              get().logout();
-              return;
-            }
-
-            // Restore session
-            set((state) => {
-              state.user = user;
-              state.isAuthenticated = true;
-              state.isLoading = false;
-              state.error = null;
-            });
           } catch (error) {
+            console.error('❌ checkSession: Error during session check:', error);
             // If session restoration fails, clear everything
             get().logout();
           }

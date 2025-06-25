@@ -1,13 +1,13 @@
 /**
- * Components Barrel Export
- * Following Instructions standards for clean import statements
+ * Component Exports
+ * Following Instructions file standards
  */
 
-// Atoms
+// Atomic Design Exports
 export * from './atoms';
-
-// Molecules
 export * from './molecules';
-
-// Organisms
 export * from './organisms';
+export * from './templates';
+
+// Routing Components
+export * from './routing';

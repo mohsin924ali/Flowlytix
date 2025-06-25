@@ -48,6 +48,8 @@ export class AuthService {
 
       if (result.success && result.data?.user) {
         console.log('✅ Authentication successful, user:', result.data.user);
+
+        // Use the user data from the IPC response
         return {
           success: true,
           user: {

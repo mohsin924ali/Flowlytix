@@ -6,35 +6,20 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
   Container,
   Grid,
-  Paper,
   Typography,
-  Avatar,
-  IconButton,
   Chip,
   Card,
   CardContent,
   LinearProgress,
   useTheme,
-  useMediaQuery,
+  Box,
+  Paper,
 } from '@mui/material';
-import {
-  Dashboard,
-  TrendingUp,
-  People,
-  Inventory,
-  ShoppingCart,
-  Notifications,
-  Settings,
-  ExitToApp,
-  WavingHand,
-} from '@mui/icons-material';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuthStore } from '../store/auth.store';
-import { Logo } from '../components/atoms';
-import { APP_CONFIG } from '../constants/app.constants';
+import { TrendingUp, People, Inventory, ShoppingCart, WavingHand } from '@mui/icons-material';
+import { motion } from 'framer-motion';
+import { DashboardLayout } from '../components/templates';
 
 /**
  * Dashboard stats interface
@@ -145,9 +130,6 @@ const FloatingElements: React.FC = () => (
  * Dashboard Page Component
  */
 export const DashboardPage: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { user, logout } = useAuthStore();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Update time every minute
@@ -199,112 +181,9 @@ export const DashboardPage: React.FC = () => {
     },
   ];
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        background: `
-          radial-gradient(circle at 10% 20%, rgba(25, 118, 210, 0.1) 0%, transparent 50%),
-          radial-gradient(circle at 90% 80%, rgba(66, 165, 245, 0.1) 0%, transparent 50%),
-          linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)
-        `,
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      <FloatingElements />
-
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-        <Paper
-          elevation={0}
-          sx={{
-            background: 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: 'blur(20px)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
-            position: 'relative',
-            zIndex: 10,
-          }}
-        >
-          <Container maxWidth='xl'>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                py: 2,
-              }}
-            >
-              {/* Logo and Brand */}
-              <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Logo variant='text' size='small' />
-                  <Chip
-                    label='Dashboard'
-                    icon={<Dashboard />}
-                    sx={{
-                      background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-                      color: 'white',
-                      fontWeight: 'bold',
-                    }}
-                  />
-                </Box>
-              </motion.div>
-
-              {/* User Section */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <IconButton>
-                    <Notifications />
-                  </IconButton>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <IconButton>
-                    <Settings />
-                  </IconButton>
-                </motion.div>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Avatar
-                    sx={{
-                      bgcolor: 'primary.main',
-                      width: 40,
-                      height: 40,
-                    }}
-                  >
-                    {user?.email?.[0]?.toUpperCase() || 'A'}
-                  </Avatar>
-                  {!isMobile && (
-                    <Box>
-                      <Typography variant='body2' fontWeight='bold'>
-                        {user?.email || 'Admin User'}
-                      </Typography>
-                      <Typography variant='caption' color='text.secondary'>
-                        Administrator
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <IconButton onClick={handleLogout} color='error'>
-                    <ExitToApp />
-                  </IconButton>
-                </motion.div>
-              </Box>
-            </Box>
-          </Container>
-        </Paper>
-      </motion.div>
-
-      {/* Main Content */}
-      <Container maxWidth='xl' sx={{ py: 4, position: 'relative', zIndex: 1 }}>
+    <DashboardLayout title='Dashboard'>
+      <Container maxWidth='xl' sx={{ py: 2 }}>
         <motion.div variants={containerVariants} initial='hidden' animate='visible'>
           {/* Welcome Section */}
           <motion.div variants={itemVariants}>
@@ -490,6 +369,6 @@ export const DashboardPage: React.FC = () => {
           </motion.div>
         </motion.div>
       </Container>
-    </Box>
+    </DashboardLayout>
   );
 };

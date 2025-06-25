@@ -74,6 +74,9 @@ export const useLoginForm = (): UseLoginFormReturn => {
 
         await login(credentials);
 
+        // Log successful login attempt
+        console.log('🔍 Login attempt completed successfully');
+
         // Handle remember me functionality
         if (data.rememberMe) {
           localStorage.setItem(

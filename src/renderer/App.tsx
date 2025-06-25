@@ -1,38 +1,30 @@
 /**
  * Main App Component
- * Root component with authentication flow and theme provider
+ * Root component with routing and theme provider
  * Following Instructions standards with TypeScript strict mode
  */
 
 import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { theme } from './utils/theme';
 import { useAuthStore } from './store/auth.store';
-import { LoginPage } from './components/organisms';
-import { DashboardPage } from './pages/DashboardPage';
-
-/**
- * Page transition variants
- */
-const pageVariants = {
-  initial: { opacity: 0, scale: 0.95 },
-  in: { opacity: 1, scale: 1 },
-  out: { opacity: 0, scale: 1.05 },
-};
-
-const pageTransition = {
-  type: 'tween',
-  ease: 'anticipate',
-  duration: 0.5,
-};
+import { AppRouter } from './components/routing';
 
 /**
  * Main App component
- * Handles authentication state and routing
+ * Handles routing with authentication
  */
 export const App: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { isLoading, isAuthenticated, checkSession } = useAuthStore();
+
+  // Check for existing session on app initialization
+  React.useEffect(() => {
+    console.log('🚀 App initializing - checking session...');
+    console.log('🔍 Initial auth state:', JSON.stringify({ isAuthenticated, isLoading }, null, 2));
+    checkSession();
+  }, [checkSession]);
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -69,31 +61,9 @@ export const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AnimatePresence mode='wait'>
-        {isAuthenticated ? (
-          <motion.div
-            key='dashboard'
-            initial='initial'
-            animate='in'
-            exit='out'
-            variants={pageVariants}
-            transition={pageTransition}
-          >
-            <DashboardPage />
-          </motion.div>
-        ) : (
-          <motion.div
-            key='login'
-            initial='initial'
-            animate='in'
-            exit='out'
-            variants={pageVariants}
-            transition={pageTransition}
-          >
-            <LoginPage showDevMode={true} logoSrc='./assets/images/logo-main.svg' />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <BrowserRouter>
+        <AppRouter />
+      </BrowserRouter>
     </ThemeProvider>
   );
 };

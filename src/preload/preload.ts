@@ -38,6 +38,7 @@ interface ElectronAPI {
   auth: {
     authenticateUser: (credentials: { email: string; password: string }) => Promise<AuthResult>;
     getUserPermissions: (params: { userId: string }) => Promise<PermissionsResult>;
+    listUsers: (params: ListUsersParams) => Promise<ListUsersResult>;
   };
 
   // Agency management
@@ -794,6 +795,47 @@ interface PermissionsResult {
   error?: string;
 }
 
+interface ListUsersParams {
+  requestedBy: string;
+  limit?: number;
+  offset?: number;
+  sortBy?: 'firstName' | 'lastName' | 'email' | 'role' | 'status' | 'createdAt' | 'lastLoginAt';
+  sortOrder?: 'asc' | 'desc';
+  role?: string;
+  status?: string;
+  search?: string;
+  createdAfter?: string;
+  createdBefore?: string;
+  isLocked?: boolean;
+}
+
+interface ListUsersResult {
+  success: boolean;
+  data?: {
+    success: boolean;
+    users: Array<{
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      fullName: string;
+      role: string;
+      roleName: string;
+      status: string;
+      createdAt: Date;
+      lastLoginAt?: Date;
+      isAccountLocked: boolean;
+      loginAttempts: number;
+    }>;
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+    error?: string;
+  };
+  error?: string;
+}
+
 // Agency types
 interface CreateAgencyRequest {
   name: string;
@@ -895,6 +937,7 @@ const electronAPI: ElectronAPI = {
   auth: {
     authenticateUser: (credentials) => ipcRenderer.invoke('auth:authenticate', credentials),
     getUserPermissions: (params) => ipcRenderer.invoke('auth:get-user', params.userId),
+    listUsers: (params) => ipcRenderer.invoke('auth:list-users', params),
   },
 
   // Agency management
