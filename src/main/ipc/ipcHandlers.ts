@@ -76,8 +76,16 @@ export function registerIpcHandlers(): void {
 // Auth handlers
 async function handleAuthenticate(_event: IpcMainInvokeEvent, credentials: any): Promise<BasicResponse> {
   try {
+    console.log('🔑 Authentication attempt received:');
+    console.log('- Credentials:', credentials);
+    console.log('- Email:', credentials?.email);
+    console.log('- Password:', credentials?.password);
+    console.log('- Expected email: admin@flowlytix.com');
+    console.log('- Expected password: admin123');
+
     // Mock authentication for now
     if (credentials?.email === 'admin@flowlytix.com' && credentials?.password === 'admin123') {
+      console.log('✅ Authentication successful');
       return {
         success: true,
         data: {
@@ -95,12 +103,14 @@ async function handleAuthenticate(_event: IpcMainInvokeEvent, credentials: any):
       };
     }
 
+    console.log('❌ Authentication failed - invalid credentials');
     return {
       success: false,
       error: 'Invalid credentials',
       timestamp: Date.now(),
     };
   } catch (error) {
+    console.error('❌ Authentication error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Authentication failed',

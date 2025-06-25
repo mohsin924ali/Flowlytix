@@ -76,6 +76,13 @@ class ElectronApp {
 
   private createMainWindow(): void {
     // Create the browser window with security settings
+    const preloadPath = isDev()
+      ? join(__dirname, '../preload/preload.js') // Development path
+      : join(__dirname, '../preload/preload.js'); // Production path - going from main/ to preload/
+
+    console.log('Preload script path:', preloadPath);
+    console.log('Preload script exists:', require('fs').existsSync(preloadPath));
+
     const windowOptions: Electron.BrowserWindowConstructorOptions = {
       width: 1400,
       height: 900,
@@ -89,9 +96,7 @@ class ElectronApp {
         allowRunningInsecureContent: false,
         webSecurity: true,
         sandbox: false, // Required for preload script
-        preload: isDev()
-          ? join(__dirname, '../preload/preload.js') // Development path
-          : join(__dirname, '../preload/preload.js'), // Production path (same for now)
+        preload: preloadPath,
         spellcheck: true,
         devTools: isDev(),
       },
@@ -109,11 +114,16 @@ class ElectronApp {
       void this.mainWindow.loadURL('http://localhost:3000');
       this.mainWindow.webContents.openDevTools();
     } else {
-      void this.mainWindow.loadFile(join(__dirname, '../../../../renderer/index.html'));
+      // Fixed path - going from dist/main/src/main/ to dist/renderer/
+      const htmlPath = join(__dirname, '../../../renderer/index.html');
+      console.log('Loading HTML file from:', htmlPath);
+      console.log('HTML file exists:', require('fs').existsSync(htmlPath));
+      void this.mainWindow.loadFile(htmlPath);
     }
 
     // Show window when ready
     this.mainWindow.once('ready-to-show', () => {
+      console.log('Main window is ready to show');
       this.mainWindow?.show();
 
       if (isDev()) {
@@ -124,6 +134,15 @@ class ElectronApp {
     // Handle window closed
     this.mainWindow.on('closed', () => {
       this.mainWindow = null;
+    });
+
+    // Add error handling for debugging
+    this.mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+      console.error('Failed to load:', validatedURL, 'Error:', errorDescription);
+    });
+
+    this.mainWindow.webContents.on('did-finish-load', () => {
+      console.log('Renderer process loaded successfully');
     });
 
     // Security: Handle external links

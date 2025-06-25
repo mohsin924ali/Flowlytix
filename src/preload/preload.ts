@@ -4,6 +4,8 @@
  * Following Electron security best practices
  */
 
+console.log('🔧 Preload script is loading...');
+
 import { contextBridge, ipcRenderer } from 'electron';
 import type { IpcRendererEvent } from 'electron';
 
