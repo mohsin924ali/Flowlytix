@@ -1,8 +1,8 @@
 /**
- * Agencies Management Page - Working Version
+ * Agencies Management Page - Fixed Version
  *
  * Professional UI for agency management with working functionality.
- * Uses direct service calls instead of complex hooks to ensure reliability.
+ * Simplified state management without complex hooks.
  *
  * @domain Agency Management
  * @architecture Clean Architecture - Presentation Layer
@@ -39,6 +39,7 @@ import {
   Grid,
   Card,
   CardContent,
+  Divider,
   CircularProgress,
   InputAdornment,
   useTheme,
@@ -50,6 +51,7 @@ import {
   Refresh as RefreshIcon,
   Edit as EditIcon,
   Business as BusinessIcon,
+  FilterList as FilterIcon,
   Clear as ClearIcon,
   Storage as DatabaseIcon,
   Phone as PhoneIcon,
@@ -57,16 +59,17 @@ import {
   Person as PersonIcon,
   LocationOn as LocationIcon,
 } from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Agency, CreateAgencyParams, AgencyService } from '../services/AgencyService';
 import { AgencyEditModal } from '../components/molecules/AgencyEditModal';
 
 /**
- * Agencies Page Component - Working Version
+ * Agencies Page Component - Fixed Version
  */
-export function AgenciesPage(): JSX.Element {
+export function AgenciesPageFixed(): JSX.Element {
   const theme = useTheme();
 
-  // State management (simplified and working)
+  // State management (simplified)
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(0); // Material-UI uses 0-based indexing
@@ -108,7 +111,7 @@ export function AgenciesPage(): JSX.Element {
       setLoading(true);
       setError(null);
 
-      console.log('🏢 Loading agencies from AgenciesPage...');
+      console.log('🏢 Loading agencies...');
       const result = await AgencyService.listAgencies({
         page: page + 1, // Convert to 1-based for backend
         pageSize,
@@ -116,11 +119,11 @@ export function AgenciesPage(): JSX.Element {
         ...(statusFilter && { status: statusFilter }),
       });
 
-      console.log('🏢 Agencies loaded in AgenciesPage:', result);
+      console.log('🏢 Agencies loaded:', result);
       setAgencies(result.agencies);
       setTotalCount(result.totalCount);
     } catch (err) {
-      console.error('❌ Failed to load agencies in AgenciesPage:', err);
+      console.error('❌ Failed to load agencies:', err);
       setError(err instanceof Error ? err.message : 'Failed to load agencies');
     } finally {
       setLoading(false);
@@ -131,7 +134,6 @@ export function AgenciesPage(): JSX.Element {
    * Initialize data on component mount
    */
   useEffect(() => {
-    console.log('🚀 AgenciesPage mounted, loading agencies...');
     loadAgencies();
   }, [loadAgencies]);
 

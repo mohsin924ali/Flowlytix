@@ -140,7 +140,7 @@ export function useAgencies(params: UseAgenciesParams = {}): UseAgenciesReturn {
         setLoading(false);
       }
     },
-    [page, pageSize, search, statusFilter, enableCaching, cacheDuration, lastLoadTime]
+    [page, pageSize, search, statusFilter, enableCaching, cacheDuration, initializeWithFirstAgency]
   );
 
   /**

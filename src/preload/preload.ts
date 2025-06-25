@@ -945,7 +945,7 @@ const electronAPI: ElectronAPI = {
     createAgency: (data) => ipcRenderer.invoke('agency:create', data),
     getAgencies: () => ipcRenderer.invoke('agency:list'),
     getAgencyById: (params) => ipcRenderer.invoke('agency:list', { agencyId: params.agencyId }),
-    updateAgency: (data) => ipcRenderer.invoke('agency:update', data.agencyId, data),
+    updateAgency: (data) => ipcRenderer.invoke('agency:update-agency', data),
   },
 
   // Business domain operations

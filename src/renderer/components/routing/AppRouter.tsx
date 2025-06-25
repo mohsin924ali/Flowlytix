@@ -113,7 +113,10 @@ export const AppRouter: React.FC = () => {
     <AnimatePresence mode='wait'>
       <Routes>
         {/* Public Routes */}
-        <Route path='/login' element={<LoginPage showDevMode={true} onLoginSuccess={handleLoginSuccess} />} />
+        <Route
+          path='/login'
+          element={<LoginPage showDevMode={true} onLoginSuccess={handleLoginSuccess} logoSrc='./logo-main.svg' />}
+        />
 
         {/* Protected Routes */}
         <Route

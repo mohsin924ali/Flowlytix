@@ -389,7 +389,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Use the correct path for the built assets
-  const defaultLogoSrc = './assets/images/logo-main.svg';
+  const defaultLogoSrc = './logo-main.svg';
   const finalLogoSrc = logoSrc || defaultLogoSrc;
 
   console.log('LoginPage: Using logo source:', finalLogoSrc);

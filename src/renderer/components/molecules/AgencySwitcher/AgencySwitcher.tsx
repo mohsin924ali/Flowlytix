@@ -25,6 +25,7 @@ import {
   alpha,
   CircularProgress,
   Tooltip,
+  IconButton,
 } from '@mui/material';
 import {
   Business as BusinessIcon,
@@ -32,6 +33,8 @@ import {
   Check as CheckIcon,
   Add as AddIcon,
   SwapHoriz as SwapIcon,
+  Edit as EditIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAgencies } from '../../../hooks/useAgencies';
@@ -47,6 +50,8 @@ export interface AgencySwitcherProps {
   onAgencySelect: (agency: Agency) => void;
   /** Callback to create new agency */
   onCreateAgency?: () => void;
+  /** Callback to edit agency */
+  onEditAgency?: (agency: Agency) => void;
   /** Component class name */
   className?: string;
   /** Test ID for testing */
@@ -63,6 +68,7 @@ export const AgencySwitcher: React.FC<AgencySwitcherProps> = ({
   currentAgencyId,
   onAgencySelect,
   onCreateAgency,
+  onEditAgency,
   className,
   'data-testid': testId = 'agency-switcher',
 }) => {
@@ -118,6 +124,20 @@ export const AgencySwitcher: React.FC<AgencySwitcherProps> = ({
     }
     handleMenuClose();
   }, [onCreateAgency, handleMenuClose]);
+
+  /**
+   * Handle edit agency
+   */
+  const handleEditAgency = useCallback(
+    (agency: Agency, event: React.MouseEvent) => {
+      event.stopPropagation(); // Prevent agency selection
+      if (onEditAgency) {
+        onEditAgency(agency);
+      }
+      handleMenuClose();
+    },
+    [onEditAgency, handleMenuClose]
+  );
 
   /**
    * Get agency status color
@@ -261,7 +281,7 @@ export const AgencySwitcher: React.FC<AgencySwitcherProps> = ({
                     <ListItemText
                       primary={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant='body2' sx={{ fontWeight: 500 }}>
+                          <Typography variant='body2' sx={{ fontWeight: 500, flex: 1 }}>
                             {agency.name}
                           </Typography>
                           <Chip
@@ -276,6 +296,24 @@ export const AgencySwitcher: React.FC<AgencySwitcherProps> = ({
                               border: `1px solid ${alpha(getStatusColor(agency.status), 0.3)}`,
                             }}
                           />
+                          {onEditAgency && (
+                            <Tooltip title='Edit Agency'>
+                              <IconButton
+                                size='small'
+                                onClick={(e) => handleEditAgency(agency, e)}
+                                sx={{
+                                  ml: 1,
+                                  opacity: 0.7,
+                                  '&:hover': {
+                                    opacity: 1,
+                                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                                  },
+                                }}
+                              >
+                                <EditIcon fontSize='small' />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       }
                       secondary={

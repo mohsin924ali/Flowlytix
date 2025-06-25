@@ -61,7 +61,7 @@ export function registerIpcHandlers(): void {
   // Agency handlers - Real database-backed implementation
   ipcMain.handle('agency:list', handleAgencyList);
   ipcMain.handle('agency:create', handleAgencyCreate);
-  ipcMain.handle('agency:update', handleAgencyUpdate);
+  ipcMain.handle('agency:update-agency', handleAgencyUpdate);
 
   // Shipping handlers
   ipcMain.handle('shipping:list', handleShippingList);
@@ -874,16 +874,128 @@ async function handleAgencyCreate(_event: IpcMainInvokeEvent, agencyData: any): 
   }
 }
 
-async function handleAgencyUpdate(
-  _event: IpcMainInvokeEvent,
-  agencyId: string,
-  updateData: any
-): Promise<BasicResponse> {
-  return {
-    success: true,
-    data: { id: agencyId },
-    timestamp: Date.now(),
-  };
+async function handleAgencyUpdate(_event: IpcMainInvokeEvent, updateData: any): Promise<BasicResponse> {
+  try {
+    console.log('🏢 Agency update request received:', {
+      agencyId: updateData?.agencyId,
+      name: updateData?.name,
+      contactPerson: updateData?.contactPerson,
+      email: updateData?.email,
+    });
+
+    // Validate required fields
+    if (!updateData?.agencyId || typeof updateData.agencyId !== 'string') {
+      throw new Error('Agency ID is required');
+    }
+
+    // For mock agencies, we'll handle them differently
+    if (updateData.agencyId.startsWith('agency-demo-')) {
+      console.log('📝 Updating mock agency data (demo mode)');
+      const responseData = {
+        agencyId: updateData.agencyId,
+        agencyName: updateData.name || 'Updated Agency',
+        isOperational: true,
+        message: 'Demo agency updated successfully (changes are temporary)',
+      };
+
+      console.log('✅ Mock agency update successful:', responseData);
+      return {
+        success: true,
+        data: responseData,
+        timestamp: Date.now(),
+      };
+    }
+
+    // For real agencies, find and update the database
+    const agenciesDir = join(process.cwd(), 'data', 'agencies');
+
+    if (!existsSync(agenciesDir)) {
+      throw new Error('Agencies directory does not exist');
+    }
+
+    // Find the agency database file
+    const files = require('fs').readdirSync(agenciesDir);
+    const dbFiles = files.filter((file: string) => file.endsWith('.db'));
+
+    let agencyFound = false;
+    let updatedAgencyName = updateData.name;
+
+    for (const dbFile of dbFiles) {
+      try {
+        const dbPath = join(agenciesDir, dbFile);
+        const Database = require('better-sqlite3');
+        const db = new Database(dbPath);
+
+        // Check if this database contains our agency
+        const agencyRecord = db.prepare('SELECT * FROM agencies WHERE id = ?').get(updateData.agencyId);
+
+        if (agencyRecord) {
+          agencyFound = true;
+          console.log('📊 Found agency in database:', dbFile);
+
+          // Update the agency record
+          const updateQuery = db.prepare(`
+            UPDATE agencies 
+            SET name = ?, contact_person = ?, email = ?, phone = ?, address = ?, updated_at = ?
+            WHERE id = ?
+          `);
+
+          const result = updateQuery.run(
+            updateData.name || agencyRecord.name,
+            updateData.contactPerson || agencyRecord.contact_person,
+            updateData.email || agencyRecord.email,
+            updateData.phone || agencyRecord.phone,
+            updateData.address || agencyRecord.address,
+            Date.now(),
+            updateData.agencyId
+          );
+
+          db.close();
+
+          if (result.changes > 0) {
+            console.log('✅ Agency database updated successfully');
+            updatedAgencyName = updateData.name || agencyRecord.name;
+            break;
+          } else {
+            throw new Error('No records were updated');
+          }
+        } else {
+          db.close();
+        }
+      } catch (dbError) {
+        console.warn(
+          'Failed to update agency database:',
+          dbFile,
+          dbError instanceof Error ? dbError.message : 'Unknown error'
+        );
+      }
+    }
+
+    if (!agencyFound) {
+      throw new Error('Agency not found in any database');
+    }
+
+    const responseData = {
+      agencyId: updateData.agencyId,
+      agencyName: updatedAgencyName,
+      isOperational: true,
+      message: 'Agency updated successfully in database',
+    };
+
+    console.log('✅ Agency update successful:', responseData);
+    return {
+      success: true,
+      data: responseData,
+      timestamp: Date.now(),
+    };
+  } catch (error) {
+    console.error('❌ Agency update error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update agency',
+      timestamp: Date.now(),
+    };
+  }
 }
 
 // Shipping handlers

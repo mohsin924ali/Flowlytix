@@ -315,7 +315,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 transition={{ duration: 0.2 }}
                 style={{ display: 'flex', alignItems: 'center', gap: 12 }}
               >
-                <Logo variant='text' size='small' />
+                <Logo variant='image' size='small' src='./logo-main.svg' />
                 <Typography
                   variant='h6'
                   sx={{
@@ -332,7 +332,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </AnimatePresence>
 
-          {isCollapsed && <Logo variant='text' size='small' />}
+          {isCollapsed && <Logo variant='image' size='small' src='./logo-main.svg' />}
 
           {!isMobile && (
             <Tooltip title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'} arrow>
