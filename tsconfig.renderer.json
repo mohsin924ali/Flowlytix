@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "outDir": "dist/renderer",
+    "noEmit": false,
+    "composite": true,
+    "tsBuildInfoFile": "dist/renderer/.tsbuildinfo"
+  },
+  "include": [
+    "src/renderer/**/*",
+    "src/components/**/*",
+    "src/hooks/**/*",
+    "src/utils/**/*",
+    "src/types/**/*",
+    "src/constants/**/*",
+    "src/services/**/*",
+    "src/stores/**/*",
+    "src/domain/**/*",
+    "src/infrastructure/**/*",
+    "src/application/**/*",
+    "src/presentation/**/*"
+  ],
+  "exclude": ["src/main/**/*", "src/preload/**/*"]
+}

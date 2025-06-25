@@ -1,0 +1,365 @@
+# 🏗️ **ARCHITECTURE & DESIGN STANDARDS**
+
+### **Code Architecture**
+
+- Follow SOLID principles strictly
+- Implement proper separation of concerns
+- Use dependency injection pattern
+- Apply clean architecture principles
+- Implement proper error boundaries
+- Use composition over inheritance
+- Follow single responsibility principle
+- **Apply Hexagonal Architecture (Ports & Adapters)** for better testability
+- **Implement Command Query Responsibility Segregation (CQRS)** for complex data flows
+- **Use Domain-Driven Design (DDD)** principles for business logic organization
+
+### **Design Patterns**
+
+- Repository pattern for data access
+- Factory pattern for object creation
+- Observer pattern for event handling
+- Strategy pattern for algorithms
+- Command pattern for user actions
+- Adapter pattern for third-party integrations
+- **Facade pattern** for complex subsystem interactions
+- **Decorator pattern** for extending functionality
+- **State pattern** for managing component states
+- **Chain of Responsibility** for processing requests
+
+### **Code Organization**
+
+- Modular architecture with clear boundaries
+- Feature-based folder structure
+- Proper abstraction layers
+- Reusable utility functions
+- Centralized configuration management
+- Clear naming conventions
+- **Implement Atomic Design methodology** (atoms, molecules, organisms, templates, pages)
+- **Use barrel exports** for clean import statements
+- **Apply Feature Flags** for progressive feature rollout
+- **Implement Module Federation** for micro-frontend architecture
+
+## 💻 **TECHNICAL SPECIFICATIONS**
+
+### **Language & Framework Standards**
+
+- **TypeScript**: Strict mode enabled, no 'any' types
+- **React/React Native**: Functional components with hooks
+- **Node.js**: Latest LTS version compatibility
+- **Database**: Proper ORM/query builder usage
+- **APIs**: RESTful design with proper HTTP status codes
+- **State Management**: Use Zustand/Redux Toolkit with proper patterns
+- **Form Handling**: React Hook Form with Zod validation
+- **CSS-in-JS**: Styled-components or Emotion with theme consistency
+- **Component Library**: Material-UI with custom design system
+
+### **Code Quality Requirements**
+
+- **Type Safety**: 100% TypeScript coverage, strict null checks
+- **Linting**: ESLint with airbnb-typescript config
+- **Formatting**: Prettier with consistent rules
+- **Documentation**: JSDoc for all public APIs
+- **Comments**: Explain complex business logic only
+- **Naming**: Descriptive, searchable names
+- **Code Analysis**: SonarQube integration for quality gates
+- **Complexity Metrics**: Maximum cyclomatic complexity of 10
+- **Dead Code Detection**: Remove unused imports/variables
+- **Dependency Analysis**: Regular audit for security vulnerabilities
+
+### **Performance Standards**
+
+- **Memory**: Efficient memory usage, no memory leaks
+- **CPU**: Optimized algorithms, avoid unnecessary computations
+- **Network**: Minimize API calls, implement caching
+- **Bundle Size**: Tree shaking, code splitting
+- **Rendering**: Virtual scrolling for large lists
+- **Database**: Optimized queries, proper indexing
+- **Core Web Vitals**: LCP < 2.5s, FID < 100ms, CLS < 0.1
+- **Progressive Loading**: Implement skeleton screens and lazy loading
+- **Image Optimization**: WebP format with fallbacks, responsive images
+- **Service Workers**: Offline-first approach with background sync
+
+## 🎨 **FRONTEND BEST PRACTICES**
+
+### **Component Design**
+
+- **Single Responsibility**: Each component should have one clear purpose
+- **Composition over Configuration**: Prefer composable components
+- **Props Interface**: Clear and minimal prop interfaces
+- **Default Props**: Provide sensible defaults
+- **Error States**: Handle loading, error, and empty states
+- **Accessibility**: WCAG 2.1 AA compliance mandatory
+- **Responsive Design**: Mobile-first approach with breakpoints
+- **Design Tokens**: Consistent spacing, colors, typography
+
+### **State Management**
+
+- **Local State**: Use useState/useReducer for component-specific state
+- **Global State**: Use Context API or external state manager sparingly
+- **Server State**: Use React Query/SWR for API data
+- **Form State**: React Hook Form for complex forms
+- **URL State**: Use query parameters for shareable state
+- **Persistence**: localStorage/sessionStorage with proper error handling
+
+### **Hooks & Custom Logic**
+
+- **Custom Hooks**: Extract reusable logic into custom hooks
+- **Dependency Arrays**: Proper cleanup and optimization
+- **Performance Hooks**: useMemo, useCallback when needed
+- **Effect Cleanup**: Always cleanup subscriptions and timers
+- **Debouncing**: Implement for search and input handlers
+
+## 🛡️ **SECURITY REQUIREMENTS**
+
+### **Input Validation**
+
+- Validate all user inputs
+- Sanitize data before processing
+- Implement proper schema validation
+- Prevent injection attacks
+- Handle edge cases gracefully
+- **Content Security Policy (CSP)** implementation
+- **Subresource Integrity (SRI)** for external resources
+
+### **Data Protection**
+
+- Encrypt sensitive data at rest
+- Use HTTPS for all communications
+- Implement proper authentication
+- Secure credential storage
+- Follow OWASP guidelines
+- **Implement RBAC (Role-Based Access Control)**
+- **Session management** with secure tokens
+- **Rate limiting** for API endpoints
+- **CORS configuration** properly set
+
+### **Error Handling**
+
+- Never expose internal errors to users
+- Log errors with appropriate detail
+- Implement proper error boundaries
+- Graceful degradation strategies
+- User-friendly error messages
+- **Error tracking** with Sentry or similar
+- **Centralized error handling** with proper categorization
+
+## 🧪 **TESTING REQUIREMENTS**
+
+### **Test Coverage**
+
+- **Unit Tests**: 90%+ coverage for business logic
+- **Integration Tests**: API endpoints and database operations
+- **E2E Tests**: Critical user journeys
+- **Performance Tests**: Load testing for bottlenecks
+- **Security Tests**: Vulnerability scanning
+- **Visual Regression Tests**: Component appearance consistency
+- **Accessibility Tests**: Automated a11y testing
+- **Cross-browser Tests**: Multiple browser compatibility
+
+### **Testing Tools & Practices**
+
+- **Jest** for unit testing with proper mocking
+- **React Testing Library** for component testing
+- **Cypress/Playwright** for E2E testing
+- **Storybook** for component documentation and testing
+- **Mock Service Worker (MSW)** for API mocking
+- **Test-Driven Development (TDD)** for critical features
+- **Behavior-Driven Development (BDD)** for business logic
+
+## 📚 **DOCUMENTATION REQUIREMENTS**
+
+### **Code Documentation**
+
+- **JSDoc**: All public functions and classes
+- **README**: Setup, usage, and examples
+- **API Documentation**: OpenAPI/Swagger specs
+- **Architecture Decisions**: ADR documents
+- **Inline Comments**: Complex business logic only
+- **Component Documentation**: Storybook with examples
+- **Changelog**: Semantic versioning with release notes
+- **Contributing Guidelines**: Clear development workflow
+
+### **Examples to Include**
+
+- Basic usage examples
+- Advanced configuration options
+- Error handling examples
+- Integration examples
+- Performance optimization tips
+- **Code snippets** in documentation
+- **Interactive examples** in Storybook
+- **Video tutorials** for complex features
+
+### **Naming Conventions**
+
+- **Files**: kebab-case for components, camelCase for utilities
+- **Components**: PascalCase
+- **Functions**: camelCase with verb prefixes
+- **Constants**: SCREAMING_SNAKE_CASE
+- **Types/Interfaces**: PascalCase with descriptive names
+- **CSS Classes**: BEM methodology or CSS-in-JS patterns
+- **Test Files**: _.test.ts or _.spec.ts suffixes
+- **Mock Files**: \*.mock.ts for reusable mocks
+
+### **Import/Export Standards**
+
+- Use named exports over default exports
+- Group imports: external, internal, relative
+- Use absolute imports with path mapping
+- Avoid circular dependencies
+- **Barrel exports** for clean module interfaces
+- **Dynamic imports** for code splitting
+- **Import maps** for better organization
+
+## 🔧 **DEVELOPMENT WORKFLOW**
+
+### **Version Control**
+
+- **Git Flow** or **GitHub Flow** for branching strategy
+- **Conventional Commits** for commit messages
+- **Pre-commit hooks** with Husky for quality checks
+- **Pull Request templates** with proper review process
+- **Branch protection rules** with required reviews
+- **Semantic versioning** for releases
+
+### **CI/CD Pipeline**
+
+- **Automated testing** on all pull requests
+- **Code quality checks** with quality gates
+- **Security scanning** for vulnerabilities
+- **Performance budgets** with failing builds
+- **Automated deployment** to staging/production
+- **Rollback strategies** for quick recovery
+
+### **Monitoring & Analytics**
+
+- **Error tracking** with proper alerting
+- **Performance monitoring** with Core Web Vitals
+- **User analytics** with privacy compliance
+- **A/B testing** framework for features
+- **Feature usage tracking** for informed decisions
+
+## 🚀 **PLATFORM-SPECIFIC REQUIREMENTS**
+
+### **For Electron Applications**
+
+- Secure IPC communication
+- Context isolation enabled
+- Proper window management
+- Auto-updater implementation
+- Native menu integration
+- System tray functionality
+- File system access patterns
+- **Security best practices** for desktop apps
+- **Performance optimization** for cross-platform compatibility
+- **Native notifications** with proper permissions
+
+### **For React Native Applications**
+
+- Platform-specific optimizations
+- Proper navigation implementation
+- Native module integration
+- Performance optimization for lists
+- Proper keyboard handling
+- Accessibility compliance
+- Deep linking support
+- **Offline functionality** with proper sync
+- **Push notifications** with device registration
+- **App store guidelines** compliance
+
+## 🎯 **ACCESSIBILITY & INTERNATIONALIZATION**
+
+### **Accessibility (a11y)**
+
+- **WCAG 2.1 AA compliance** mandatory
+- **Semantic HTML** with proper ARIA labels
+- **Keyboard navigation** support
+- **Screen reader compatibility**
+- **Color contrast** meeting requirements
+- **Focus management** for SPAs
+- **Alternative text** for images
+- **Captions** for video content
+
+### **Internationalization (i18n)**
+
+- **React-i18next** for translation management
+- **Locale-specific formatting** for dates/numbers
+- **RTL language support** when needed
+- **Cultural considerations** for UI/UX
+- **Dynamic language switching**
+- **Pluralization rules** handling
+- **Translation keys** naming conventions
+
+## 🚨 **CRITICAL SUCCESS CRITERIA**
+
+The code must:
+
+- ✅ Compile without errors or warnings
+- ✅ Pass all tests with 90%+ coverage
+- ✅ Meet performance benchmarks
+- ✅ Follow security best practices
+- ✅ Be production-ready
+- ✅ Include comprehensive documentation
+- ✅ Be maintainable and extensible
+- ✅ Handle edge cases gracefully
+- ✅ **Meet accessibility standards (WCAG 2.1 AA)**
+- ✅ **Pass security audits**
+- ✅ **Achieve Core Web Vitals targets**
+- ✅ **Have zero critical code smells**
+- ✅ **Support offline functionality**
+- ✅ **Be responsive across all devices**
+
+## 🔄 **REVIEW PROCESS**
+
+After implementation:
+
+1. **Code Review**: Check against all standards
+2. **Security Review**: Vulnerability assessment
+3. **Performance Review**: Benchmark testing
+4. **Documentation Review**: Completeness check
+5. **Integration Testing**: End-to-end validation
+6. **Accessibility Review**: WCAG compliance check
+7. **Design Review**: UI/UX consistency
+8. **Architecture Review**: Scalability assessment
+
+## 🛠️ **RECOMMENDED TOOLS & LIBRARIES**
+
+### **Development Tools**
+
+- **VS Code** with recommended extensions
+- **TypeScript** with strict configuration
+- **ESLint + Prettier** for code quality
+- **Husky + lint-staged** for pre-commit hooks
+- **Commitizen** for conventional commits
+
+### **Frontend Libraries**
+
+- **React Query/SWR** for server state management
+- **Zustand/Redux Toolkit** for client state
+- **React Hook Form + Zod** for forms and validation
+- **Framer Motion** for animations
+- **React Testing Library + Jest** for testing
+- **Storybook** for component development
+
+### **Build & Deployment**
+
+- **Vite/Webpack** for module bundling
+- **GitHub Actions/GitLab CI** for CI/CD
+- **Vercel/Netlify** for frontend deployment
+- **Docker** for containerization
+- **Terraform** for infrastructure as code
+
+---
+
+**IMPORTANT**:
+
+- Do not skip any of these requirements
+- If you need clarification on any point, ask before proceeding
+- Prioritize code quality over speed of delivery
+- Assume this code will be maintained by a team for years
+- Consider scalability from day one
+- Include proper error handling for all scenarios
+- **Follow the principle of progressive enhancement**
+- **Implement feature flags for safer deployments**
+- **Always consider the user experience first**
+- **Maintain backward compatibility when possible**
