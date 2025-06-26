@@ -122,3 +122,20 @@ export type {
 
 // Shipping Repository
 export type { ShippingRepository, ShippingSearchCriteria, ShippingQueryOptions } from './shipping.repository';
+
+// Employee repository interface exports
+export type { IEmployeeRepository } from './employee.repository';
+export {
+  EmployeeRepositoryError,
+  EmployeeNotFoundError,
+  EmployeeAlreadyExistsError,
+  EmployeeConstraintViolationError,
+} from './employee.repository';
+export type {
+  EmployeeSearchCriteria,
+  EmployeeSortOptions,
+  PaginationParams,
+  PaginatedResult,
+} from './employee.repository';
+
+// Report repository not yet implemented

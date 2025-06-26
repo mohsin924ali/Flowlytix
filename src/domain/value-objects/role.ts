@@ -5,14 +5,11 @@
  */
 
 /**
- * Available system roles
+ * Available system roles - simplified to Super Admin and Agency Admin only
  */
 export enum SystemRole {
   SUPER_ADMIN = 'super_admin',
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  EMPLOYEE = 'employee',
-  VIEWER = 'viewer',
+  ADMIN = 'admin', // Agency Admin
 }
 
 /**
@@ -24,6 +21,13 @@ export enum Permission {
   READ_USER = 'user:read',
   UPDATE_USER = 'user:update',
   DELETE_USER = 'user:delete',
+
+  // Agency management permissions
+  CREATE_AGENCY = 'agency:create',
+  READ_AGENCY = 'agency:read',
+  UPDATE_AGENCY = 'agency:update',
+  DELETE_AGENCY = 'agency:delete',
+  ASSIGN_AGENCY = 'agency:assign',
 
   // Inventory permissions
   CREATE_PRODUCT = 'inventory:create',
@@ -45,6 +49,12 @@ export enum Permission {
   READ_CUSTOMER = 'customer:read',
   UPDATE_CUSTOMER = 'customer:update',
   DELETE_CUSTOMER = 'customer:delete',
+
+  // Employee management permissions (for business flows)
+  CREATE_EMPLOYEE = 'employee:create',
+  READ_EMPLOYEE = 'employee:read',
+  UPDATE_EMPLOYEE = 'employee:update',
+  DELETE_EMPLOYEE = 'employee:delete',
 
   // Report permissions
   VIEW_REPORTS = 'report:view',
@@ -242,56 +252,6 @@ export class Role {
   }
 
   /**
-   * Normalizes role value
-   * @param value - Raw role value
-   * @returns Normalized SystemRole
-   */
-  private normalizeRole(value: SystemRole | string): SystemRole {
-    if (typeof value === 'string') {
-      const normalizedString = value.toLowerCase().trim();
-
-      // Handle common variations
-      const roleMap: Record<string, SystemRole> = {
-        superadmin: SystemRole.SUPER_ADMIN,
-        'super admin': SystemRole.SUPER_ADMIN,
-        super_admin: SystemRole.SUPER_ADMIN,
-        admin: SystemRole.ADMIN,
-        administrator: SystemRole.ADMIN,
-        manager: SystemRole.MANAGER,
-        employee: SystemRole.EMPLOYEE,
-        staff: SystemRole.EMPLOYEE,
-        viewer: SystemRole.VIEWER,
-        guest: SystemRole.VIEWER,
-      };
-
-      const mappedRole = roleMap[normalizedString];
-      if (mappedRole) {
-        return mappedRole;
-      }
-
-      // Check if it's a valid enum value
-      if (Object.values(SystemRole).includes(normalizedString as SystemRole)) {
-        return normalizedString as SystemRole;
-      }
-
-      throw new InvalidRoleError(value, 'Unknown role type');
-    }
-
-    return value;
-  }
-
-  /**
-   * Validates role value
-   * @param value - Role to validate
-   * @throws {InvalidRoleError} When role is invalid
-   */
-  private validateRole(value: SystemRole): void {
-    if (!Object.values(SystemRole).includes(value)) {
-      throw new InvalidRoleError(value, 'Invalid role value');
-    }
-  }
-
-  /**
    * Gets permissions for a specific role
    * @param role - Role to get permissions for
    * @returns Array of permissions
@@ -299,15 +259,19 @@ export class Role {
   private getPermissionsForRole(role: SystemRole): Permission[] {
     switch (role) {
       case SystemRole.SUPER_ADMIN:
+        // Super Admin has all permissions
         return Object.values(Permission);
 
       case SystemRole.ADMIN:
+        // Agency Admin has all permissions except super admin specific ones
         return [
-          // User management (except super admin actions)
-          Permission.CREATE_USER,
+          // User management (can create other agency admins but not super admins)
           Permission.READ_USER,
           Permission.UPDATE_USER,
-          Permission.DELETE_USER,
+
+          // Agency management (only their own agency)
+          Permission.READ_AGENCY,
+          Permission.UPDATE_AGENCY,
 
           // Full inventory access
           Permission.CREATE_PRODUCT,
@@ -330,76 +294,20 @@ export class Role {
           Permission.UPDATE_CUSTOMER,
           Permission.DELETE_CUSTOMER,
 
+          // Employee management
+          Permission.CREATE_EMPLOYEE,
+          Permission.READ_EMPLOYEE,
+          Permission.UPDATE_EMPLOYEE,
+          Permission.DELETE_EMPLOYEE,
+
           // Report access
           Permission.VIEW_REPORTS,
           Permission.GENERATE_REPORTS,
           Permission.EXPORT_REPORTS,
 
           // Limited system access
+          Permission.MANAGE_SETTINGS,
           Permission.VIEW_LOGS,
-        ];
-
-      case SystemRole.MANAGER:
-        return [
-          // Limited user management
-          Permission.READ_USER,
-          Permission.UPDATE_USER,
-
-          // Inventory management
-          Permission.CREATE_PRODUCT,
-          Permission.READ_PRODUCT,
-          Permission.UPDATE_PRODUCT,
-          Permission.MANAGE_STOCK,
-
-          // Order management
-          Permission.CREATE_ORDER,
-          Permission.READ_ORDER,
-          Permission.UPDATE_ORDER,
-          Permission.PROCESS_ORDER,
-          Permission.CANCEL_ORDER,
-
-          // Customer management
-          Permission.CREATE_CUSTOMER,
-          Permission.READ_CUSTOMER,
-          Permission.UPDATE_CUSTOMER,
-
-          // Report access
-          Permission.VIEW_REPORTS,
-          Permission.GENERATE_REPORTS,
-          Permission.EXPORT_REPORTS,
-        ];
-
-      case SystemRole.EMPLOYEE:
-        return [
-          // Basic user read
-          Permission.READ_USER,
-
-          // Product read and stock management
-          Permission.READ_PRODUCT,
-          Permission.MANAGE_STOCK,
-
-          // Order processing
-          Permission.CREATE_ORDER,
-          Permission.READ_ORDER,
-          Permission.UPDATE_ORDER,
-          Permission.PROCESS_ORDER,
-
-          // Customer basic access
-          Permission.READ_CUSTOMER,
-          Permission.UPDATE_CUSTOMER,
-
-          // Basic reporting
-          Permission.VIEW_REPORTS,
-        ];
-
-      case SystemRole.VIEWER:
-        return [
-          // Read-only access
-          Permission.READ_USER,
-          Permission.READ_PRODUCT,
-          Permission.READ_ORDER,
-          Permission.READ_CUSTOMER,
-          Permission.VIEW_REPORTS,
         ];
 
       default:
@@ -413,10 +321,12 @@ export class Role {
    * @returns Formatted role name
    */
   private formatRoleName(role: SystemRole): string {
-    return role
-      .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
+    switch (role) {
+      case SystemRole.SUPER_ADMIN:
+        return 'Super Administrator';
+      case SystemRole.ADMIN:
+        return 'Agency Administrator';
+    }
   }
 
   /**
@@ -424,6 +334,53 @@ export class Role {
    * @returns Array of roles in hierarchical order
    */
   private getRoleHierarchy(): SystemRole[] {
-    return [SystemRole.SUPER_ADMIN, SystemRole.ADMIN, SystemRole.MANAGER, SystemRole.EMPLOYEE, SystemRole.VIEWER];
+    return [SystemRole.SUPER_ADMIN, SystemRole.ADMIN];
+  }
+
+  /**
+   * Validates role value
+   * @param value - Role to validate
+   * @throws {InvalidRoleError} When role is invalid
+   */
+  private validateRole(value: SystemRole): void {
+    if (!Object.values(SystemRole).includes(value)) {
+      throw new InvalidRoleError(value, 'Invalid role value');
+    }
+  }
+
+  /**
+   * Normalizes role value
+   * @param value - Raw role value
+   * @returns Normalized SystemRole
+   */
+  private normalizeRole(value: SystemRole | string): SystemRole {
+    if (typeof value === 'string') {
+      const normalizedString = value.toLowerCase().trim();
+
+      // Handle common variations
+      const roleMap: Record<string, SystemRole> = {
+        superadmin: SystemRole.SUPER_ADMIN,
+        'super admin': SystemRole.SUPER_ADMIN,
+        super_admin: SystemRole.SUPER_ADMIN,
+        admin: SystemRole.ADMIN,
+        administrator: SystemRole.ADMIN,
+        'agency admin': SystemRole.ADMIN,
+        'agency administrator': SystemRole.ADMIN,
+      };
+
+      const mappedRole = roleMap[normalizedString];
+      if (mappedRole) {
+        return mappedRole;
+      }
+
+      // Check if it's a valid enum value
+      if (Object.values(SystemRole).includes(normalizedString as SystemRole)) {
+        return normalizedString as SystemRole;
+      }
+
+      throw new InvalidRoleError(value, 'Unknown role type. Only super_admin and admin are allowed.');
+    }
+
+    return value;
   }
 }

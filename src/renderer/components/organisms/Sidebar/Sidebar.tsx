@@ -180,14 +180,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 position: 'relative',
                 overflow: 'hidden',
                 background: isActive
-                  ? 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)'
+                  ? 'linear-gradient(135deg, rgba(81, 63, 242, 0.12) 0%, rgba(107, 82, 245, 0.06) 100%)'
                   : 'transparent',
-                border: isActive ? '1px solid rgba(25, 118, 210, 0.2)' : '1px solid transparent',
+                border: isActive ? '1px solid rgba(81, 63, 242, 0.2)' : '1px solid transparent',
                 '&:hover': {
                   background: isActive
-                    ? 'linear-gradient(135deg, rgba(25, 118, 210, 0.15) 0%, rgba(66, 165, 245, 0.08) 100%)'
-                    : 'rgba(25, 118, 210, 0.04)',
-                  border: '1px solid rgba(25, 118, 210, 0.1)',
+                    ? 'linear-gradient(135deg, rgba(81, 63, 242, 0.18) 0%, rgba(107, 82, 245, 0.1) 100%)'
+                    : 'rgba(81, 63, 242, 0.06)',
+                  border: '1px solid rgba(81, 63, 242, 0.15)',
                   transform: 'translateX(4px)',
                 },
                 '&:before': {
@@ -197,7 +197,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   top: 0,
                   bottom: 0,
                   width: 4,
-                  background: isActive ? 'linear-gradient(180deg, #1976d2 0%, #42a5f5 100%)' : 'transparent',
+                  background: isActive ? 'linear-gradient(180deg, #513ff2 0%, #6b52f5 100%)' : 'transparent',
                   borderRadius: '0 2px 2px 0',
                 },
                 transition: theme.transitions.create(['background', 'transform', 'border'], {
@@ -272,6 +272,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
   };
 
+  // Add navigation items based on user role
+  const getNavigationForRole = (userRole: string) => {
+    const baseNavigation = [
+      { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { path: '/orders', label: 'Orders', icon: 'orders' },
+      { path: '/customers', label: 'Customers', icon: 'customers' },
+      { path: '/products', label: 'Products', icon: 'products' },
+      { path: '/employees', label: 'Employees', icon: 'employees' }, // Business data only
+    ];
+
+    switch (userRole.toLowerCase()) {
+      case 'super_admin':
+        return [
+          ...baseNavigation,
+          { path: '/agencies', label: 'Agencies', icon: 'agencies' },
+          { path: '/users', label: 'User Management', icon: 'users' },
+          { path: '/analytics', label: 'Analytics', icon: 'analytics' },
+          { path: '/settings', label: 'System Settings', icon: 'settings' },
+        ];
+
+      case 'admin': // Agency Admin
+        return [
+          ...baseNavigation,
+          { path: '/analytics', label: 'Analytics', icon: 'analytics' },
+          { path: '/settings', label: 'Settings', icon: 'settings' },
+        ];
+
+      default:
+        return baseNavigation;
+    }
+  };
+
   return (
     <motion.div
       variants={sidebarVariants}
@@ -321,7 +353,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   variant='h6'
                   sx={{
                     fontWeight: 'bold',
-                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                    background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
                     backgroundClip: 'text',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',

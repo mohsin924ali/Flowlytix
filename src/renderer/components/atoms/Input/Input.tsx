@@ -119,7 +119,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                   borderColor: 'primary.main',
                   borderWidth: '2px',
-                  boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)',
+                  boxShadow: '0 0 0 3px rgba(81, 63, 242, 0.1)',
                 },
                 ...inputProps?.sx,
               },
@@ -155,7 +155,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 left: 0,
                 right: 0,
                 height: 2,
-                background: 'linear-gradient(90deg, #1976d2, #42a5f5)',
+                background: 'linear-gradient(90deg, #513ff2, #6b52f5)',
                 borderRadius: 1,
                 transformOrigin: 'center',
               }}

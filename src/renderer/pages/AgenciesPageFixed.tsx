@@ -292,9 +292,9 @@ export function AgenciesPageFixed(): JSX.Element {
             startIcon={<AddIcon />}
             onClick={() => setCreateDialogOpen(true)}
             sx={{
-              background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+              background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)',
+                background: 'linear-gradient(135deg, #4338ca 0%, #513ff2 100%)',
               },
             }}
           >

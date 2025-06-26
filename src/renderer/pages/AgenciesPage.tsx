@@ -290,10 +290,13 @@ export function AgenciesPage(): JSX.Element {
             startIcon={<AddIcon />}
             onClick={() => setCreateDialogOpen(true)}
             sx={{
-              background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+              background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)',
+                background: 'linear-gradient(135deg, #4338ca 0%, #513ff2 100%)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 25px rgba(81, 63, 242, 0.3)',
               },
+              transition: 'all 0.2s ease-in-out',
             }}
           >
             Add Agency

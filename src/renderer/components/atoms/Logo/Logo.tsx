@@ -106,7 +106,7 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
           sx={{
             fontSize: sizeConfig.fontSize,
             fontWeight: 'bold',
-            background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+            background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -119,7 +119,7 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
               left: 0,
               width: '100%',
               height: 2,
-              background: 'linear-gradient(90deg, #1976d2, #42a5f5)',
+              background: 'linear-gradient(90deg, #513ff2, #6b52f5)',
               borderRadius: 1,
               transform: 'scaleX(0)',
               transformOrigin: 'left',
@@ -152,8 +152,8 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
             ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)'
             : 'transparent',
           padding: circular ? '8px' : 0,
-          border: circular ? '2px solid rgba(25, 118, 210, 0.15)' : 'none',
-          boxShadow: circular ? '0 4px 20px rgba(25, 118, 210, 0.1)' : 'none',
+          border: circular ? '2px solid rgba(81, 63, 242, 0.15)' : 'none',
+          boxShadow: circular ? '0 4px 20px rgba(81, 63, 242, 0.1)' : 'none',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -161,8 +161,8 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
           transition: 'all 0.3s ease-in-out',
           '&:hover': circular
             ? {
-                boxShadow: '0 8px 32px rgba(25, 118, 210, 0.2)',
-                border: '2px solid rgba(25, 118, 210, 0.3)',
+                boxShadow: '0 8px 32px rgba(81, 63, 242, 0.2)',
+                border: '2px solid rgba(81, 63, 242, 0.3)',
                 transform: 'scale(1.05)',
               }
             : {},
@@ -229,7 +229,7 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
               sx={{
                 fontSize: sizeConfig.textFontSize,
                 fontWeight: 'bold',
-                background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -297,7 +297,7 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
                 left: 0,
                 right: 0,
                 bottom: 0,
-                background: 'radial-gradient(circle, rgba(25, 118, 210, 0.1) 0%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(81, 63, 242, 0.1) 0%, transparent 70%)',
                 opacity: 0,
                 transform: 'scale(0.8)',
                 transition: 'all 0.3s ease-out',

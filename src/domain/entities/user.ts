@@ -28,6 +28,7 @@ export interface CreateUserParams {
   firstName: string;
   lastName: string;
   status?: UserStatus;
+  agencyId?: string; // For agency admin assignment
 }
 
 /**
@@ -43,9 +44,10 @@ export interface UserProps {
   status: UserStatus;
   createdAt: Date;
   updatedAt: Date;
-  lastLoginAt?: Date;
+  lastLoginAt: Date | undefined;
   loginAttempts: number;
-  lockedUntil?: Date;
+  lockedUntil: Date | undefined;
+  agencyId: string | undefined; // Agency assignment for agency admins
 }
 
 /**
@@ -86,9 +88,10 @@ export class User {
   private _status: UserStatus;
   private readonly _createdAt: Date;
   private _updatedAt: Date;
-  private _lastLoginAt?: Date;
+  private _lastLoginAt: Date | undefined;
   private _loginAttempts: number;
-  private _lockedUntil?: Date;
+  private _lockedUntil: Date | undefined;
+  private _agencyId: string | undefined; // Agency assignment
 
   // Security constants for offline system
   private static readonly MAX_LOGIN_ATTEMPTS = 5;
@@ -114,6 +117,7 @@ export class User {
     this._lastLoginAt = props.lastLoginAt;
     this._loginAttempts = props.loginAttempts;
     this._lockedUntil = props.lockedUntil;
+    this._agencyId = props.agencyId;
   }
 
   // Getters
@@ -163,6 +167,10 @@ export class User {
 
   public get lockedUntil(): Date | undefined {
     return this._lockedUntil ? new Date(this._lockedUntil) : undefined;
+  }
+
+  public get agencyId(): string | undefined {
+    return this._agencyId;
   }
 
   /**
@@ -427,9 +435,10 @@ export class User {
     role: string;
     roleName: string;
     status: UserStatus;
-    lastLoginAt?: Date;
+    lastLoginAt: Date | undefined;
     isLocked: boolean;
     isPasswordExpired: boolean;
+    agencyId: string | undefined;
   } {
     return {
       id: this._id,
@@ -441,6 +450,7 @@ export class User {
       lastLoginAt: this._lastLoginAt,
       isLocked: this.isAccountLocked(),
       isPasswordExpired: this.isPasswordExpired(),
+      agencyId: this._agencyId,
     };
   }
 
@@ -458,9 +468,10 @@ export class User {
     status: UserStatus;
     createdAt: Date;
     updatedAt: Date;
-    lastLoginAt?: Date;
+    lastLoginAt: Date | undefined;
     loginAttempts: number;
-    lockedUntil?: Date;
+    lockedUntil: Date | undefined;
+    agencyId: string | undefined;
   } {
     return {
       id: this._id,
@@ -475,6 +486,7 @@ export class User {
       lastLoginAt: this._lastLoginAt,
       loginAttempts: this._loginAttempts,
       lockedUntil: this._lockedUntil,
+      agencyId: this._agencyId,
     };
   }
 
@@ -529,6 +541,7 @@ export class User {
       createdAt: now,
       updatedAt: now,
       loginAttempts: 0,
+      agencyId: params.agencyId,
     };
 
     return new User(userProps);
@@ -549,9 +562,10 @@ export class User {
     status: UserStatus;
     createdAt: Date;
     updatedAt: Date;
-    lastLoginAt?: Date;
+    lastLoginAt: Date | undefined;
     loginAttempts: number;
-    lockedUntil?: Date;
+    lockedUntil: Date | undefined;
+    agencyId: string | undefined;
   }): User {
     // Reconstruct value objects
     const { Email } = require('../value-objects/email');
@@ -575,6 +589,7 @@ export class User {
       lastLoginAt: persistenceData.lastLoginAt,
       loginAttempts: persistenceData.loginAttempts,
       lockedUntil: persistenceData.lockedUntil,
+      agencyId: persistenceData.agencyId,
     };
 
     return new User(userProps);
@@ -692,5 +707,41 @@ export class User {
     const timestamp = Date.now().toString(36);
     const randomPart = Math.random().toString(36).substr(2, 9);
     return `user_${timestamp}_${randomPart}`;
+  }
+
+  /**
+   * Assigns agency to user (for agency admins)
+   * @param agencyId - Agency ID to assign
+   * @param updatedBy - User performing the update (for authorization)
+   * @throws {UserSecurityError} When unauthorized
+   */
+  public assignAgency(agencyId: string, updatedBy: User): void {
+    // Only super admins can assign agencies
+    if (updatedBy.role.value !== SystemRole.SUPER_ADMIN) {
+      throw new UserSecurityError('Only super administrators can assign agencies');
+    }
+
+    // Only agency admins can be assigned to agencies
+    if (this._role.value !== SystemRole.ADMIN) {
+      throw new UserSecurityError('Only agency administrators can be assigned to agencies');
+    }
+
+    this._agencyId = agencyId;
+    this.updateTimestamp();
+  }
+
+  /**
+   * Removes agency assignment
+   * @param updatedBy - User performing the update (for authorization)
+   * @throws {UserSecurityError} When unauthorized
+   */
+  public removeAgencyAssignment(updatedBy: User): void {
+    // Only super admins can remove agency assignments
+    if (updatedBy.role.value !== SystemRole.SUPER_ADMIN) {
+      throw new UserSecurityError('Only super administrators can remove agency assignments');
+    }
+
+    this._agencyId = undefined;
+    this.updateTimestamp();
   }
 }

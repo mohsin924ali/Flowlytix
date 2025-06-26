@@ -103,16 +103,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             py: 1.5,
             px: 3,
             ...(variant === 'contained' && {
-              background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-              boxShadow: '0 4px 15px rgba(25, 118, 210, 0.3)',
+              background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
+              boxShadow: '0 4px 15px rgba(81, 63, 242, 0.3)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)',
-                boxShadow: '0 6px 20px rgba(25, 118, 210, 0.4)',
+                background: 'linear-gradient(135deg, #4338ca 0%, #513ff2 100%)',
+                boxShadow: '0 6px 20px rgba(81, 63, 242, 0.4)',
                 transform: 'translateY(-1px)',
               },
               '&:active': {
                 transform: 'translateY(0px)',
-                boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
+                boxShadow: '0 2px 8px rgba(81, 63, 242, 0.3)',
               },
             }),
             ...(variant === 'outlined' && {
@@ -121,9 +121,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
               color: 'primary.main',
               '&:hover': {
                 borderColor: 'primary.dark',
-                backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                backgroundColor: 'rgba(81, 63, 242, 0.04)',
                 transform: 'translateY(-1px)',
-                boxShadow: '0 4px 12px rgba(25, 118, 210, 0.2)',
+                boxShadow: '0 4px 12px rgba(81, 63, 242, 0.2)',
               },
             }),
             '&:before': {

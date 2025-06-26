@@ -261,8 +261,8 @@ export const AgencyEditModal: React.FC<AgencyEditModalProps> = ({
               alignItems: 'center',
               justifyContent: 'space-between',
               pb: 1,
-              background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(66, 165, 245, 0.05) 100%)',
-              borderBottom: '1px solid rgba(25, 118, 210, 0.1)',
+              background: 'linear-gradient(135deg, rgba(81, 63, 242, 0.05) 0%, rgba(107, 82, 245, 0.05) 100%)',
+              borderBottom: '1px solid rgba(81, 63, 242, 0.1)',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -441,9 +441,9 @@ export const AgencyEditModal: React.FC<AgencyEditModalProps> = ({
               startIcon={submitting ? <CircularProgress size={16} /> : <SaveIcon />}
               sx={{
                 minWidth: 120,
-                background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)',
+                  background: 'linear-gradient(135deg, #4338ca 0%, #513ff2 100%)',
                 },
               }}
             >

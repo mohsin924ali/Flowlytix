@@ -21,6 +21,9 @@ export { SqliteProductRepository } from './product.repository';
 // Agency Repository Implementation - Step MT-2A
 export { SqliteAgencyRepository, createAgencyRepository } from './agency.repository';
 
+// Employee Repository Implementation - Step 3: Infrastructure Adapter
+export { SqliteEmployeeRepository, createEmployeeRepository } from './employee.repository';
+
 // Lot-Batch Repository Implementation
 export * from './lot-batch.repository';
 

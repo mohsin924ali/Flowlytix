@@ -31,12 +31,19 @@ export const AUTH_CONFIG = {
  */
 export const UI_CONFIG = {
   THEME: {
-    PRIMARY_COLOR: '#1976d2',
-    SECONDARY_COLOR: '#dc004e',
-    SUCCESS_COLOR: '#2e7d32',
-    ERROR_COLOR: '#d32f2f',
-    WARNING_COLOR: '#ed6c02',
-    INFO_COLOR: '#0288d1',
+    PRIMARY_COLOR: '#513ff2',
+    SECONDARY_COLOR: '#6b52f5',
+    SUCCESS_COLOR: '#10b981',
+    ERROR_COLOR: '#ef4444',
+    WARNING_COLOR: '#f59e0b',
+    INFO_COLOR: '#3b82f6',
+    BRAND_GRADIENT: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
+    LIGHT_PURPLE: '#f8f7ff',
+    PURPLE_50: '#faf9ff',
+    PURPLE_100: '#f3f1ff',
+    PURPLE_500: '#513ff2',
+    PURPLE_600: '#4338ca',
+    PURPLE_700: '#3730a3',
   },
   BREAKPOINTS: {
     XS: 0,

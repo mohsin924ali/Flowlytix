@@ -98,18 +98,30 @@ const getStatusColor = (status: string): 'success' | 'warning' | 'error' | 'defa
 };
 
 /**
- * Get role chip color
+ * Get role chip color - updated for simplified role system
  */
-const getRoleColor = (role: string): 'primary' | 'secondary' | 'info' | 'default' => {
+const getRoleColor = (role: string): 'primary' | 'secondary' | 'default' => {
   switch (role.toLowerCase()) {
-    case 'admin':
+    case 'super_admin':
       return 'primary';
-    case 'manager':
+    case 'admin':
       return 'secondary';
-    case 'employee':
-      return 'info';
     default:
       return 'default';
+  }
+};
+
+/**
+ * Get role display name - updated for simplified role system
+ */
+const getRoleDisplayName = (role: string): string => {
+  switch (role.toLowerCase()) {
+    case 'super_admin':
+      return 'Super Administrator';
+    case 'admin':
+      return 'Agency Administrator';
+    default:
+      return role;
   }
 };
 
@@ -194,7 +206,12 @@ const UsersTable: React.FC<{
                 </Typography>
               </TableCell>
               <TableCell>
-                <Chip label={user.roleName} size='small' color={getRoleColor(user.role)} variant='outlined' />
+                <Chip
+                  label={getRoleDisplayName(user.role)}
+                  size='small'
+                  color={getRoleColor(user.role)}
+                  variant='outlined'
+                />
               </TableCell>
               <TableCell>
                 <Chip label={user.status} size='small' color={getStatusColor(user.status)} variant='filled' />
@@ -283,7 +300,7 @@ export const UsersPage: React.FC = () => {
                 variant='h4'
                 sx={{
                   fontWeight: 'bold',
-                  background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                  background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
@@ -334,10 +351,8 @@ export const UsersPage: React.FC = () => {
                       <InputLabel>Role</InputLabel>
                       <Select value={filters.role || ''} onChange={handleRoleChange} label='Role'>
                         <MenuItem value=''>All Roles</MenuItem>
-                        <MenuItem value='admin'>Admin</MenuItem>
-                        <MenuItem value='manager'>Manager</MenuItem>
-                        <MenuItem value='employee'>Employee</MenuItem>
-                        <MenuItem value='viewer'>Viewer</MenuItem>
+                        <MenuItem value='super_admin'>Super Administrator</MenuItem>
+                        <MenuItem value='admin'>Agency Administrator</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
