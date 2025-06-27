@@ -316,14 +316,14 @@ export class UpdateAgencyHandler {
       return true;
     }
 
-    // Admins can update any agency
+    // Agency admins can only update their assigned agency
     if (user.role.value === SystemRole.ADMIN) {
-      return true;
+      // Check if user has an assigned agency and it matches the agency being updated
+      return user.agencyId === agency.id;
     }
 
-    // Other users can only update their own agency (if they have permission)
-    // This would require agency-user relationship which might be implemented later
-    return true; // For now, allow if user has MANAGE_SETTINGS permission
+    // All other users are denied update access
+    return false;
   }
 
   /**
@@ -336,7 +336,7 @@ export class UpdateAgencyHandler {
   private validateRoleBasedUpdateRules(command: UpdateAgencyCommand, user: any, agency: Agency): void {
     // Non-standard currency updates require admin role
     if (command.settings?.currency && command.settings.currency !== 'USD') {
-      if (!user.hasPermission(Permission.MANAGE_SETTINGS) || user.role.value === SystemRole.VIEWER) {
+      if (!user.hasPermission(Permission.MANAGE_SETTINGS)) {
         throw new Error('Insufficient permissions to set non-standard currency');
       }
     }

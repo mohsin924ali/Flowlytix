@@ -118,6 +118,7 @@ declare global {
     electronAPI: {
       auth: {
         authenticateUser: (credentials: LoginCredentials) => Promise<any>;
+        createUser: (params: any) => Promise<any>;
         getUserPermissions: (params: { userId: string }) => Promise<any>;
       };
       agency: {

@@ -37,6 +37,7 @@ interface ElectronAPI {
   // Authentication
   auth: {
     authenticateUser: (credentials: { email: string; password: string }) => Promise<AuthResult>;
+    createUser: (params: CreateUserParams) => Promise<CreateUserResult>;
     getUserPermissions: (params: { userId: string }) => Promise<PermissionsResult>;
     listUsers: (params: ListUsersParams) => Promise<ListUsersResult>;
   };
@@ -809,6 +810,22 @@ interface ListUsersParams {
   isLocked?: boolean;
 }
 
+interface CreateUserParams {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  agencyId?: string;
+  createdBy: string;
+}
+
+interface CreateUserResult {
+  success: boolean;
+  userId?: string;
+  error?: string;
+}
+
 interface ListUsersResult {
   success: boolean;
   data?: {
@@ -936,6 +953,7 @@ const electronAPI: ElectronAPI = {
   // Authentication
   auth: {
     authenticateUser: (credentials) => ipcRenderer.invoke('auth:authenticate', credentials),
+    createUser: (params) => ipcRenderer.invoke('auth:create-user', params),
     getUserPermissions: (params) => ipcRenderer.invoke('auth:get-user', params.userId),
     listUsers: (params) => ipcRenderer.invoke('auth:list-users', params),
   },

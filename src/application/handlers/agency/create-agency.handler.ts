@@ -71,9 +71,9 @@ export class CreateAgencyHandler {
         throw new Error('Creating user not found');
       }
 
-      // Check authorization - only users with MANAGE_SETTINGS permission can create agencies
-      if (!creatingUser.hasPermission(Permission.MANAGE_SETTINGS)) {
-        throw new Error('Insufficient permissions to create agency');
+      // Check authorization - only super admins can create agencies
+      if (creatingUser.role.value !== SystemRole.SUPER_ADMIN) {
+        throw new Error('Only super administrators can create agencies');
       }
 
       // Check if agency with same name already exists (system-wide uniqueness)
@@ -217,8 +217,6 @@ export class CreateAgencyHandler {
         return 10000000; // $10M for super admin
       case SystemRole.ADMIN:
         return 5000000; // $5M for admin
-      case SystemRole.MANAGER:
-        return 1000000; // $1M for manager
       default:
         return 100000; // $100K default
     }
@@ -235,8 +233,6 @@ export class CreateAgencyHandler {
       case SystemRole.SUPER_ADMIN:
       case SystemRole.ADMIN:
         return 180; // 6 months for admin
-      case SystemRole.MANAGER:
-        return 90; // 3 months for manager
       default:
         return 30; // 30 days default
     }

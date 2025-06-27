@@ -31,6 +31,8 @@ export interface NavigationRoute {
   badge?: number;
   /** Route group for organization */
   group?: string;
+  /** Required user role to access this route */
+  requiredRole?: string;
 }
 
 /**

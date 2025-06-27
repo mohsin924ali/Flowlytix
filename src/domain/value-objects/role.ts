@@ -265,11 +265,11 @@ export class Role {
       case SystemRole.ADMIN:
         // Agency Admin has all permissions except super admin specific ones
         return [
-          // User management (can create other agency admins but not super admins)
+          // User management - cannot create users (only super admin can create admins)
           Permission.READ_USER,
           Permission.UPDATE_USER,
 
-          // Agency management (only their own agency)
+          // Agency management - cannot create agencies (only their own agency)
           Permission.READ_AGENCY,
           Permission.UPDATE_AGENCY,
 
@@ -305,7 +305,7 @@ export class Role {
           Permission.GENERATE_REPORTS,
           Permission.EXPORT_REPORTS,
 
-          // Limited system access
+          // System access (limited to what they need)
           Permission.MANAGE_SETTINGS,
           Permission.VIEW_LOGS,
         ];

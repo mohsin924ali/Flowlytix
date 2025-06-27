@@ -268,13 +268,13 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   /**
-   * Check if user is super admin (flexible role checking)
+   * Check if user is super admin (strict role checking)
    */
   const isSuperAdmin = React.useMemo(() => {
     if (!user?.role) return false;
 
     const role = user.role.toLowerCase();
-    return role === 'super_admin' || role === 'superadmin' || role === 'admin';
+    return role === 'super_admin' || role === 'superadmin';
   }, [user?.role]);
 
   // Note: Debug logging removed - agency switcher is working correctly
@@ -296,10 +296,11 @@ export const Header: React.FC<HeaderProps> = ({
           easing: theme.transitions.easing.sharp,
           duration: NAVIGATION_CONFIG.ANIMATION_DURATION,
         }),
-        backgroundColor: alpha(theme.palette.background.paper, 0.8),
+        background: 'linear-gradient(90deg, #ffffff 0%, #f8fafc 25%, #f1f5f9 75%, #e2e8f0 100%)',
         backdropFilter: 'blur(20px)',
-        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-        color: theme.palette.text.primary,
+        borderBottom: `1px solid rgba(0, 0, 0, 0.1)`,
+        color: '#374151',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
       }}
     >
       <Toolbar
@@ -320,7 +321,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onToggleSidebar}
             sx={{
               mr: 1,
-              color: theme.palette.text.primary,
+              color: '#374151',
             }}
           >
             <MenuIcon />
@@ -336,10 +337,10 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onToggleSidebar}
             sx={{
               mr: 2,
-              color: theme.palette.text.primary,
+              color: '#374151',
               '&:hover': {
-                backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                color: theme.palette.primary.main,
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                color: '#1e40af',
               },
             }}
           >
@@ -375,7 +376,7 @@ export const Header: React.FC<HeaderProps> = ({
                     sx={{
                       mx: 1,
                       fontSize: 16,
-                      color: theme.palette.text.secondary,
+                      color: '#6b7280',
                     }}
                   />
                 )}
@@ -391,13 +392,13 @@ export const Header: React.FC<HeaderProps> = ({
                     cursor: 'pointer',
                     padding: '4px 8px',
                     borderRadius: 1,
-                    color: index === breadcrumbs.length - 1 ? theme.palette.primary.main : theme.palette.text.secondary,
+                    color: index === breadcrumbs.length - 1 ? '#1e40af' : '#6b7280',
                     fontWeight: index === breadcrumbs.length - 1 ? 600 : 400,
                     fontSize: '0.875rem',
                     transition: 'all 0.2s ease',
                     '&:hover': {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                      color: theme.palette.primary.main,
+                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                      color: '#1e40af',
                     },
                   }}
                 >
@@ -446,15 +447,15 @@ export const Header: React.FC<HeaderProps> = ({
             sx={{
               position: 'relative',
               borderRadius: 2,
-              backgroundColor: alpha(theme.palette.common.white, 0.1),
-              border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+              backgroundColor: 'rgba(0, 0, 0, 0.05)',
+              border: `1px solid rgba(0, 0, 0, 0.1)`,
               '&:hover': {
-                backgroundColor: alpha(theme.palette.common.white, 0.15),
+                backgroundColor: 'rgba(0, 0, 0, 0.08)',
               },
               '&:focus-within': {
-                backgroundColor: alpha(theme.palette.common.white, 0.2),
-                borderColor: theme.palette.primary.main,
-                boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
+                backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                borderColor: '#3b82f6',
+                boxShadow: `0 0 0 2px rgba(59, 130, 246, 0.2)`,
               },
               transition: 'all 0.2s ease',
               width: searchFocused ? 300 : 200,
@@ -475,7 +476,7 @@ export const Header: React.FC<HeaderProps> = ({
               <SearchIcon
                 sx={{
                   fontSize: 20,
-                  color: theme.palette.text.secondary,
+                  color: '#6b7280',
                 }}
               />
             </Box>
@@ -487,13 +488,16 @@ export const Header: React.FC<HeaderProps> = ({
               onBlur={() => setSearchFocused(false)}
               inputProps={{ 'aria-label': 'search' }}
               sx={{
-                color: 'inherit',
+                color: '#374151',
                 width: '100%',
                 '& .MuiInputBase-input': {
                   padding: '8px 12px 8px 40px',
                   fontSize: '0.875rem',
                   transition: theme.transitions.create('width'),
                   width: '100%',
+                  '&::placeholder': {
+                    color: '#6b7280',
+                  },
                 },
               }}
             />
@@ -506,7 +510,7 @@ export const Header: React.FC<HeaderProps> = ({
           <IconButton
             sx={{
               display: { xs: 'flex', md: 'none' },
-              color: theme.palette.text.primary,
+              color: '#374151',
             }}
             aria-label='search'
           >
@@ -515,22 +519,14 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Theme Toggle */}
           <Tooltip title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-            <IconButton
-              onClick={handleThemeToggle}
-              sx={{ color: theme.palette.text.primary }}
-              aria-label='toggle theme'
-            >
+            <IconButton onClick={handleThemeToggle} sx={{ color: '#374151' }} aria-label='toggle theme'>
               {isDarkMode ? <LightModeIcon /> : <DarkModeIcon />}
             </IconButton>
           </Tooltip>
 
           {/* Notifications */}
           <Tooltip title='Notifications'>
-            <IconButton
-              onClick={handleNotificationMenuOpen}
-              sx={{ color: theme.palette.text.primary }}
-              aria-label='notifications'
-            >
+            <IconButton onClick={handleNotificationMenuOpen} sx={{ color: '#374151' }} aria-label='notifications'>
               <Badge badgeContent={3} color='error'>
                 <NotificationsIcon />
               </Badge>
