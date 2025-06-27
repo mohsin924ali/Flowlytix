@@ -8,12 +8,14 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ProtectedRoute } from './ProtectedRoute';
-import { LoginPage } from '../organisms';
+import { LoginPage } from '../organisms/LoginPage/LoginPage';
 import { DashboardPage } from '../../pages/DashboardPage';
 import { UsersPage } from '../../pages/UsersPage';
 import { AgenciesPage } from '../../pages/AgenciesPage';
+import { EmployeesPage } from '../../pages/EmployeesPage';
 import { ROUTES } from '../../constants/navigation.constants';
 import { useAuthStore } from '../../store/auth.store';
+import logoMainSrc from '../../assets/images/logo-main.svg';
 
 /**
  * Page transition variants
@@ -63,7 +65,7 @@ const PlaceholderPage: React.FC<{ title: string; description: string }> = ({ tit
         fontSize: '2rem',
         fontWeight: 'bold',
         marginBottom: '0.5rem',
-        background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+        background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
         backgroundClip: 'text',
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
@@ -115,7 +117,7 @@ export const AppRouter: React.FC = () => {
         {/* Public Routes */}
         <Route
           path='/login'
-          element={<LoginPage showDevMode={true} onLoginSuccess={handleLoginSuccess} logoSrc='./logo-main.svg' />}
+          element={<LoginPage showDevMode={true} onLoginSuccess={handleLoginSuccess} logoSrc={logoMainSrc} />}
         />
 
         {/* Protected Routes */}
@@ -260,6 +262,38 @@ export const AppRouter: React.FC = () => {
               <PlaceholderPage
                 title='Agency Details'
                 description='View agency information, performance metrics, and manage business relationships.'
+              />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Employee Routes */}
+        <Route
+          path='/employees'
+          element={
+            <ProtectedRoute>
+              <EmployeesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/employees/create'
+          element={
+            <ProtectedRoute>
+              <PlaceholderPage
+                title='Add New Employee'
+                description='Register new employees with personal information, department assignment, and role configuration.'
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/employees/:id'
+          element={
+            <ProtectedRoute>
+              <PlaceholderPage
+                title='Employee Details'
+                description='View employee information, performance metrics, and manage human resource details.'
               />
             </ProtectedRoute>
           }

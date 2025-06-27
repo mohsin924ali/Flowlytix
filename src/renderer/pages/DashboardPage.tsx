@@ -128,8 +128,8 @@ const WelcomeSection: React.FC = () => {
         sx={{
           p: 3,
           mb: 4,
-          background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(66, 165, 245, 0.05) 100%)',
-          border: '1px solid rgba(25, 118, 210, 0.1)',
+          background: 'linear-gradient(135deg, rgba(81, 63, 242, 0.08) 0%, rgba(107, 82, 245, 0.06) 100%)',
+          border: '1px solid rgba(81, 63, 242, 0.15)',
           borderRadius: 2,
         }}
       >
@@ -150,7 +150,7 @@ const WelcomeSection: React.FC = () => {
               variant='h4'
               sx={{
                 fontWeight: 700,
-                background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -265,7 +265,7 @@ const FloatingElements: React.FC = () => (
           width: Math.random() * 100 + 50,
           height: Math.random() * 100 + 50,
           borderRadius: '50%',
-          background: `linear-gradient(135deg, rgba(25, 118, 210, ${Math.random() * 0.1 + 0.05}) 0%, rgba(66, 165, 245, ${Math.random() * 0.1 + 0.03}) 100%)`,
+          background: `linear-gradient(135deg, rgba(81, 63, 242, ${Math.random() * 0.1 + 0.05}) 0%, rgba(107, 82, 245, ${Math.random() * 0.1 + 0.03}) 100%)`,
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(255, 255, 255, 0.2)',
         }}
@@ -312,7 +312,7 @@ export const DashboardPage: React.FC = () => {
       change: '+12.5%',
       trend: 'up',
       icon: ShoppingCart,
-      color: '#1976d2',
+      color: '#513ff2',
     },
     {
       id: 'customers',

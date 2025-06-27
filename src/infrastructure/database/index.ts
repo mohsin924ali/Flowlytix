@@ -1,3 +1,18 @@
+// Employee schemas (newly added following incremental approach)
+export {
+  EMPLOYEE_SCHEMAS,
+  EMPLOYEE_INDEXES,
+  EMPLOYEE_SCHEMA_CREATION_ORDER,
+  EMPLOYEE_SCHEMA_VALIDATION_QUERIES,
+  EMPLOYEE_SCHEMA_PERFORMANCE_CONFIG,
+  EMPLOYEES_TABLE_SCHEMA,
+  EMPLOYEE_AUDIT_TABLE_SCHEMA,
+  EMPLOYEE_METRICS_TABLE_SCHEMA,
+  EMPLOYEES_TABLE_INDEXES,
+  EMPLOYEE_AUDIT_TABLE_INDEXES,
+  EMPLOYEE_METRICS_TABLE_INDEXES,
+} from './employee-schema';
+
 /**
  * Database Infrastructure Layer - Index
  * Centralized exports for database functionality

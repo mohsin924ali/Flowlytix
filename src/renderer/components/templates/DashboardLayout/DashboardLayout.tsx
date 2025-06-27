@@ -84,8 +84,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         display: 'flex',
         minHeight: '100vh',
         background: `
-          radial-gradient(circle at 10% 20%, rgba(25, 118, 210, 0.05) 0%, transparent 50%),
-          radial-gradient(circle at 90% 80%, rgba(66, 165, 245, 0.05) 0%, transparent 50%),
+                      radial-gradient(circle at 10% 20%, rgba(81, 63, 242, 0.05) 0%, transparent 50%),
+            radial-gradient(circle at 90% 80%, rgba(107, 82, 245, 0.05) 0%, transparent 50%),
           linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)
         `,
         position: 'relative',
@@ -96,7 +96,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {showSidebar && (
         <Sidebar
           navigationItems={allNavigationItems}
-          isOpen={sidebarOpen}
+          isOpen={true}
           isCollapsed={collapsed}
           activeRoute={activeRoute}
           onToggle={toggleSidebar}
@@ -122,7 +122,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <Header
             sidebarOpen={sidebarOpen}
             sidebarCollapsed={collapsed}
-            onToggleSidebar={toggleSidebar}
+            onToggleSidebar={toggleCollapsed}
             data-testid='dashboard-header'
           />
         )}

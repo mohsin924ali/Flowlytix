@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { Logo } from '../../atoms';
 import { LoginForm } from '../../molecules/LoginForm/LoginForm';
 import { APP_CONFIG } from '../../../constants/app.constants';
+import logoMainSrc from '../../../assets/images/logo-main.svg';
 
 /**
  * LoginPage props interface
@@ -88,7 +89,7 @@ const AnimatedBackground: React.FC = () => (
           width: Math.random() * 100 + 50,
           height: Math.random() * 100 + 50,
           borderRadius: '50%',
-          background: `linear-gradient(135deg, rgba(25, 118, 210, ${Math.random() * 0.15 + 0.05}) 0%, rgba(66, 165, 245, ${Math.random() * 0.1 + 0.03}) 100%)`,
+          background: `linear-gradient(135deg, rgba(81, 63, 242, ${Math.random() * 0.15 + 0.05}) 0%, rgba(107, 82, 245, ${Math.random() * 0.1 + 0.03}) 100%)`,
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
         }}
@@ -185,9 +186,9 @@ const LogoBrandingSection: React.FC<{ logoSrc?: string | undefined }> = ({ logoS
               left: -30,
               right: -30,
               bottom: -30,
-              border: '2px solid rgba(25, 118, 210, 0.2)',
+              border: '2px solid rgba(81, 63, 242, 0.2)',
               borderRadius: '50%',
-              borderTop: '2px solid rgba(25, 118, 210, 0.6)',
+              borderTop: '2px solid rgba(81, 63, 242, 0.6)',
             }}
           />
           <motion.div
@@ -199,16 +200,16 @@ const LogoBrandingSection: React.FC<{ logoSrc?: string | undefined }> = ({ logoS
               left: -20,
               right: -20,
               bottom: -20,
-              border: '1px solid rgba(66, 165, 245, 0.3)',
+              border: '1px solid rgba(107, 82, 245, 0.3)',
               borderRadius: '50%',
-              borderBottom: '1px solid rgba(66, 165, 245, 0.8)',
+              borderBottom: '1px solid rgba(107, 82, 245, 0.8)',
             }}
           />
 
           {/* Logo with pulsing effect */}
           <motion.div
             animate={{
-              boxShadow: ['0 0 0 0 rgba(25, 118, 210, 0.4)', '0 0 0 20px rgba(25, 118, 210, 0)'],
+              boxShadow: ['0 0 0 0 rgba(81, 63, 242, 0.4)', '0 0 0 20px rgba(81, 63, 242, 0)'],
             }}
             transition={{ duration: 2, repeat: Infinity }}
             style={{
@@ -238,7 +239,8 @@ const LogoBrandingSection: React.FC<{ logoSrc?: string | undefined }> = ({ logoS
               <Logo
                 variant='image'
                 src={logoSrc}
-                size='large'
+                size='xlarge'
+                circular={true}
                 sx={{
                   filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.1))',
                 }}
@@ -254,7 +256,7 @@ const LogoBrandingSection: React.FC<{ logoSrc?: string | undefined }> = ({ logoS
                   justifyContent: 'center',
                   fontSize: '2.5rem',
                   fontWeight: 'bold',
-                  background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                  background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
@@ -276,7 +278,7 @@ const LogoBrandingSection: React.FC<{ logoSrc?: string | undefined }> = ({ logoS
             variant='h2'
             sx={{
               fontWeight: 'bold',
-              background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 50%, #1976d2 100%)',
+              background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 50%, #513ff2 100%)',
               backgroundSize: '200% 200%',
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
@@ -342,7 +344,7 @@ const LogoBrandingSection: React.FC<{ logoSrc?: string | undefined }> = ({ logoS
             width: 60,
             height: 60,
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)',
+            background: 'linear-gradient(135deg, rgba(81, 63, 242, 0.1) 0%, rgba(107, 82, 245, 0.05) 100%)',
             backdropFilter: 'blur(10px)',
           }}
         >
@@ -360,7 +362,7 @@ const LogoBrandingSection: React.FC<{ logoSrc?: string | undefined }> = ({ logoS
             width: 40,
             height: 40,
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, rgba(66, 165, 245, 0.1) 0%, rgba(25, 118, 210, 0.05) 100%)',
+            background: 'linear-gradient(135deg, rgba(107, 82, 245, 0.1) 0%, rgba(81, 63, 242, 0.05) 100%)',
             backdropFilter: 'blur(10px)',
           }}
         >
@@ -389,7 +391,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Use the correct path for the built assets
-  const defaultLogoSrc = './logo-main.svg';
+  const defaultLogoSrc = logoMainSrc;
   const finalLogoSrc = logoSrc || defaultLogoSrc;
 
   console.log('LoginPage: Using logo source:', finalLogoSrc);
@@ -405,8 +407,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           flexDirection: 'column',
           position: 'relative',
           background: `
-            radial-gradient(circle at 20% 80%, rgba(25, 118, 210, 0.15) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(66, 165, 245, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 20% 80%, rgba(81, 63, 242, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(107, 82, 245, 0.15) 0%, transparent 50%),
             linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)
           `,
           overflow: 'hidden',
@@ -480,8 +482,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               background: `
-                radial-gradient(circle at 30% 70%, rgba(25, 118, 210, 0.2) 0%, transparent 50%),
-                radial-gradient(circle at 70% 30%, rgba(66, 165, 245, 0.15) 0%, transparent 50%),
+                            radial-gradient(circle at 30% 70%, rgba(81, 63, 242, 0.2) 0%, transparent 50%),
+            radial-gradient(circle at 70% 30%, rgba(107, 82, 245, 0.15) 0%, transparent 50%),
                 linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)
               `,
               position: 'relative',
@@ -492,7 +494,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 right: 0,
                 bottom: 0,
                 width: 1,
-                background: 'linear-gradient(180deg, transparent, rgba(25, 118, 210, 0.2), transparent)',
+                background: 'linear-gradient(180deg, transparent, rgba(81, 63, 242, 0.2), transparent)',
               },
             }}
           >
@@ -511,8 +513,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               background: `
-                radial-gradient(circle at 70% 30%, rgba(25, 118, 210, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 30% 70%, rgba(66, 165, 245, 0.08) 0%, transparent 50%),
+                            radial-gradient(circle at 70% 30%, rgba(81, 63, 242, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 30% 70%, rgba(107, 82, 245, 0.08) 0%, transparent 50%),
                 linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)
               `,
               position: 'relative',
@@ -538,7 +540,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       left: 0,
                       right: 0,
                       height: 1,
-                      background: 'linear-gradient(90deg, transparent, rgba(25, 118, 210, 0.5), transparent)',
+                      background: 'linear-gradient(90deg, transparent, rgba(81, 63, 242, 0.5), transparent)',
                     },
                   }}
                 >

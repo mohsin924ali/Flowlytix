@@ -47,7 +47,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             width: 40,
             height: 40,
             border: '4px solid #e3f2fd',
-            borderTop: '4px solid #1976d2',
+            borderTop: '4px solid #513ff2',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',
           }}

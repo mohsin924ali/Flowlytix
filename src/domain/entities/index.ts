@@ -11,6 +11,10 @@ export { Agency, AgencyStatus, AgencyDomainError, AgencyValidationError, AgencyB
 
 export type { AgencySettings, CreateAgencyParams, AgencyProps } from './agency';
 
+export { Employee, EmployeeStatus, EmployeeDepartment, EmployeeDomainError, EmployeeValidationError } from './employee';
+
+export type { CreateEmployeeParams, EmployeeProps } from './employee';
+
 export {
   Product,
   ProductStatus,

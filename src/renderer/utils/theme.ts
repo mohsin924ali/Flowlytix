@@ -15,26 +15,38 @@ export const theme: Theme = createTheme({
     mode: 'light',
     primary: {
       main: UI_CONFIG.THEME.PRIMARY_COLOR,
+      light: UI_CONFIG.THEME.SECONDARY_COLOR,
+      dark: UI_CONFIG.THEME.PURPLE_700,
       contrastText: '#ffffff',
     },
     secondary: {
       main: UI_CONFIG.THEME.SECONDARY_COLOR,
+      light: UI_CONFIG.THEME.PURPLE_100,
+      dark: UI_CONFIG.THEME.PURPLE_600,
       contrastText: '#ffffff',
     },
     success: {
       main: UI_CONFIG.THEME.SUCCESS_COLOR,
+      light: '#34d399',
+      dark: '#059669',
     },
     error: {
       main: UI_CONFIG.THEME.ERROR_COLOR,
+      light: '#f87171',
+      dark: '#dc2626',
     },
     warning: {
       main: UI_CONFIG.THEME.WARNING_COLOR,
+      light: '#fbbf24',
+      dark: '#d97706',
     },
     info: {
       main: UI_CONFIG.THEME.INFO_COLOR,
+      light: '#60a5fa',
+      dark: '#2563eb',
     },
     background: {
-      default: '#fafafa',
+      default: UI_CONFIG.THEME.PURPLE_50,
       paper: '#ffffff',
     },
     text: {
@@ -85,18 +97,33 @@ export const theme: Theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
-          padding: '10px 24px',
+          borderRadius: 10,
+          padding: '12px 28px',
           fontSize: '0.875rem',
-          fontWeight: 500,
+          fontWeight: 600,
+          textTransform: 'none',
           boxShadow: 'none',
+          transition: 'all 0.2s ease-in-out',
           '&:hover': {
             boxShadow: 'none',
+            transform: 'translateY(-1px)',
           },
         },
         contained: {
+          background: UI_CONFIG.THEME.BRAND_GRADIENT,
           '&:hover': {
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+            background: `linear-gradient(135deg, ${UI_CONFIG.THEME.PURPLE_600} 0%, ${UI_CONFIG.THEME.PURPLE_700} 100%)`,
+            boxShadow: '0 8px 25px rgba(81, 63, 242, 0.3)',
+          },
+        },
+        outlined: {
+          borderColor: UI_CONFIG.THEME.PRIMARY_COLOR,
+          color: UI_CONFIG.THEME.PRIMARY_COLOR,
+          borderWidth: 2,
+          '&:hover': {
+            borderWidth: 2,
+            background: UI_CONFIG.THEME.PURPLE_50,
+            borderColor: UI_CONFIG.THEME.PURPLE_600,
           },
         },
       },
@@ -124,13 +151,17 @@ export const theme: Theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          borderRadius: 12,
+          borderRadius: 16,
+          border: '1px solid rgba(81, 63, 242, 0.08)',
         },
         elevation1: {
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
+          boxShadow: '0 2px 12px rgba(81, 63, 242, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
+        },
+        elevation2: {
+          boxShadow: '0 4px 20px rgba(81, 63, 242, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06)',
         },
         elevation8: {
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+          boxShadow: '0 12px 40px rgba(81, 63, 242, 0.15), 0 8px 24px rgba(0, 0, 0, 0.08)',
         },
       },
     },

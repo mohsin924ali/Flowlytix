@@ -123,7 +123,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               sx={{
                 mb: 4,
                 fontWeight: 'bold',
-                background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -302,9 +302,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               <Box
                 sx={{
                   p: 3,
-                  background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(66, 165, 245, 0.05) 100%)',
+                  background: 'linear-gradient(135deg, rgba(81, 63, 242, 0.05) 0%, rgba(107, 82, 245, 0.05) 100%)',
                   borderRadius: 2,
-                  border: '1px solid rgba(25, 118, 210, 0.1)',
+                  border: '1px solid rgba(81, 63, 242, 0.1)',
                   backdropFilter: 'blur(10px)',
                   position: 'relative',
                   overflow: 'hidden',
@@ -315,7 +315,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                     left: 0,
                     right: 0,
                     height: 1,
-                    background: 'linear-gradient(90deg, transparent, rgba(25, 118, 210, 0.3), transparent)',
+                    background: 'linear-gradient(90deg, transparent, rgba(81, 63, 242, 0.3), transparent)',
                   },
                 }}
               >

@@ -13,15 +13,15 @@ export interface User {
   readonly lastName: string;
   readonly role: string;
   readonly permissions: string[];
+  readonly agencyId?: string; // Agency assignment for agency admins
 }
 
 /**
- * User roles enumeration
+ * User roles enumeration - simplified system
  */
 export enum UserRole {
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  EMPLOYEE = 'employee',
+  SUPER_ADMIN = 'super_admin',
+  ADMIN = 'admin', // Agency Admin
 }
 
 /**
