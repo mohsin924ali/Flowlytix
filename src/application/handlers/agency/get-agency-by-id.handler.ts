@@ -118,10 +118,14 @@ export class GetAgencyByIdHandler {
       return true;
     }
 
-    // Regular users can only access their own agency
-    // Note: In a real implementation, you'd check user.agencyId === agency.id
-    // For now, we'll allow access for users with MANAGE_SETTINGS permission
-    return user.hasPermission(Permission.MANAGE_SETTINGS);
+    // Agency admins can only access their assigned agency
+    if (user.role.value === SystemRole.ADMIN) {
+      // Check if user has an assigned agency and it matches the requested agency
+      return user.agencyId === agency.id;
+    }
+
+    // All other users are denied access
+    return false;
   }
 
   /**

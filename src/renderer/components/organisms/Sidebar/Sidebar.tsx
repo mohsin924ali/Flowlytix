@@ -25,6 +25,8 @@ import { ChevronLeft, ChevronRight, ExpandLess, ExpandMore } from '@mui/icons-ma
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '../../atoms';
 import type { NavigationRoute } from '../../../types/navigation.types';
+import { NAVIGATION_ROUTES, SYSTEM_ROUTES } from '../../../constants/navigation.constants';
+import { useAuthStore } from '../../../store/auth.store';
 import logoSrc from '../../../assets/images/logo-main.svg';
 
 /**
@@ -101,6 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
+  const { user } = useAuthStore();
 
   /**
    * Toggle expanded state for menu items with children
@@ -180,14 +183,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 position: 'relative',
                 overflow: 'hidden',
                 background: isActive
-                  ? 'linear-gradient(135deg, rgba(81, 63, 242, 0.12) 0%, rgba(107, 82, 245, 0.06) 100%)'
+                  ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(147, 197, 253, 0.06) 100%)'
                   : 'transparent',
-                border: isActive ? '1px solid rgba(81, 63, 242, 0.2)' : '1px solid transparent',
+                border: isActive ? '1px solid rgba(59, 130, 246, 0.2)' : '1px solid transparent',
                 '&:hover': {
                   background: isActive
-                    ? 'linear-gradient(135deg, rgba(81, 63, 242, 0.18) 0%, rgba(107, 82, 245, 0.1) 100%)'
-                    : 'rgba(81, 63, 242, 0.06)',
-                  border: '1px solid rgba(81, 63, 242, 0.15)',
+                    ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.18) 0%, rgba(147, 197, 253, 0.1) 100%)'
+                    : 'rgba(59, 130, 246, 0.06)',
+                  border: '1px solid rgba(59, 130, 246, 0.15)',
                   transform: 'translateX(4px)',
                 },
                 '&:before': {
@@ -197,7 +200,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   top: 0,
                   bottom: 0,
                   width: 4,
-                  background: isActive ? 'linear-gradient(180deg, #513ff2 0%, #6b52f5 100%)' : 'transparent',
+                  background: isActive ? 'linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)' : 'transparent',
                   borderRadius: '0 2px 2px 0',
                 },
                 transition: theme.transitions.create(['background', 'transform', 'border'], {
@@ -220,7 +223,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   variant='dot'
                   invisible={!item.badge || item.badge === 0}
                 >
-                  <item.icon sx={{ fontSize: 24 }} />
+                  <item.icon sx={{ fontSize: 24, color: isActive ? '#1e40af' : '#6b7280' }} />
                 </Badge>
               </ListItemIcon>
 
@@ -239,7 +242,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         opacity: isCollapsed ? 0 : 1,
                         '& .MuiListItemText-primary': {
                           fontWeight: isActive ? 600 : 400,
-                          color: isActive ? 'primary.main' : 'text.primary',
+                          color: isActive ? '#1e40af' : '#374151',
                           fontSize: '0.875rem',
                         },
                       }}
@@ -272,37 +275,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
   };
 
-  // Add navigation items based on user role
-  const getNavigationForRole = (userRole: string) => {
-    const baseNavigation = [
-      { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-      { path: '/orders', label: 'Orders', icon: 'orders' },
-      { path: '/customers', label: 'Customers', icon: 'customers' },
-      { path: '/products', label: 'Products', icon: 'products' },
-      { path: '/employees', label: 'Employees', icon: 'employees' }, // Business data only
-    ];
+  /**
+   * Filter navigation items based on user role
+   */
+  const getFilteredNavigationItems = React.useMemo(() => {
+    if (!user) return [];
 
-    switch (userRole.toLowerCase()) {
-      case 'super_admin':
-        return [
-          ...baseNavigation,
-          { path: '/agencies', label: 'Agencies', icon: 'agencies' },
-          { path: '/users', label: 'User Management', icon: 'users' },
-          { path: '/analytics', label: 'Analytics', icon: 'analytics' },
-          { path: '/settings', label: 'System Settings', icon: 'settings' },
-        ];
+    const userRole = user.role?.toLowerCase();
 
-      case 'admin': // Agency Admin
-        return [
-          ...baseNavigation,
-          { path: '/analytics', label: 'Analytics', icon: 'analytics' },
-          { path: '/settings', label: 'Settings', icon: 'settings' },
-        ];
+    // Get all navigation items
+    const allItems = [...NAVIGATION_ROUTES, ...SYSTEM_ROUTES];
 
-      default:
-        return baseNavigation;
-    }
-  };
+    // Filter items based on role requirements
+    const filterByRole = (items: NavigationRoute[]): NavigationRoute[] => {
+      return items
+        .filter((item) => {
+          // If item has no role requirement, show it to everyone
+          if (!item.requiredRole) return true;
+
+          // Check if user has the required role
+          const requiredRole = item.requiredRole.toLowerCase();
+          return userRole === requiredRole || userRole === 'super_admin';
+        })
+        .map((item) => {
+          const filteredChildren = item.children ? filterByRole(item.children) : undefined;
+          return {
+            ...item,
+            ...(filteredChildren && filteredChildren.length > 0 && { children: filteredChildren }),
+          };
+        });
+    };
+
+    return filterByRole(allItems);
+  }, [user]);
 
   return (
     <motion.div
@@ -319,20 +324,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         sx={{
           width: '100%',
           height: '100%',
-          background: 'rgba(255, 255, 255, 0.95)',
+          background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 25%, #f1f5f9 75%, #e2e8f0 100%)',
           backdropFilter: 'blur(20px)',
-          borderRight: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRight: '1px solid rgba(0, 0, 0, 0.1)',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
           overflow: 'hidden',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
         }}
       >
         {/* Header */}
         <Box
           sx={{
             p: 2,
-            borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+            borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: isCollapsed ? 'center' : 'space-between',
@@ -353,7 +359,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   variant='h6'
                   sx={{
                     fontWeight: 'bold',
-                    background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
+                    background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)',
                     backgroundClip: 'text',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
@@ -387,14 +393,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             },
           }}
         >
-          <List>{navigationItems.map((item, index) => renderNavigationItem(item, index))}</List>
+          <List>{getFilteredNavigationItems.map((item, index) => renderNavigationItem(item, index))}</List>
         </Box>
 
         {/* Footer */}
         <Box
           sx={{
             p: 2,
-            borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+            borderTop: '1px solid rgba(0, 0, 0, 0.1)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -408,7 +414,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <Typography variant='caption' color='text.secondary' sx={{ textAlign: 'center' }}>
+                <Typography variant='caption' sx={{ textAlign: 'center', color: '#6b7280' }}>
                   © 2024 Flowlytix
                 </Typography>
               </motion.div>

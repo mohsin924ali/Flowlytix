@@ -1,11 +1,102 @@
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
+import * as crypto from 'crypto';
 
 /**
- * Minimal IPC Handlers for Initial Build
- * This is a simplified version to get the system building
+ * IPC Handlers with Database-backed Authentication
  */
+
+// Database setup
+const Database = require('better-sqlite3');
+const dbPath = join(__dirname, '..', '..', 'data', 'main.db');
+
+// Ensure data directory exists
+const dataDir = join(__dirname, '..', '..', 'data');
+if (!existsSync(dataDir)) {
+  mkdirSync(dataDir, { recursive: true });
+}
+
+// Initialize main database
+let mainDb: any = null;
+
+function initializeMainDatabase() {
+  if (!mainDb) {
+    mainDb = new Database(dbPath);
+
+    // Create users table if it doesn't exist
+    mainDb.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        password_salt TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'admin',
+        status TEXT NOT NULL DEFAULT 'active',
+        agency_id TEXT,
+        login_attempts INTEGER DEFAULT 0,
+        locked_until INTEGER,
+        last_login_at INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    `);
+
+    // Check if any users exist, if not create default super admin
+    const userCountStmt = mainDb.prepare('SELECT COUNT(*) as count FROM users');
+    const userCount = userCountStmt.get();
+
+    if (userCount.count === 0) {
+      console.log('🔧 No users found, creating default super admin...');
+
+      const { hash, salt } = hashPassword('03126073mO');
+      const userId = crypto.randomUUID();
+      const now = Date.now();
+
+      const insertDefaultUserStmt = mainDb.prepare(`
+        INSERT INTO users (
+          id, email, first_name, last_name, password_hash, password_salt,
+          role, status, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      insertDefaultUserStmt.run(
+        userId,
+        'mohsin@flowlytix.com',
+        'Mohsin',
+        'Ali',
+        hash,
+        salt,
+        'super_admin',
+        'active',
+        now,
+        now
+      );
+
+      console.log('✅ Default super admin created:');
+      console.log('   Email: mohsin@flowlytix.com');
+      console.log('   Password: 03126073mO');
+      console.log('   Role: super_admin');
+    }
+
+    console.log('📁 Main database initialized at:', dbPath);
+  }
+  return mainDb;
+}
+
+// Utility functions for password hashing
+function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
+  const passwordSalt = salt || crypto.randomBytes(32).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, passwordSalt, 10000, 64, 'sha512').toString('hex');
+  return { hash, salt: passwordSalt };
+}
+
+function verifyPassword(password: string, hash: string, salt: string): boolean {
+  const hashVerify = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+  return hash === hashVerify;
+}
 
 // Basic response types
 interface BasicResponse {
@@ -21,10 +112,14 @@ interface BasicResponse {
 export function registerIpcHandlers(): void {
   console.log('Registering IPC handlers...');
 
+  // Initialize main database
+  initializeMainDatabase();
+
   // Auth handlers
   ipcMain.handle('auth:authenticate', handleAuthenticate);
   ipcMain.handle('auth:get-user', handleGetUser);
   ipcMain.handle('auth:list-users', handleListUsers);
+  ipcMain.handle('auth:create-user', handleCreateUser);
   ipcMain.handle('auth:logout', handleLogout);
 
   // Database handlers
@@ -263,36 +358,138 @@ async function createAgencyDatabase(
 async function handleAuthenticate(_event: IpcMainInvokeEvent, credentials: any): Promise<BasicResponse> {
   try {
     console.log('🔑 Authentication attempt received:');
-    console.log('- Credentials:', credentials);
     console.log('- Email:', credentials?.email);
-    console.log('- Password:', credentials?.password);
-    console.log('- Expected email: admin@flowlytix.com');
-    console.log('- Expected password: admin123');
 
-    // Mock authentication for now
-    if (credentials?.email === 'admin@flowlytix.com' && credentials?.password === 'admin123') {
-      console.log('✅ Authentication successful');
+    // Validate credentials are provided and not empty
+    if (!credentials) {
+      console.log('❌ Authentication failed - no credentials provided');
       return {
-        success: true,
-        data: {
-          user: {
-            id: '1',
-            email: 'admin@flowlytix.com',
-            firstName: 'Admin',
-            lastName: 'User',
-            role: 'super_admin',
-            permissions: ['VIEW_DASHBOARD', 'MANAGE_PRODUCTS', 'VIEW_REPORTS', 'MANAGE_AGENCIES', 'SWITCH_AGENCIES'],
-          },
-          token: 'mock-jwt-token',
-        },
+        success: false,
+        error: 'Email and password are required',
         timestamp: Date.now(),
       };
     }
 
-    console.log('❌ Authentication failed - invalid credentials');
+    const { email, password } = credentials;
+
+    // Validate email is provided and not empty
+    if (!email || typeof email !== 'string' || email.trim().length === 0) {
+      console.log('❌ Authentication failed - invalid or empty email');
+      return {
+        success: false,
+        error: 'Email is required',
+        timestamp: Date.now(),
+      };
+    }
+
+    // Validate password is provided and not empty
+    if (!password || typeof password !== 'string' || password.trim().length === 0) {
+      console.log('❌ Authentication failed - invalid or empty password');
+      return {
+        success: false,
+        error: 'Password is required',
+        timestamp: Date.now(),
+      };
+    }
+
+    // Initialize database
+    const db = initializeMainDatabase();
+
+    // Find user by email
+    const findUserStmt = db.prepare('SELECT * FROM users WHERE email = ? AND status = ?');
+    const user = findUserStmt.get(email.trim(), 'active');
+
+    if (!user) {
+      console.log('❌ Authentication failed - user not found');
+      return {
+        success: false,
+        error: 'Invalid email or password',
+        timestamp: Date.now(),
+      };
+    }
+
+    // Check if account is locked
+    if (user.locked_until && user.locked_until > Date.now()) {
+      console.log('❌ Authentication failed - account locked');
+      return {
+        success: false,
+        error: 'Account is temporarily locked due to too many failed attempts',
+        timestamp: Date.now(),
+      };
+    }
+
+    // Verify password
+    const isValidPassword = verifyPassword(password.trim(), user.password_hash, user.password_salt);
+
+    if (!isValidPassword) {
+      console.log('❌ Authentication failed - invalid password');
+
+      // Increment login attempts
+      const updateAttemptsStmt = db.prepare(`
+        UPDATE users 
+        SET login_attempts = login_attempts + 1,
+            locked_until = CASE WHEN login_attempts + 1 >= 5 THEN ? ELSE locked_until END,
+            updated_at = ?
+        WHERE id = ?
+      `);
+
+      const lockUntil = user.login_attempts + 1 >= 5 ? Date.now() + 15 * 60 * 1000 : null; // 15 minutes
+      updateAttemptsStmt.run(lockUntil, Date.now(), user.id);
+
+      return {
+        success: false,
+        error: 'Invalid email or password',
+        timestamp: Date.now(),
+      };
+    }
+
+    // Authentication successful - reset login attempts and update last login
+    const updateLoginStmt = db.prepare(`
+      UPDATE users 
+      SET login_attempts = 0, 
+          locked_until = NULL, 
+          last_login_at = ?, 
+          updated_at = ?
+      WHERE id = ?
+    `);
+    updateLoginStmt.run(Date.now(), Date.now(), user.id);
+
+    console.log('✅ Authentication successful for:', email);
+
+    // Map role permissions
+    const getPermissions = (role: string) => {
+      switch (role) {
+        case 'super_admin':
+          return [
+            'VIEW_DASHBOARD',
+            'MANAGE_PRODUCTS',
+            'VIEW_REPORTS',
+            'MANAGE_AGENCIES',
+            'SWITCH_AGENCIES',
+            'CREATE_USERS',
+            'MANAGE_USERS',
+          ];
+        case 'admin':
+          return ['VIEW_DASHBOARD', 'MANAGE_PRODUCTS', 'VIEW_REPORTS'];
+        default:
+          return ['VIEW_DASHBOARD'];
+      }
+    };
+
     return {
-      success: false,
-      error: 'Invalid credentials',
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          role: user.role,
+          agencyId: user.agency_id,
+          permissions: getPermissions(user.role),
+        },
+        token: 'jwt-token-placeholder',
+      },
       timestamp: Date.now(),
     };
   } catch (error) {
@@ -305,16 +502,111 @@ async function handleAuthenticate(_event: IpcMainInvokeEvent, credentials: any):
   }
 }
 
-async function handleGetUser(_event: IpcMainInvokeEvent, userId: string): Promise<BasicResponse> {
+async function handleCreateUser(_event: IpcMainInvokeEvent, userData: any): Promise<BasicResponse> {
   try {
+    console.log('👤 Create user request received');
+
+    // Validate required fields
+    if (!userData.email || !userData.password || !userData.firstName || !userData.lastName || !userData.role) {
+      return {
+        success: false,
+        error: 'Missing required fields: email, password, firstName, lastName, role',
+        timestamp: Date.now(),
+      };
+    }
+
+    // Initialize database
+    const db = initializeMainDatabase();
+
+    // Check if user already exists
+    const checkUserStmt = db.prepare('SELECT id FROM users WHERE email = ?');
+    const existingUser = checkUserStmt.get(userData.email);
+
+    if (existingUser) {
+      return {
+        success: false,
+        error: 'User with this email already exists',
+        timestamp: Date.now(),
+      };
+    }
+
+    // Hash password
+    const { hash, salt } = hashPassword(userData.password);
+
+    // Generate user ID
+    const userId = crypto.randomUUID();
+    const now = Date.now();
+
+    // Insert new user
+    const insertUserStmt = db.prepare(`
+      INSERT INTO users (
+        id, email, first_name, last_name, password_hash, password_salt,
+        role, status, agency_id, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    insertUserStmt.run(
+      userId,
+      userData.email,
+      userData.firstName,
+      userData.lastName,
+      hash,
+      salt,
+      userData.role,
+      'active',
+      userData.agencyId || null,
+      now,
+      now
+    );
+
+    console.log('✅ User created successfully:', userData.email);
+
     return {
       success: true,
       data: {
         id: userId,
-        email: 'admin@flowlytix.com',
-        firstName: 'Admin',
-        lastName: 'User',
-        role: 'super_admin',
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role,
+        agencyId: userData.agencyId || null,
+      },
+      timestamp: Date.now(),
+    };
+  } catch (error) {
+    console.error('❌ Create user error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create user',
+      timestamp: Date.now(),
+    };
+  }
+}
+
+async function handleGetUser(_event: IpcMainInvokeEvent, userId: string): Promise<BasicResponse> {
+  try {
+    const db = initializeMainDatabase();
+
+    const getUserStmt = db.prepare('SELECT * FROM users WHERE id = ? AND status = ?');
+    const user = getUserStmt.get(userId, 'active');
+
+    if (!user) {
+      return {
+        success: false,
+        error: 'User not found',
+        timestamp: Date.now(),
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        role: user.role,
+        agencyId: user.agency_id,
       },
       timestamp: Date.now(),
     };
@@ -331,124 +623,94 @@ async function handleListUsers(_event: IpcMainInvokeEvent, params: any): Promise
   try {
     console.log('👥 List users request received:', params);
 
-    // TODO: Connect to real database
-    // For now, using enhanced mock data with database-like behavior
-    // To enable real database:
-    // 1. Import DatabaseConnection, SqliteUserRepository
-    // 2. Initialize connection: DatabaseConnection.getInstance(defaultDatabaseConfig)
-    // 3. Create repository: new SqliteUserRepository(connection)
-    // 4. Call repository.search() with proper criteria
+    // Initialize database
+    const db = initializeMainDatabase();
 
-    // Enhanced mock user data that simulates real database
-    const mockUsers = [
-      {
-        id: '1',
-        email: 'admin@flowlytix.com',
-        firstName: 'Admin',
-        lastName: 'User',
-        fullName: 'Admin User',
-        role: 'admin',
-        roleName: 'Administrator',
-        status: 'active',
-        createdAt: '2024-01-01T00:00:00.000Z',
-        lastLoginAt: '2024-01-15T10:30:00.000Z',
-        isAccountLocked: false,
-        loginAttempts: 0,
-      },
-      {
-        id: '2',
-        email: 'manager@flowlytix.com',
-        firstName: 'John',
-        lastName: 'Manager',
-        fullName: 'John Manager',
-        role: 'manager',
-        roleName: 'Manager',
-        status: 'active',
-        createdAt: '2024-01-02T00:00:00.000Z',
-        lastLoginAt: '2024-01-14T15:45:00.000Z',
-        isAccountLocked: false,
-        loginAttempts: 0,
-      },
-      {
-        id: '3',
-        email: 'employee@flowlytix.com',
-        firstName: 'Jane',
-        lastName: 'Employee',
-        fullName: 'Jane Employee',
-        role: 'employee',
-        roleName: 'Employee',
-        status: 'active',
-        createdAt: '2024-01-03T00:00:00.000Z',
-        lastLoginAt: null,
-        isAccountLocked: false,
-        loginAttempts: 0,
-      },
-      {
-        id: '4',
-        email: 'viewer@flowlytix.com',
-        firstName: 'Bob',
-        lastName: 'Viewer',
-        fullName: 'Bob Viewer',
-        role: 'viewer',
-        roleName: 'Viewer',
-        status: 'inactive',
-        createdAt: '2024-01-04T00:00:00.000Z',
-        lastLoginAt: '2024-01-10T09:15:00.000Z',
-        isAccountLocked: false,
-        loginAttempts: 0,
-      },
-      {
-        id: '5',
-        email: 'locked@flowlytix.com',
-        firstName: 'Locked',
-        lastName: 'User',
-        fullName: 'Locked User',
-        role: 'employee',
-        roleName: 'Employee',
-        status: 'active',
-        createdAt: '2024-01-05T00:00:00.000Z',
-        lastLoginAt: '2024-01-12T14:20:00.000Z',
-        isAccountLocked: true,
-        loginAttempts: 5,
-      },
-    ];
+    // Build dynamic query based on filters
+    let query = `
+      SELECT 
+        id, email, first_name, last_name, role, status, agency_id,
+        login_attempts, locked_until, last_login_at, created_at, updated_at
+      FROM users 
+      WHERE 1=1
+    `;
+    const queryParams: any[] = [];
 
-    // Apply basic filtering (search, role, status)
-    let filteredUsers = [...mockUsers];
-
-    if (params.search) {
-      const searchTerm = params.search.toLowerCase();
-      filteredUsers = filteredUsers.filter(
-        (user) => user.fullName.toLowerCase().includes(searchTerm) || user.email.toLowerCase().includes(searchTerm)
-      );
+    // Apply search filter
+    if (params?.search) {
+      query += ` AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)`;
+      const searchTerm = `%${params.search}%`;
+      queryParams.push(searchTerm, searchTerm, searchTerm);
     }
 
-    if (params.role) {
-      filteredUsers = filteredUsers.filter((user) => user.role === params.role);
+    // Apply role filter
+    if (params?.role) {
+      query += ` AND role = ?`;
+      queryParams.push(params.role);
     }
 
-    if (params.status) {
-      filteredUsers = filteredUsers.filter((user) => user.status === params.status);
+    // Apply status filter
+    if (params?.status) {
+      query += ` AND status = ?`;
+      queryParams.push(params.status);
     }
 
-    if (params.isLocked !== undefined) {
-      filteredUsers = filteredUsers.filter((user) => user.isAccountLocked === params.isLocked);
+    // Apply locked filter
+    if (params?.isLocked !== undefined) {
+      if (params.isLocked) {
+        query += ` AND locked_until > ?`;
+        queryParams.push(Date.now());
+      } else {
+        query += ` AND (locked_until IS NULL OR locked_until <= ?)`;
+        queryParams.push(Date.now());
+      }
     }
 
     // Apply pagination
-    const limit = params.limit || 50;
-    const offset = params.offset || 0;
-    const total = filteredUsers.length;
-    const paginatedUsers = filteredUsers.slice(offset, offset + limit);
+    const limit = params?.limit || 50;
+    const offset = params?.offset || 0;
+    query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    queryParams.push(limit, offset);
+
+    // Execute query
+    const usersStmt = db.prepare(query);
+    const users = usersStmt.all(...queryParams);
+
+    // Get total count for pagination
+    const countQuery = query
+      .replace(/SELECT.*?FROM/, 'SELECT COUNT(*) as count FROM')
+      .replace(/ORDER BY.*?LIMIT.*?OFFSET.*?$/, '');
+    const countParams = queryParams.slice(0, -2); // Remove LIMIT and OFFSET params
+    const countStmt = db.prepare(countQuery);
+    const totalResult = countStmt.get(...countParams) as { count: number };
+    const total = totalResult.count;
+
+    // Map users to expected format
+    const mappedUsers = users.map((user: any) => ({
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      fullName: `${user.first_name} ${user.last_name}`,
+      role: user.role,
+      roleName: user.role.charAt(0).toUpperCase() + user.role.slice(1).replace('_', ' '),
+      status: user.status,
+      agencyId: user.agency_id,
+      createdAt: new Date(user.created_at).toISOString(),
+      lastLoginAt: user.last_login_at ? new Date(user.last_login_at).toISOString() : null,
+      isAccountLocked: user.locked_until ? user.locked_until > Date.now() : false,
+      loginAttempts: user.login_attempts,
+    }));
+
     const hasMore = offset + limit < total;
 
-    console.log('✅ List users successful, returning', paginatedUsers.length, 'users');
+    console.log('✅ List users successful, returning', mappedUsers.length, 'users');
 
     return {
       success: true,
       data: {
         success: true,
-        users: paginatedUsers,
+        users: mappedUsers,
         total,
         limit,
         offset,

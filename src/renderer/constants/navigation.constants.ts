@@ -68,6 +68,7 @@ export const ROUTES = {
   SHIPPING_TRACKING: '/shipping/tracking',
 
   // System routes
+  ADMIN_PANEL: '/admin',
   USERS: '/users',
   SETTINGS: '/settings',
   PROFILE: '/profile',
@@ -298,13 +299,52 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
  */
 export const SYSTEM_ROUTES: NavigationRoute[] = [
   {
-    id: 'users',
-    label: 'Users',
-    path: ROUTES.USERS,
+    id: 'admin-panel',
+    label: 'Admin Panel',
+    path: ROUTES.ADMIN_PANEL,
     icon: SupervisorAccount,
     requiresAuth: true,
-    description: 'User management and administration',
+    description: 'Central administration panel for super administrators',
     group: 'system',
+    requiredRole: 'super_admin',
+    children: [
+      {
+        id: 'admin-users',
+        label: 'User Management',
+        path: ROUTES.USERS,
+        icon: People,
+        requiresAuth: true,
+        description: 'Manage system users and administrators',
+        requiredRole: 'super_admin',
+      },
+      {
+        id: 'admin-agencies',
+        label: 'Agency Management',
+        path: ROUTES.AGENCIES,
+        icon: Business,
+        requiresAuth: true,
+        description: 'Manage distribution agencies',
+        requiredRole: 'super_admin',
+      },
+      {
+        id: 'admin-employees',
+        label: 'Employee Management',
+        path: ROUTES.EMPLOYEES,
+        icon: SupervisorAccount,
+        requiresAuth: true,
+        description: 'Manage agency employees',
+        requiredRole: 'super_admin',
+      },
+      {
+        id: 'admin-settings',
+        label: 'System Settings',
+        path: ROUTES.SETTINGS,
+        icon: Settings,
+        requiresAuth: true,
+        description: 'Configure system-wide settings',
+        requiredRole: 'super_admin',
+      },
+    ],
   },
   {
     id: 'profile',
@@ -313,15 +353,6 @@ export const SYSTEM_ROUTES: NavigationRoute[] = [
     icon: Person,
     requiresAuth: true,
     description: 'User profile and preferences',
-    group: 'system',
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    path: ROUTES.SETTINGS,
-    icon: Settings,
-    requiresAuth: true,
-    description: 'Application settings and configuration',
     group: 'system',
   },
 ];

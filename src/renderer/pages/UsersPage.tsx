@@ -16,7 +16,7 @@
  * @version 1.0.0
  */
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -43,15 +43,20 @@ import {
   TablePagination,
   IconButton,
   Tooltip,
+  Button,
+  Fab,
 } from '@mui/material';
 import {
   Search as SearchIcon,
   Person as PersonIcon,
   Refresh as RefreshIcon,
   FilterList as FilterIcon,
+  Add as AddIcon,
+  PersonAdd as PersonAddIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { DashboardLayout } from '../components/templates';
+import { UserCreateModal, type UserCreateFormData } from '../components/molecules';
 import { useUsers } from '../hooks/useUsers';
 import type { UserListItem } from '../services/UsersService';
 
@@ -253,6 +258,11 @@ export const UsersPage: React.FC = () => {
     resetFilters,
   } = useUsers();
 
+  // Create user modal state
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
   /**
    * Handle search input change
    */
@@ -289,29 +299,99 @@ export const UsersPage: React.FC = () => {
     setPagination({ limit: parseInt(event.target.value, 10), page: 1 });
   };
 
+  /**
+   * Handle create user
+   */
+  const handleCreateUser = useCallback(
+    async (userData: UserCreateFormData): Promise<void> => {
+      try {
+        setCreating(true);
+        setCreateError(null);
+
+        // Call the Electron API to create user
+        if (window.electronAPI?.auth?.createUser) {
+          await window.electronAPI.auth.createUser({
+            email: userData.email,
+            password: userData.password,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            role: userData.role,
+            agencyId: userData.agencyId,
+            createdBy: '1', // Current user ID - should come from auth context
+          });
+
+          // Refresh the users list
+          await refetch();
+          setCreateModalOpen(false);
+        } else {
+          throw new Error('User creation API not available');
+        }
+      } catch (error) {
+        console.error('Failed to create user:', error);
+        setCreateError(error instanceof Error ? error.message : 'Failed to create user');
+      } finally {
+        setCreating(false);
+      }
+    },
+    [refetch]
+  );
+
+  /**
+   * Handle open create modal
+   */
+  const handleOpenCreateModal = useCallback(() => {
+    setCreateError(null);
+    setCreateModalOpen(true);
+  }, []);
+
+  /**
+   * Handle close create modal
+   */
+  const handleCloseCreateModal = useCallback(() => {
+    if (!creating) {
+      setCreateModalOpen(false);
+      setCreateError(null);
+    }
+  }, [creating]);
+
   return (
     <DashboardLayout title='Users'>
       <Container maxWidth='xl' sx={{ py: 2 }}>
         <motion.div variants={containerVariants} initial='hidden' animate='visible'>
           {/* Header */}
           <motion.div variants={itemVariants}>
-            <Box sx={{ mb: 4 }}>
-              <Typography
-                variant='h4'
+            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box>
+                <Typography
+                  variant='h4'
+                  sx={{
+                    fontWeight: 'bold',
+                    background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    mb: 1,
+                  }}
+                >
+                  User Management
+                </Typography>
+                <Typography variant='body1' color='text.secondary'>
+                  Manage and monitor user accounts across your organization
+                </Typography>
+              </Box>
+              <Button
+                variant='contained'
+                startIcon={<PersonAddIcon />}
+                onClick={handleOpenCreateModal}
                 sx={{
-                  fontWeight: 'bold',
                   background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  mb: 1,
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #4c38e8 0%, #5f47f0 100%)',
+                  },
                 }}
               >
-                User Management
-              </Typography>
-              <Typography variant='body1' color='text.secondary'>
-                Manage and monitor user accounts across your organization
-              </Typography>
+                Create User
+              </Button>
             </Box>
           </motion.div>
 
@@ -408,6 +488,15 @@ export const UsersPage: React.FC = () => {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Create User Modal */}
+          <UserCreateModal
+            open={createModalOpen}
+            loading={creating}
+            error={createError}
+            onClose={handleCloseCreateModal}
+            onSubmit={handleCreateUser}
+          />
         </motion.div>
       </Container>
     </DashboardLayout>

@@ -71,18 +71,32 @@ export class GetAgenciesHandler {
       // Step 6: Execute search through repository
       const searchResult = await this.agencyRepository.search(searchCriteria);
 
-      // Step 7: Convert agencies to summary results
-      const agencySummaries: AgencySummary[] = searchResult.agencies.map((agency) =>
-        this.convertAgencyToSummary(agency)
-      );
+      // Step 7: Apply role-based filtering for non-super-admin users
+      let filteredAgencies = searchResult.agencies;
+      let filteredTotal = searchResult.total;
 
-      // Step 8: Calculate pagination metadata
-      const hasMore = searchResult.total > query.offset + query.limit;
+      if (requestingUser.role.value !== SystemRole.SUPER_ADMIN) {
+        // Agency admins can only see their assigned agency
+        if (requestingUser.role.value === SystemRole.ADMIN && requestingUser.agencyId) {
+          filteredAgencies = searchResult.agencies.filter((agency) => agency.id === requestingUser.agencyId);
+          filteredTotal = filteredAgencies.length;
+        } else {
+          // Users without agency assignment see no agencies
+          filteredAgencies = [];
+          filteredTotal = 0;
+        }
+      }
+
+      // Step 8: Convert agencies to summary results
+      const agencySummaries: AgencySummary[] = filteredAgencies.map((agency) => this.convertAgencyToSummary(agency));
+
+      // Step 9: Calculate pagination metadata
+      const hasMore = filteredTotal > query.offset + query.limit;
 
       return {
         success: true,
         agencies: agencySummaries,
-        total: searchResult.total,
+        total: filteredTotal,
         limit: query.limit,
         offset: query.offset,
         hasMore,

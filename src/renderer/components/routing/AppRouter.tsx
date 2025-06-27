@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ProtectedRoute } from './ProtectedRoute';
 import { LoginPage } from '../organisms/LoginPage/LoginPage';
 import { DashboardPage } from '../../pages/DashboardPage';
+import { AdminPanelPage } from '../../pages/AdminPanelPage';
 import { UsersPage } from '../../pages/UsersPage';
 import { AgenciesPage } from '../../pages/AgenciesPage';
 import { EmployeesPage } from '../../pages/EmployeesPage';
@@ -371,9 +372,17 @@ export const AppRouter: React.FC = () => {
 
         {/* System Routes */}
         <Route
+          path='/admin'
+          element={
+            <ProtectedRoute requiredPermissions={['SUPER_ADMIN']}>
+              <AdminPanelPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path='/users'
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredPermissions={['SUPER_ADMIN']}>
               <UsersPage />
             </ProtectedRoute>
           }
