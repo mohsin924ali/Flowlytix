@@ -76,6 +76,10 @@ export const ROUTES = {
 
 /**
  * Navigation menu structure
+ * Simplified structure following user requirements:
+ * - Removed Agencies and Employees (moved to Admin Panel)
+ * - Removed Profile (available in header)
+ * - Simplified Customers, Products, Orders to single entries (like User Management)
  */
 export const NAVIGATION_ROUTES: NavigationRoute[] = [
   {
@@ -89,138 +93,30 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
   },
   {
     id: 'customers',
-    label: 'Customers',
+    label: 'Customer Management',
     path: ROUTES.CUSTOMERS,
     icon: People,
     requiresAuth: true,
     description: 'Customer management and relationships',
     group: 'business',
-    children: [
-      {
-        id: 'customers-list',
-        label: 'All Customers',
-        path: ROUTES.CUSTOMERS_LIST,
-        icon: People,
-        requiresAuth: true,
-        description: 'View all customers',
-      },
-      {
-        id: 'customers-create',
-        label: 'Add Customer',
-        path: ROUTES.CUSTOMERS_CREATE,
-        icon: People,
-        requiresAuth: true,
-        description: 'Create new customer',
-      },
-    ],
   },
   {
     id: 'products',
-    label: 'Products',
+    label: 'Product Management',
     path: ROUTES.PRODUCTS,
     icon: Inventory,
     requiresAuth: true,
     description: 'Product catalog and inventory management',
     group: 'business',
-    children: [
-      {
-        id: 'products-list',
-        label: 'All Products',
-        path: ROUTES.PRODUCTS_LIST,
-        icon: Inventory,
-        requiresAuth: true,
-        description: 'View all products',
-      },
-      {
-        id: 'products-create',
-        label: 'Add Product',
-        path: ROUTES.PRODUCTS_CREATE,
-        icon: Inventory,
-        requiresAuth: true,
-        description: 'Create new product',
-      },
-    ],
   },
   {
     id: 'orders',
-    label: 'Orders',
+    label: 'Order Management',
     path: ROUTES.ORDERS,
     icon: ShoppingCart,
     requiresAuth: true,
     description: 'Order management and processing',
     group: 'business',
-    children: [
-      {
-        id: 'orders-list',
-        label: 'All Orders',
-        path: ROUTES.ORDERS_LIST,
-        icon: ShoppingCart,
-        requiresAuth: true,
-        description: 'View all orders',
-      },
-      {
-        id: 'orders-create',
-        label: 'Create Order',
-        path: ROUTES.ORDERS_CREATE,
-        icon: ShoppingCart,
-        requiresAuth: true,
-        description: 'Create new order',
-      },
-    ],
-  },
-  {
-    id: 'agencies',
-    label: 'Agencies',
-    path: ROUTES.AGENCIES,
-    icon: Business,
-    requiresAuth: true,
-    description: 'Agency management and relationships',
-    group: 'business',
-    children: [
-      {
-        id: 'agencies-list',
-        label: 'All Agencies',
-        path: ROUTES.AGENCIES_LIST,
-        icon: Business,
-        requiresAuth: true,
-        description: 'View all agencies',
-      },
-      {
-        id: 'agencies-create',
-        label: 'Add Agency',
-        path: ROUTES.AGENCIES_CREATE,
-        icon: Business,
-        requiresAuth: true,
-        description: 'Create new agency',
-      },
-    ],
-  },
-  {
-    id: 'employees',
-    label: 'Employees',
-    path: ROUTES.EMPLOYEES,
-    icon: SupervisorAccount,
-    requiresAuth: true,
-    description: 'Employee management and human resources',
-    group: 'business',
-    children: [
-      {
-        id: 'employees-list',
-        label: 'All Employees',
-        path: ROUTES.EMPLOYEES_LIST,
-        icon: SupervisorAccount,
-        requiresAuth: true,
-        description: 'View all employees',
-      },
-      {
-        id: 'employees-create',
-        label: 'Add Employee',
-        path: ROUTES.EMPLOYEES_CREATE,
-        icon: SupervisorAccount,
-        requiresAuth: true,
-        description: 'Create new employee',
-      },
-    ],
   },
   {
     id: 'shipping',
@@ -296,6 +192,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
 
 /**
  * System navigation routes
+ * Profile removed as it's available in header banner
  */
 export const SYSTEM_ROUTES: NavigationRoute[] = [
   {
@@ -345,15 +242,6 @@ export const SYSTEM_ROUTES: NavigationRoute[] = [
         requiredRole: 'super_admin',
       },
     ],
-  },
-  {
-    id: 'profile',
-    label: 'Profile',
-    path: ROUTES.PROFILE,
-    icon: Person,
-    requiresAuth: true,
-    description: 'User profile and preferences',
-    group: 'system',
   },
 ];
 

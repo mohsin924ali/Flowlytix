@@ -317,7 +317,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       style={{
         width: isCollapsed ? 64 : 280,
         height: '100vh',
-        position: 'relative',
+        position: 'fixed',
+        left: 0,
+        top: 0,
+        zIndex: theme.zIndex.drawer,
       }}
     >
       <Box

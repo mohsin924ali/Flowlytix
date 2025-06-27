@@ -207,15 +207,17 @@ export const UserCreateModal: React.FC<UserCreateModalProps> = ({
     const errors = validateForm(formData);
     const hasErrors = Object.keys(errors).length > 0;
 
-    // Debug logging - always log for debugging
-    console.log('=== FORM VALIDATION DEBUG ===');
-    console.log('Form data:', formData);
-    console.log('Validation errors:', errors);
-    console.log('Has errors:', hasErrors);
-    console.log('Form valid:', !hasErrors);
-    console.log('==============================');
+    // Additional validation for completeness
+    const isFormComplete =
+      formData.email.trim().length > 0 &&
+      formData.password.length > 0 &&
+      formData.confirmPassword.length > 0 &&
+      formData.firstName.trim().length > 0 &&
+      formData.lastName.trim().length > 0 &&
+      formData.role.length > 0 &&
+      (formData.role === 'super_admin' || (formData.role === 'admin' && Boolean(formData.agencyId?.trim())));
 
-    setIsFormValid(!hasErrors);
+    setIsFormValid(!hasErrors && isFormComplete);
   }, [formData, validateForm]);
 
   /**
@@ -597,11 +599,6 @@ export const UserCreateModal: React.FC<UserCreateModalProps> = ({
           Cancel
         </Button>
 
-        {/* Debug button - temporary */}
-        <Button onClick={() => setIsFormValid(true)} variant='outlined' color='warning' sx={{ mr: 1 }}>
-          Force Enable
-        </Button>
-
         <Button
           onClick={handleSubmit}
           variant='contained'
@@ -619,7 +616,7 @@ export const UserCreateModal: React.FC<UserCreateModalProps> = ({
           }}
           data-testid='create-user-button'
         >
-          {submitting ? 'Creating...' : `Create User ${isFormValid ? '✓' : '✗'}`}
+          {submitting ? 'Creating...' : 'Create User'}
         </Button>
       </DialogActions>
     </Dialog>
