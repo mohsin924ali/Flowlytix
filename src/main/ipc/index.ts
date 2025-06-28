@@ -451,7 +451,51 @@ async function initializeDatabase(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_agencies_status ON agencies(status);
   `);
 
+  // Migrate database schema to latest version
+  await migrateDatabaseSchema();
+
   console.log('✅ Database initialized with CQRS-compatible schema');
+}
+
+/**
+ * Migrate database schema to latest version
+ * Handles schema changes between versions to ensure compatibility
+ */
+async function migrateDatabaseSchema(): Promise<void> {
+  try {
+    console.log('🔄 Checking database schema for migrations...');
+
+    // Check if agencies table has created_by column (migration for Issue #1)
+    const agencyColumns = db.prepare('PRAGMA table_info(agencies)').all() as Array<{ name: string }>;
+    const hasCreatedByColumn = agencyColumns.some((col) => col.name === 'created_by');
+
+    if (!hasCreatedByColumn) {
+      console.log('🔄 Migrating agencies table: Adding created_by column...');
+      db.exec('ALTER TABLE agencies ADD COLUMN created_by TEXT');
+      console.log('✅ Migration completed: agencies.created_by column added');
+    }
+
+    // Check if agencies table has updated_by column (future-proofing)
+    const hasUpdatedByColumn = agencyColumns.some((col) => col.name === 'updated_by');
+    if (!hasUpdatedByColumn) {
+      console.log('🔄 Migrating agencies table: Adding updated_by column...');
+      db.exec('ALTER TABLE agencies ADD COLUMN updated_by TEXT');
+      console.log('✅ Migration completed: agencies.updated_by column added');
+    }
+
+    // Check if agencies table has version column (future-proofing)
+    const hasVersionColumn = agencyColumns.some((col) => col.name === 'version');
+    if (!hasVersionColumn) {
+      console.log('🔄 Migrating agencies table: Adding version column...');
+      db.exec('ALTER TABLE agencies ADD COLUMN version INTEGER DEFAULT 1');
+      console.log('✅ Migration completed: agencies.version column added');
+    }
+
+    console.log('✅ Database schema migration completed');
+  } catch (error) {
+    console.error('❌ Database schema migration failed:', error);
+    // Don't throw - allow application to continue with compatibility mode
+  }
 }
 
 /**
@@ -1259,27 +1303,62 @@ async function registerBasicAgencyHandler(): Promise<void> {
         notifications: request.notifications || { lowStock: true, overduePayments: true, newOrders: true },
       };
 
-      db.prepare(
+      // Check if created_by column exists (database migration compatibility)
+      let hasCreatedByColumn = false;
+      try {
+        const columns = db.prepare('PRAGMA table_info(agencies)').all() as Array<{ name: string }>;
+        hasCreatedByColumn = columns.some((col) => col.name === 'created_by');
+      } catch (error) {
+        console.warn('⚠️ Could not check table schema:', error);
+      }
+
+      if (hasCreatedByColumn) {
+        // Use full INSERT with created_by column (new schema)
+        db.prepare(
+          `
+          INSERT INTO agencies (
+            id, name, database_path, contact_person, phone, email, address,
+            settings, status, created_at, updated_at, created_by
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `
-        INSERT INTO agencies (
-          id, name, database_path, contact_person, phone, email, address,
-          settings, status, created_at, updated_at, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `
-      ).run(
-        agencyId,
-        request.name,
-        `${agencyId}.db`,
-        request.contactPerson || null,
-        request.phone || null,
-        request.email || null,
-        request.address || null,
-        JSON.stringify(settings),
-        'active',
-        now,
-        now,
-        'system'
-      );
+        ).run(
+          agencyId,
+          request.name,
+          `${agencyId}.db`,
+          request.contactPerson || null,
+          request.phone || null,
+          request.email || null,
+          request.address || null,
+          JSON.stringify(settings),
+          'active',
+          now,
+          now,
+          'system'
+        );
+      } else {
+        // Use INSERT without created_by column (legacy schema compatibility)
+        console.log('⚠️ Using legacy schema compatibility mode for agencies table');
+        db.prepare(
+          `
+          INSERT INTO agencies (
+            id, name, database_path, contact_person, phone, email, address,
+            settings, status, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `
+        ).run(
+          agencyId,
+          request.name,
+          `${agencyId}.db`,
+          request.contactPerson || null,
+          request.phone || null,
+          request.email || null,
+          request.address || null,
+          JSON.stringify(settings),
+          'active',
+          now,
+          now
+        );
+      }
 
       console.log('✅ Agency created successfully:', agencyId);
       return {
