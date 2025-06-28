@@ -952,48 +952,57 @@ const electronAPI: ElectronAPI = {
 
   // Authentication
   auth: {
-    authenticateUser: (credentials) => ipcRenderer.invoke('auth:authenticate', credentials),
+    authenticateUser: async (credentials) => {
+      console.log('🔌 Preload: authenticateUser called with:', credentials);
+      try {
+        const result = await ipcRenderer.invoke('auth:authenticate-user', credentials);
+        console.log('🔌 Preload: IPC result received:', result);
+        return result;
+      } catch (error) {
+        console.error('🔌 Preload: IPC error:', error);
+        throw error;
+      }
+    },
     createUser: (params) => ipcRenderer.invoke('auth:create-user', params),
-    getUserPermissions: (params) => ipcRenderer.invoke('auth:get-user', params.userId),
+    getUserPermissions: (params) => ipcRenderer.invoke('auth:get-user-permissions', params),
     listUsers: (params) => ipcRenderer.invoke('auth:list-users', params),
   },
 
   // Agency management
   agency: {
-    createAgency: (data) => ipcRenderer.invoke('agency:create', data),
-    getAgencies: () => ipcRenderer.invoke('agency:list'),
-    getAgencyById: (params) => ipcRenderer.invoke('agency:list', { agencyId: params.agencyId }),
+    createAgency: (data) => ipcRenderer.invoke('agency:create-agency', data),
+    getAgencies: () => ipcRenderer.invoke('agency:get-agencies'),
+    getAgencyById: (params) => ipcRenderer.invoke('agency:get-agency-by-id', params),
     updateAgency: (data) => ipcRenderer.invoke('agency:update-agency', data),
   },
 
   // Business domain operations
   inventory: {
-    getProducts: (filters) => ipcRenderer.invoke('product:list', filters),
-    createProduct: (product) => ipcRenderer.invoke('product:create', product),
-    updateProduct: (id, updates) => ipcRenderer.invoke('product:update', id, updates),
-    deleteProduct: (id) => ipcRenderer.invoke('product:delete', id),
+    getProducts: (filters) => ipcRenderer.invoke('inventory:get-products', filters),
+    createProduct: (product) => ipcRenderer.invoke('inventory:create-product', product),
+    updateProduct: (id, updates) => ipcRenderer.invoke('inventory:update-product', id, updates),
+    deleteProduct: (id) => ipcRenderer.invoke('inventory:delete-product', id),
   },
 
   orders: {
-    getOrders: (filters) => ipcRenderer.invoke('order:list', filters),
-    createOrder: (order) => ipcRenderer.invoke('order:create', order),
-    updateOrder: (id, updates) => ipcRenderer.invoke('order:update', id, updates),
-    cancelOrder: (id, reason) =>
-      ipcRenderer.invoke('order:update', id, { status: 'cancelled', cancellationReason: reason }),
+    getOrders: (filters) => ipcRenderer.invoke('order:get-orders', filters),
+    createOrder: (order) => ipcRenderer.invoke('order:create-order', order),
+    updateOrder: (id, updates) => ipcRenderer.invoke('order:update-order', id, updates),
+    cancelOrder: (id, reason) => ipcRenderer.invoke('order:cancel-order', id, { reason }),
   },
 
   customers: {
-    getCustomers: (filters) => ipcRenderer.invoke('customer:list', filters),
-    createCustomer: (customer) => ipcRenderer.invoke('customer:create', customer),
-    updateCustomer: (id, updates) => ipcRenderer.invoke('customer:update', id, updates),
-    deleteCustomer: (id) => ipcRenderer.invoke('customer:delete', id),
+    getCustomers: (filters) => ipcRenderer.invoke('customer:get-customers', filters),
+    createCustomer: (customer) => ipcRenderer.invoke('customer:create-customer', customer),
+    updateCustomer: (id, updates) => ipcRenderer.invoke('customer:update-customer', id, updates),
+    deleteCustomer: (id) => ipcRenderer.invoke('customer:delete-customer', id),
   },
 
   // Shipping operations
   shipping: {
-    getShipments: (filters?: any) => ipcRenderer.invoke('shipping:list', filters),
-    createShipment: (shipment: any) => ipcRenderer.invoke('shipping:create', shipment),
-    trackShipment: (trackingNumber: string) => ipcRenderer.invoke('shipping:track', trackingNumber),
+    getShipments: (filters?: any) => ipcRenderer.invoke('shipping:get-shipments', filters),
+    createShipment: (shipment: any) => ipcRenderer.invoke('shipping:create-shipping', shipment),
+    trackShipment: (trackingNumber: string) => ipcRenderer.invoke('shipping:get-shipping-by-tracking', trackingNumber),
   },
 
   // Lot Batch operations

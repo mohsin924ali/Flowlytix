@@ -35,6 +35,11 @@ export const useAuthStore = create<AuthStore>()(
          * @param credentials - User login credentials
          */
         login: async (credentials: LoginCredentials): Promise<void> => {
+          console.log('🔐 Auth Store: Starting login process with credentials:', {
+            email: credentials.email,
+            passwordLength: credentials.password.length,
+          });
+
           set((state) => {
             state.isLoading = true;
             state.error = null;
@@ -43,13 +48,20 @@ export const useAuthStore = create<AuthStore>()(
           try {
             // Check if Electron API is available
             if (typeof window === 'undefined' || !window.electronAPI) {
+              console.log('❌ Auth Store: Electron API not available');
               throw new Error(ERROR_MESSAGES.ELECTRON_API_UNAVAILABLE);
             }
+
+            console.log('✅ Auth Store: Electron API available, calling AuthService.authenticate...');
 
             // Attempt authentication
             const result = await AuthService.authenticate(credentials);
 
+            console.log('📡 Auth Store: AuthService.authenticate returned:', JSON.stringify(result, null, 2));
+
             if (result.success && result.user) {
+              console.log('✅ Auth Store: Authentication successful, updating state...');
+
               // Update state synchronously
               set((state) => {
                 state.user = result.user!;
@@ -73,10 +85,14 @@ export const useAuthStore = create<AuthStore>()(
                 user: result.user.email,
               });
             } else {
+              console.log('❌ Auth Store: Authentication failed with result:', result);
               throw new Error(result.error || ERROR_MESSAGES.AUTHENTICATION_FAILED);
             }
           } catch (error) {
+            console.log('💥 Auth Store: Login error caught:', error);
             const errorMessage = error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR;
+
+            console.log('❌ Auth Store: Setting error state:', errorMessage);
 
             set((state) => {
               state.isLoading = false;

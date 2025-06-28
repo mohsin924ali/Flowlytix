@@ -50,13 +50,15 @@ class ElectronApp {
     this.setupAppEventHandlers();
 
     // Register IPC handlers
-    this.registerIpcHandlers();
+    this.registerIpcHandlers().catch((error) => {
+      console.error('Failed to register IPC handlers during initialization:', error);
+    });
   }
 
-  private registerIpcHandlers(): void {
+  private async registerIpcHandlers(): Promise<void> {
     try {
-      const { registerIpcHandlers } = require('./ipc/ipcHandlers');
-      registerIpcHandlers();
+      const { registerIpcHandlers } = await import('./ipc');
+      await registerIpcHandlers();
     } catch (error) {
       console.error('Failed to register IPC handlers:', error);
     }

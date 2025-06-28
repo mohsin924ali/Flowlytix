@@ -37,6 +37,8 @@ export class AuthService {
       }
 
       console.log('🔗 Calling electronAPI.auth.authenticateUser...');
+      console.log('🔗 Available electronAPI methods:', Object.keys(window.electronAPI));
+      console.log('🔗 Available auth methods:', Object.keys(window.electronAPI.auth));
 
       // Call the main process via IPC
       const result = await window.electronAPI.auth.authenticateUser({
@@ -45,27 +47,29 @@ export class AuthService {
       });
 
       console.log('📡 IPC Response received:', result);
+      console.log('📡 IPC Response type:', typeof result);
+      console.log('📡 IPC Response keys:', Object.keys(result || {}));
 
-      if (result.success && result.data?.user) {
-        console.log('✅ Authentication successful, user:', result.data.user);
+      if (result.success && result.user) {
+        console.log('✅ Authentication successful, user:', result.user);
 
         // Use the user data from the IPC response
         return {
           success: true,
           user: {
-            id: result.data.user.id,
-            email: result.data.user.email,
-            firstName: result.data.user.firstName,
-            lastName: result.data.user.lastName,
-            role: result.data.user.role,
-            permissions: result.data.user.permissions || [],
+            id: result.user.id,
+            email: result.user.email,
+            firstName: result.user.firstName,
+            lastName: result.user.lastName,
+            role: result.user.role,
+            permissions: result.user.permissions || [],
           },
         };
       } else {
-        console.log('❌ Authentication failed:', result.error);
+        console.log('❌ Authentication failed:', result.message || result.error);
         return {
           success: false,
-          error: result.error || 'Authentication failed',
+          error: result.message || result.error || 'Authentication failed',
         };
       }
     } catch (error) {
