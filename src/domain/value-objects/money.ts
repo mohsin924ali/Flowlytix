@@ -308,7 +308,9 @@ export class Money {
     let remainder = this._amount;
 
     for (let i = 0; i < ratios.length; i++) {
-      const allocation = Math.floor((this._amount * ratios[i]) / totalRatio);
+      const ratio = ratios[i];
+      if (ratio === undefined) continue;
+      const allocation = Math.floor((this._amount * ratio) / totalRatio);
       results.push(new Money(allocation, this._currency));
       remainder -= allocation;
     }
@@ -316,7 +318,10 @@ export class Money {
     // Distribute remainder to maintain total
     for (let i = 0; i < remainder; i++) {
       const index = i % results.length;
-      results[index] = new Money(results[index]._amount + 1, this._currency);
+      const currentResult = results[index];
+      if (currentResult) {
+        results[index] = new Money(currentResult._amount + 1, this._currency);
+      }
     }
 
     return results;

@@ -47,6 +47,7 @@ interface UserPersistenceData {
   login_attempts: number;
   locked_until: number | null;
   last_login_at: number | null;
+  agency_id: string | null;
   version: number;
   created_by: string;
   created_at: number;
@@ -518,10 +519,11 @@ export class SqliteUserRepository implements IUserRepository {
       role: row.role,
       status: row.status as any, // UserStatus enum will be validated by User.fromPersistence
       loginAttempts: row.login_attempts,
+      agencyId: row.agency_id || undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
-      ...(row.last_login_at && { lastLoginAt: new Date(row.last_login_at) }),
-      ...(row.locked_until && { lockedUntil: new Date(row.locked_until) }),
+      lastLoginAt: row.last_login_at ? new Date(row.last_login_at) : undefined,
+      lockedUntil: row.locked_until ? new Date(row.locked_until) : undefined,
     };
 
     return User.fromPersistence(persistenceData);
@@ -665,4 +667,15 @@ class SqliteUserRepositoryTransaction implements IUserRepositoryTransaction {
   isActive(): boolean {
     return this.active;
   }
+}
+
+/**
+ * Factory function to create SqliteUserRepository
+ * Following same pattern as other repositories for consistency
+ */
+export function createUserRepository(connection: DatabaseConnection): IUserRepository {
+  if (!connection) {
+    throw new UserRepositoryConnectionError('Database connection is required', 'constructor');
+  }
+  return new SqliteUserRepository(connection);
 }

@@ -9,6 +9,7 @@ import { immer } from 'zustand/middleware/immer';
 import type { AuthStore, LoginCredentials, User } from '../types/auth.types';
 import { AUTH_CONFIG, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants/app.constants';
 import { AuthService } from '../services/AuthService';
+import { useAgencyStore } from './agency.store';
 
 /**
  * Initial authentication state
@@ -70,6 +71,46 @@ export const useAuthStore = create<AuthStore>()(
                 state.error = null;
               });
 
+              // CRITICAL FIX: Update agency store with user's assigned agency
+              if (result.user.agency) {
+                console.log('🏢 Auth Store: Setting assigned agency in agency store:', result.user.agency);
+                useAgencyStore.getState().setCurrentAgency({
+                  id: result.user.agency.id,
+                  name: result.user.agency.name,
+                  status: result.user.agency.status,
+                  contactPerson: result.user.agency.contactPerson,
+                  phone: result.user.agency.phone,
+                  email: result.user.agency.email,
+                  address: result.user.agency.address,
+                  createdAt: new Date().toISOString(), // TODO: Get from backend if needed
+                  databasePath: `${result.user.agency.id}.db`, // Standard format
+                  settings: {
+                    // Default settings - these should come from backend in future
+                    allowCreditSales: true,
+                    defaultCreditDays: 30,
+                    maxCreditLimit: 50000,
+                    requireApprovalForOrders: false,
+                    enableInventoryTracking: true,
+                    taxRate: 0.15,
+                    currency: 'USD',
+                    businessHours: {
+                      start: '09:00',
+                      end: '17:00',
+                      timezone: 'UTC',
+                    },
+                    notifications: {
+                      lowStock: true,
+                      overduePayments: true,
+                      newOrders: true,
+                    },
+                  },
+                });
+              } else if (result.user.role === 'super_admin') {
+                // For super admins without specific agency assignment, clear current agency
+                console.log('🏢 Auth Store: Super admin login - clearing current agency');
+                useAgencyStore.getState().clearCurrentAgency();
+              }
+
               // Store session data
               localStorage.setItem(
                 AUTH_CONFIG.SESSION_STORAGE_KEY,
@@ -83,6 +124,7 @@ export const useAuthStore = create<AuthStore>()(
               console.log('✅ Authentication state updated:', {
                 isAuthenticated: true,
                 user: result.user.email,
+                assignedAgency: result.user.agency?.name || 'None',
               });
             } else {
               console.log('❌ Auth Store: Authentication failed with result:', result);
@@ -115,6 +157,9 @@ export const useAuthStore = create<AuthStore>()(
             state.isLoading = false;
             state.error = null;
           });
+
+          // Clear agency store on logout
+          useAgencyStore.getState().clearCurrentAgency();
 
           // Clear session data
           localStorage.removeItem(AUTH_CONFIG.SESSION_STORAGE_KEY);

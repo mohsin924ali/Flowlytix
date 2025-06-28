@@ -154,7 +154,7 @@ export class DatabaseConnection {
       }
 
       const result = this.database.prepare('SELECT 1 as health').get();
-      return result && (result as any).health === 1;
+      return Boolean(result && (result as { health: number }).health === 1);
     } catch {
       return false;
     }

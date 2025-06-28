@@ -5,7 +5,8 @@
  */
 
 import type { Email } from '../value-objects/email';
-import type { Role, SystemRole, Permission } from '../value-objects/role';
+import type { Role, Permission } from '../value-objects/role';
+import { SystemRole } from '../value-objects/role';
 import type { Password, HashedPassword } from '../value-objects/password';
 
 /**
@@ -540,7 +541,9 @@ export class User {
       status: params.status || UserStatus.ACTIVE,
       createdAt: now,
       updatedAt: now,
+      lastLoginAt: undefined,
       loginAttempts: 0,
+      lockedUntil: undefined,
       agencyId: params.agencyId,
     };
 

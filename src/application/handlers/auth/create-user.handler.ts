@@ -11,8 +11,8 @@ import { Role, Permission } from '../../../domain/value-objects/role';
 export interface IUserRepository {
   findByEmail(email: Email): Promise<User | null>;
   findById(id: string): Promise<User | null>;
-  save(user: User): Promise<void>;
-  exists(email: Email): Promise<boolean>;
+  save(user: User): Promise<User>;
+  existsByEmail(email: Email): Promise<boolean>;
 }
 
 /**

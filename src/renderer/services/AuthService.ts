@@ -12,6 +12,16 @@ export interface AuthResult {
     lastName: string;
     role: string;
     permissions: string[];
+    agencyId?: string;
+    agency?: {
+      id: string;
+      name: string;
+      status: string;
+      contactPerson?: string;
+      phone?: string;
+      email?: string;
+      address?: string;
+    };
   };
   error?: string;
 }
@@ -53,7 +63,7 @@ export class AuthService {
       if (result.success && result.user) {
         console.log('✅ Authentication successful, user:', result.user);
 
-        // Use the user data from the IPC response
+        // Use the user data from the IPC response (including agency info)
         return {
           success: true,
           user: {
@@ -63,6 +73,8 @@ export class AuthService {
             lastName: result.user.lastName,
             role: result.user.role,
             permissions: result.user.permissions || [],
+            agencyId: result.user.agencyId,
+            agency: result.user.agency, // Pass through complete agency information
           },
         };
       } else {
