@@ -6,13 +6,17 @@ import {
 import { User } from '../../../domain/entities/user';
 import { Email } from '../../../domain/value-objects/email';
 import { IUserRepository } from './create-user.handler';
+import { IAgencyRepository } from '../../../domain/repositories/agency.repository';
 
 /**
  * Handler for AuthenticateUser command
- * Implements secure offline authentication logic
+ * Implements secure offline authentication logic with agency status validation
  */
 export class AuthenticateUserHandler {
-  constructor(private readonly userRepository: IUserRepository) {}
+  constructor(
+    private readonly userRepository: IUserRepository,
+    private readonly agencyRepository: IAgencyRepository
+  ) {}
 
   /**
    * Handles user authentication command
@@ -50,6 +54,23 @@ export class AuthenticateUserHandler {
       const authResult = user.authenticate(command.password);
 
       if (authResult) {
+        // Check agency status for admin users before completing authentication
+        if (user.agencyId && user.role.name === 'admin') {
+          try {
+            const agency = await this.agencyRepository.findById(user.agencyId);
+            if (agency && agency.status !== 'active') {
+              return {
+                success: false,
+                error: 'Your agency has been deactivated by the super admin. Please contact support for assistance.',
+                isAgencyInactive: true,
+              };
+            }
+          } catch (error) {
+            // If agency lookup fails, still allow authentication but log the issue
+            console.error('Failed to check agency status during authentication:', error);
+          }
+        }
+
         // Authentication successful
         await this.userRepository.save(user); // Save updated login time and reset attempts
 
@@ -92,8 +113,12 @@ export class AuthenticateUserHandler {
 /**
  * Factory function to create AuthenticateUserHandler
  * @param userRepository - User repository implementation
+ * @param agencyRepository - Agency repository implementation
  * @returns AuthenticateUserHandler instance
  */
-export function createAuthenticateUserHandler(userRepository: IUserRepository): AuthenticateUserHandler {
-  return new AuthenticateUserHandler(userRepository);
+export function createAuthenticateUserHandler(
+  userRepository: IUserRepository,
+  agencyRepository: IAgencyRepository
+): AuthenticateUserHandler {
+  return new AuthenticateUserHandler(userRepository, agencyRepository);
 }

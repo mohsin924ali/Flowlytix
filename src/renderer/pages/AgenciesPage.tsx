@@ -57,8 +57,9 @@ import {
   Person as PersonIcon,
   LocationOn as LocationIcon,
 } from '@mui/icons-material';
-import { Agency, CreateAgencyParams, AgencyService } from '../services/AgencyService';
+import { Agency, CreateAgencyParams, UpdateAgencyParams, AgencyService } from '../services/AgencyService';
 import { AgencyEditModal } from '../components/molecules/AgencyEditModal';
+import { DashboardLayout } from '../components/templates';
 
 /**
  * Agencies Page Component - Working Version
@@ -189,13 +190,16 @@ export function AgenciesPage(): JSX.Element {
   const handleAgencyUpdate = useCallback(
     async (agencyId: string, formData: any) => {
       try {
-        await AgencyService.updateAgency(agencyId, {
-          name: formData.name,
-          contactPerson: formData.contactPerson,
-          email: formData.email,
-          phone: formData.phone,
-          address: formData.address,
-        });
+        // Build update object with only defined values
+        const updateData: UpdateAgencyParams = {};
+        if (formData.name !== undefined) updateData.name = formData.name;
+        if (formData.contactPerson !== undefined) updateData.contactPerson = formData.contactPerson;
+        if (formData.email !== undefined) updateData.email = formData.email;
+        if (formData.phone !== undefined) updateData.phone = formData.phone;
+        if (formData.address !== undefined) updateData.address = formData.address;
+        if (formData.status !== undefined) updateData.status = formData.status;
+
+        await AgencyService.updateAgency(agencyId, updateData);
 
         // Refresh the list
         await loadAgencies();
@@ -270,315 +274,317 @@ export function AgenciesPage(): JSX.Element {
   );
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Paper sx={{ p: 3 }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <BusinessIcon sx={{ mr: 2, fontSize: 32, color: 'primary.main' }} />
-            <Box>
-              <Typography variant='h4' component='h1' sx={{ fontWeight: 600 }}>
-                Agency Management
-              </Typography>
-              <Typography variant='body2' color='text.secondary'>
-                Manage distribution agencies and their settings
-              </Typography>
+    <DashboardLayout title='Agencies'>
+      <Box sx={{ p: 3 }}>
+        <Paper sx={{ p: 3 }}>
+          {/* Header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <BusinessIcon sx={{ mr: 2, fontSize: 32, color: 'primary.main' }} />
+              <Box>
+                <Typography variant='h4' component='h1' sx={{ fontWeight: 600 }}>
+                  Agency Management
+                </Typography>
+                <Typography variant='body2' color='text.secondary'>
+                  Manage distribution agencies and their settings
+                </Typography>
+              </Box>
             </Box>
-          </Box>
-          <Button
-            variant='contained'
-            startIcon={<AddIcon />}
-            onClick={() => setCreateDialogOpen(true)}
-            sx={{
-              background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #4338ca 0%, #513ff2 100%)',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 8px 25px rgba(81, 63, 242, 0.3)',
-              },
-              transition: 'all 0.2s ease-in-out',
-            }}
-          >
-            Add Agency
-          </Button>
-        </Box>
-
-        {/* Filters */}
-        <Card sx={{ mb: 3, bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
-          <CardContent>
-            <Grid container spacing={2} alignItems='center'>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  placeholder='Search agencies...'
-                  value={searchValue}
-                  onChange={handleSearchChange}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position='start'>
-                        <SearchIcon color='action' />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <FormControl fullWidth>
-                  <InputLabel>Status</InputLabel>
-                  <Select value={statusFilter} label='Status' onChange={handleStatusFilterChange}>
-                    <MenuItem value=''>All Statuses</MenuItem>
-                    <MenuItem value='active'>Active</MenuItem>
-                    <MenuItem value='inactive'>Inactive</MenuItem>
-                    <MenuItem value='suspended'>Suspended</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <Button
-                  variant='outlined'
-                  startIcon={<ClearIcon />}
-                  onClick={handleClearFilters}
-                  disabled={!searchValue && !statusFilter}
-                >
-                  Clear Filters
-                </Button>
-              </Grid>
-              <Grid item xs={12} md={2}>
-                <Button
-                  variant='outlined'
-                  startIcon={loading ? <CircularProgress size={16} /> : <RefreshIcon />}
-                  onClick={loadAgencies}
-                  disabled={loading}
-                  fullWidth
-                >
-                  Refresh
-                </Button>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-
-        {/* Error Alert */}
-        {error && (
-          <Alert severity='error' sx={{ mb: 3 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-
-        {/* Agencies Table */}
-        <TableContainer component={Paper} sx={{ mb: 3 }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Agency</TableCell>
-                <TableCell>Contact</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Database</TableCell>
-                <TableCell align='right'>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                // Loading skeletons
-                Array.from({ length: pageSize }).map((_, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <Skeleton width='60%' />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton width='80%' />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton width='40%' />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton width='70%' />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton width='30%' />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : agencies.length > 0 ? (
-                agencies.map((agency) => (
-                  <TableRow key={agency.id} hover>
-                    <TableCell>
-                      <Box>
-                        <Typography variant='subtitle2' sx={{ fontWeight: 600 }}>
-                          {agency.name}
-                        </Typography>
-                        {agency.address && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                            <LocationIcon sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
-                            <Typography variant='caption' color='text.secondary'>
-                              {agency.address}
-                            </Typography>
-                          </Box>
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box>
-                        {agency.contactPerson && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                            <PersonIcon sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
-                            <Typography variant='body2'>{agency.contactPerson}</Typography>
-                          </Box>
-                        )}
-                        {agency.email && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                            <EmailIcon sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
-                            <Typography variant='caption' color='text.secondary'>
-                              {agency.email}
-                            </Typography>
-                          </Box>
-                        )}
-                        {agency.phone && (
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <PhoneIcon sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
-                            <Typography variant='caption' color='text.secondary'>
-                              {agency.phone}
-                            </Typography>
-                          </Box>
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={agency.status.charAt(0).toUpperCase() + agency.status.slice(1)}
-                        size='small'
-                        sx={{
-                          backgroundColor: alpha(getStatusColor(agency.status), 0.1),
-                          color: getStatusColor(agency.status),
-                          border: `1px solid ${alpha(getStatusColor(agency.status), 0.3)}`,
-                          fontWeight: 600,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <DatabaseIcon sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
-                        <Typography variant='caption' color='text.secondary'>
-                          {agency.databasePath?.split('/').pop() || 'N/A'}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell align='right'>
-                      <Tooltip title='Edit Agency'>
-                        <IconButton
-                          size='small'
-                          onClick={() => handleEditAgency(agency)}
-                          sx={{
-                            '&:hover': {
-                              backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                            },
-                          }}
-                        >
-                          <EditIcon fontSize='small' />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} align='center' sx={{ py: 4 }}>
-                    <Typography variant='body1' color='text.secondary'>
-                      No agencies found
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        {/* Pagination */}
-        <TablePagination
-          component='div'
-          count={totalCount}
-          page={page}
-          onPageChange={handlePageChange}
-          rowsPerPage={pageSize}
-          onRowsPerPageChange={handlePageSizeChange}
-          rowsPerPageOptions={[10, 25, 50, 100]}
-        />
-
-        {/* Create Agency Dialog */}
-        <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth='md' fullWidth>
-          <DialogTitle>Create New Agency</DialogTitle>
-          <DialogContent>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label='Agency Name'
-                  value={createForm.name}
-                  onChange={handleCreateFormChange('name')}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label='Contact Person'
-                  value={createForm.contactPerson}
-                  onChange={handleCreateFormChange('contactPerson')}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label='Email'
-                  type='email'
-                  value={createForm.email}
-                  onChange={handleCreateFormChange('email')}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label='Phone'
-                  value={createForm.phone}
-                  onChange={handleCreateFormChange('phone')}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label='Address'
-                  value={createForm.address}
-                  onChange={handleCreateFormChange('address')}
-                  multiline
-                  rows={2}
-                />
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
             <Button
-              onClick={handleCreateAgency}
               variant='contained'
-              disabled={creating || !createForm.name}
-              startIcon={creating ? <CircularProgress size={16} /> : <AddIcon />}
+              startIcon={<AddIcon />}
+              onClick={() => setCreateDialogOpen(true)}
+              sx={{
+                background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #4338ca 0%, #513ff2 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 8px 25px rgba(81, 63, 242, 0.3)',
+                },
+                transition: 'all 0.2s ease-in-out',
+              }}
             >
-              {creating ? 'Creating...' : 'Create Agency'}
+              Add Agency
             </Button>
-          </DialogActions>
-        </Dialog>
+          </Box>
 
-        {/* Edit Agency Modal */}
-        <AgencyEditModal
-          open={editModalOpen}
-          agency={editingAgency}
-          onClose={() => {
-            setEditModalOpen(false);
-            setEditingAgency(null);
-          }}
-          onSubmit={handleAgencyUpdate}
-        />
-      </Paper>
-    </Box>
+          {/* Filters */}
+          <Card sx={{ mb: 3, bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
+            <CardContent>
+              <Grid container spacing={2} alignItems='center'>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    placeholder='Search agencies...'
+                    value={searchValue}
+                    onChange={handleSearchChange}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <SearchIcon color='action' />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <FormControl fullWidth>
+                    <InputLabel>Status</InputLabel>
+                    <Select value={statusFilter} label='Status' onChange={handleStatusFilterChange}>
+                      <MenuItem value=''>All Statuses</MenuItem>
+                      <MenuItem value='active'>Active</MenuItem>
+                      <MenuItem value='inactive'>Inactive</MenuItem>
+                      <MenuItem value='suspended'>Suspended</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Button
+                    variant='outlined'
+                    startIcon={<ClearIcon />}
+                    onClick={handleClearFilters}
+                    disabled={!searchValue && !statusFilter}
+                  >
+                    Clear Filters
+                  </Button>
+                </Grid>
+                <Grid item xs={12} md={2}>
+                  <Button
+                    variant='outlined'
+                    startIcon={loading ? <CircularProgress size={16} /> : <RefreshIcon />}
+                    onClick={loadAgencies}
+                    disabled={loading}
+                    fullWidth
+                  >
+                    Refresh
+                  </Button>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+
+          {/* Error Alert */}
+          {error && (
+            <Alert severity='error' sx={{ mb: 3 }} onClose={() => setError(null)}>
+              {error}
+            </Alert>
+          )}
+
+          {/* Agencies Table */}
+          <TableContainer component={Paper} sx={{ mb: 3 }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Agency</TableCell>
+                  <TableCell>Contact</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Database</TableCell>
+                  <TableCell align='right'>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {loading ? (
+                  // Loading skeletons
+                  Array.from({ length: pageSize }).map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Skeleton width='60%' />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton width='80%' />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton width='40%' />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton width='70%' />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton width='30%' />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : agencies.length > 0 ? (
+                  agencies.map((agency) => (
+                    <TableRow key={agency.id} hover>
+                      <TableCell>
+                        <Box>
+                          <Typography variant='subtitle2' sx={{ fontWeight: 600 }}>
+                            {agency.name}
+                          </Typography>
+                          {agency.address && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                              <LocationIcon sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
+                              <Typography variant='caption' color='text.secondary'>
+                                {agency.address}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box>
+                          {agency.contactPerson && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                              <PersonIcon sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
+                              <Typography variant='body2'>{agency.contactPerson}</Typography>
+                            </Box>
+                          )}
+                          {agency.email && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                              <EmailIcon sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
+                              <Typography variant='caption' color='text.secondary'>
+                                {agency.email}
+                              </Typography>
+                            </Box>
+                          )}
+                          {agency.phone && (
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <PhoneIcon sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
+                              <Typography variant='caption' color='text.secondary'>
+                                {agency.phone}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={agency.status.charAt(0).toUpperCase() + agency.status.slice(1)}
+                          size='small'
+                          sx={{
+                            backgroundColor: alpha(getStatusColor(agency.status), 0.1),
+                            color: getStatusColor(agency.status),
+                            border: `1px solid ${alpha(getStatusColor(agency.status), 0.3)}`,
+                            fontWeight: 600,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <DatabaseIcon sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
+                          <Typography variant='caption' color='text.secondary'>
+                            {agency.databasePath?.split('/').pop() || 'N/A'}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell align='right'>
+                        <Tooltip title='Edit Agency'>
+                          <IconButton
+                            size='small'
+                            onClick={() => handleEditAgency(agency)}
+                            sx={{
+                              '&:hover': {
+                                backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                              },
+                            }}
+                          >
+                            <EditIcon fontSize='small' />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} align='center' sx={{ py: 4 }}>
+                      <Typography variant='body1' color='text.secondary'>
+                        No agencies found
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          {/* Pagination */}
+          <TablePagination
+            component='div'
+            count={totalCount}
+            page={page}
+            onPageChange={handlePageChange}
+            rowsPerPage={pageSize}
+            onRowsPerPageChange={handlePageSizeChange}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+          />
+
+          {/* Create Agency Dialog */}
+          <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth='md' fullWidth>
+            <DialogTitle>Create New Agency</DialogTitle>
+            <DialogContent>
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label='Agency Name'
+                    value={createForm.name}
+                    onChange={handleCreateFormChange('name')}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label='Contact Person'
+                    value={createForm.contactPerson}
+                    onChange={handleCreateFormChange('contactPerson')}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label='Email'
+                    type='email'
+                    value={createForm.email}
+                    onChange={handleCreateFormChange('email')}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label='Phone'
+                    value={createForm.phone}
+                    onChange={handleCreateFormChange('phone')}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label='Address'
+                    value={createForm.address}
+                    onChange={handleCreateFormChange('address')}
+                    multiline
+                    rows={2}
+                  />
+                </Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+              <Button
+                onClick={handleCreateAgency}
+                variant='contained'
+                disabled={creating || !createForm.name}
+                startIcon={creating ? <CircularProgress size={16} /> : <AddIcon />}
+              >
+                {creating ? 'Creating...' : 'Create Agency'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Edit Agency Modal */}
+          <AgencyEditModal
+            open={editModalOpen}
+            agency={editingAgency}
+            onClose={() => {
+              setEditModalOpen(false);
+              setEditingAgency(null);
+            }}
+            onSubmit={handleAgencyUpdate}
+          />
+        </Paper>
+      </Box>
+    </DashboardLayout>
   );
 }

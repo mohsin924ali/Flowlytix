@@ -26,7 +26,8 @@ import {
   validateListUsersQueryBusinessRules,
 } from '../../queries/auth/list-users.query';
 import { User } from '../../../domain/entities/user';
-import { IUserRepository } from './create-user.handler';
+import { IUserRepository } from '../../../domain/repositories/user.repository';
+import { IAgencyRepository } from '../../../domain/repositories/agency.repository';
 import { Permission, SystemRole } from '../../../domain/value-objects/role';
 
 /**
@@ -34,7 +35,10 @@ import { Permission, SystemRole } from '../../../domain/value-objects/role';
  * Implements secure user listing with authorization checks and filtering
  */
 export class ListUsersHandler {
-  constructor(private readonly userRepository: IUserRepository) {}
+  constructor(
+    private readonly userRepository: IUserRepository,
+    private readonly agencyRepository: IAgencyRepository
+  ) {}
 
   /**
    * Handles list users query with filtering and pagination
@@ -77,30 +81,60 @@ export class ListUsersHandler {
         };
       }
 
-      // Step 5: For now, return a simple mock response to match existing pattern
-      // Note: This is a simplified implementation to establish the foundation
-      // The actual user listing will be implemented when the repository interface is extended
-      const mockUsers: UserListItem[] = [
-        {
-          id: '1',
-          email: 'admin@flowlytix.com',
-          firstName: 'Admin',
-          lastName: 'User',
-          fullName: 'Admin User',
-          role: 'admin',
-          roleName: 'Administrator',
-          status: 'active',
-          createdAt: new Date(),
-          lastLoginAt: new Date(),
-          isAccountLocked: false,
-          loginAttempts: 0,
-        },
-      ];
+      // Step 5: Get users from repository using search method
+      const searchResult = await this.userRepository.search({
+        limit: 1000,
+        offset: 0,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      });
+      const allUsers = searchResult.users;
 
-      // Apply basic filtering and pagination
-      const filteredUsers = mockUsers.filter((user) => {
-        if (query.search && !user.email.toLowerCase().includes(query.search.toLowerCase())) {
-          return false;
+      // Step 6: Convert users to list items with agency information
+      const userListItems: UserListItem[] = [];
+
+      for (const user of allUsers) {
+        let agencyId: string | undefined;
+        let agencyName: string | undefined;
+
+        // Get agency information if user has agency assigned
+        if (user.agencyId) {
+          try {
+            const agency = await this.agencyRepository.findById(user.agencyId);
+            if (agency) {
+              agencyId = agency.id;
+              agencyName = agency.name;
+            }
+          } catch (error) {
+            console.warn(`Failed to load agency for user ${user.id}:`, error);
+          }
+        }
+
+        userListItems.push({
+          id: user.id,
+          email: user.email.value,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          fullName: user.fullName,
+          role: user.role.value,
+          roleName: this.getRoleDisplayName(user.role.value),
+          status: user.status.toString(),
+          createdAt: user.createdAt,
+          lastLoginAt: user.lastLoginAt,
+          isAccountLocked: user.isAccountLocked(),
+          loginAttempts: user.loginAttempts,
+          agencyId: agencyId || undefined,
+          agencyName: agencyName || undefined,
+        });
+      }
+
+      // Step 7: Apply filtering
+      const filteredUsers = userListItems.filter((user) => {
+        if (query.search) {
+          const searchLower = query.search.toLowerCase();
+          if (!user.email.toLowerCase().includes(searchLower) && !user.fullName.toLowerCase().includes(searchLower)) {
+            return false;
+          }
         }
         if (query.role && user.role !== query.role) {
           return false;
@@ -108,13 +142,23 @@ export class ListUsersHandler {
         if (query.status && user.status !== query.status) {
           return false;
         }
+        if (query.agencyId && user.agencyId !== query.agencyId) {
+          return false;
+        }
+        if (query.isLocked !== undefined && user.isAccountLocked !== query.isLocked) {
+          return false;
+        }
         return true;
       });
 
+      // Step 8: Apply sorting
+      const sortedUsers = this.sortUsers(filteredUsers, query.sortBy, query.sortOrder);
+
+      // Step 9: Apply pagination
       const startIndex = query.offset;
       const endIndex = startIndex + query.limit;
-      const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-      const hasMore = filteredUsers.length > query.offset + query.limit;
+      const paginatedUsers = sortedUsers.slice(startIndex, endIndex);
+      const hasMore = sortedUsers.length > query.offset + query.limit;
 
       return {
         success: true,
@@ -151,13 +195,83 @@ export class ListUsersHandler {
       };
     }
   }
+
+  /**
+   * Get role display name
+   */
+  private getRoleDisplayName(role: string): string {
+    switch (role.toLowerCase()) {
+      case 'super_admin':
+        return 'Super Administrator';
+      case 'admin':
+        return 'Agency Administrator';
+      case 'employee':
+        return 'Employee';
+      default:
+        return role;
+    }
+  }
+
+  /**
+   * Sort users array
+   */
+  private sortUsers(users: UserListItem[], sortBy: string, sortOrder: 'asc' | 'desc'): UserListItem[] {
+    return users.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortBy) {
+        case 'firstName':
+          aValue = a.firstName;
+          bValue = b.firstName;
+          break;
+        case 'lastName':
+          aValue = a.lastName;
+          bValue = b.lastName;
+          break;
+        case 'email':
+          aValue = a.email;
+          bValue = b.email;
+          break;
+        case 'role':
+          aValue = a.role;
+          bValue = b.role;
+          break;
+        case 'status':
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        case 'createdAt':
+          aValue = a.createdAt.getTime();
+          bValue = b.createdAt.getTime();
+          break;
+        case 'lastLoginAt':
+          aValue = a.lastLoginAt?.getTime() || 0;
+          bValue = b.lastLoginAt?.getTime() || 0;
+          break;
+        default:
+          aValue = a.createdAt.getTime();
+          bValue = b.createdAt.getTime();
+      }
+
+      if (sortOrder === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+  }
 }
 
 /**
  * Factory function to create ListUsersHandler
  * @param userRepository - User repository implementation
+ * @param agencyRepository - Agency repository implementation
  * @returns ListUsersHandler instance
  */
-export function createListUsersHandler(userRepository: IUserRepository): ListUsersHandler {
-  return new ListUsersHandler(userRepository);
+export function createListUsersHandler(
+  userRepository: IUserRepository,
+  agencyRepository: IAgencyRepository
+): ListUsersHandler {
+  return new ListUsersHandler(userRepository, agencyRepository);
 }

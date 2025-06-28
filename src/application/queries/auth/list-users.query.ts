@@ -36,6 +36,7 @@ export interface ListUsersQuery {
   readonly createdAfter?: Date;
   readonly createdBefore?: Date;
   readonly isLocked?: boolean;
+  readonly agencyId?: string;
 }
 
 /**
@@ -54,6 +55,8 @@ export interface UserListItem {
   readonly lastLoginAt?: Date | undefined;
   readonly isAccountLocked: boolean;
   readonly loginAttempts: number;
+  readonly agencyId?: string | undefined;
+  readonly agencyName?: string | undefined;
 }
 
 /**

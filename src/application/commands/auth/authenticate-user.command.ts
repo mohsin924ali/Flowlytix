@@ -18,6 +18,7 @@ export interface AuthenticationResult {
   readonly isLocked?: boolean;
   readonly attemptsRemaining?: number;
   readonly lockoutExpiresAt?: Date | undefined;
+  readonly isAgencyInactive?: boolean;
 }
 
 /**

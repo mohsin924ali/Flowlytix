@@ -115,6 +115,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           flexDirection: 'column',
           minHeight: '100vh',
           position: 'relative',
+          marginLeft: showSidebar ? `${sidebarWidth}px` : 0,
+          transition: 'margin-left 0.3s ease',
         }}
       >
         {/* Professional Header */}

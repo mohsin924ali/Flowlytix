@@ -53,10 +53,13 @@ import {
   FilterList as FilterIcon,
   Add as AddIcon,
   PersonAdd as PersonAddIcon,
+  Business as BusinessIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { DashboardLayout } from '../components/templates';
 import { UserCreateModal, type UserCreateFormData } from '../components/molecules';
+import { UserEditModal } from '../components/molecules/UserEditModal/UserEditModal';
 import { useUsers } from '../hooks/useUsers';
 import type { UserListItem } from '../services/UsersService';
 
@@ -149,7 +152,8 @@ const formatDate = (date: Date): string => {
 const UsersTable: React.FC<{
   users: readonly UserListItem[];
   isLoading: boolean;
-}> = ({ users, isLoading }) => {
+  onEditUser: (userId: string) => void;
+}> = ({ users, isLoading, onEditUser }) => {
   if (isLoading) {
     return (
       <Box display='flex' justifyContent='center' alignItems='center' minHeight={200}>
@@ -180,9 +184,10 @@ const UsersTable: React.FC<{
             <TableCell>Name</TableCell>
             <TableCell>Email</TableCell>
             <TableCell>Role</TableCell>
+            <TableCell>Agency</TableCell>
             <TableCell>Status</TableCell>
             <TableCell>Created</TableCell>
-            <TableCell>Last Login</TableCell>
+            <TableCell>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -219,6 +224,18 @@ const UsersTable: React.FC<{
                 />
               </TableCell>
               <TableCell>
+                {user.agencyName ? (
+                  <Box display='flex' alignItems='center' gap={1}>
+                    <BusinessIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant='body2'>{user.agencyName}</Typography>
+                  </Box>
+                ) : (
+                  <Typography variant='body2' color='text.secondary' fontStyle='italic'>
+                    No agency
+                  </Typography>
+                )}
+              </TableCell>
+              <TableCell>
                 <Chip label={user.status} size='small' color={getStatusColor(user.status)} variant='filled' />
               </TableCell>
               <TableCell>
@@ -227,9 +244,13 @@ const UsersTable: React.FC<{
                 </Typography>
               </TableCell>
               <TableCell>
-                <Typography variant='body2' color='text.secondary'>
-                  {user.lastLoginAt ? formatDate(user.lastLoginAt) : 'Never'}
-                </Typography>
+                <Box display='flex' gap={1}>
+                  <Tooltip title='Edit User'>
+                    <IconButton size='small' onClick={() => onEditUser(user.id)}>
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
               </TableCell>
             </TableRow>
           ))}
@@ -262,6 +283,10 @@ export const UsersPage: React.FC = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+
+  // Edit user modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editUserId, setEditUserId] = useState<string | null>(null);
 
   /**
    * Handle search input change
@@ -353,6 +378,29 @@ export const UsersPage: React.FC = () => {
       setCreateError(null);
     }
   }, [creating]);
+
+  /**
+   * Handle edit user
+   */
+  const handleEditUser = useCallback((userId: string) => {
+    setEditUserId(userId);
+    setEditModalOpen(true);
+  }, []);
+
+  /**
+   * Handle close edit modal
+   */
+  const handleCloseEditModal = useCallback(() => {
+    setEditModalOpen(false);
+    setEditUserId(null);
+  }, []);
+
+  /**
+   * Handle user updated
+   */
+  const handleUserUpdated = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   return (
     <DashboardLayout title='Users'>
@@ -470,7 +518,7 @@ export const UsersPage: React.FC = () => {
           <motion.div variants={itemVariants}>
             <Card>
               <CardContent sx={{ p: 0 }}>
-                <UsersTable users={users} isLoading={isLoading && !isInitialized} />
+                <UsersTable users={users} isLoading={isLoading && !isInitialized} onEditUser={handleEditUser} />
 
                 {/* Pagination */}
                 {isInitialized && (
@@ -496,6 +544,14 @@ export const UsersPage: React.FC = () => {
             error={createError}
             onClose={handleCloseCreateModal}
             onSubmit={handleCreateUser}
+          />
+
+          {/* Edit User Modal */}
+          <UserEditModal
+            open={editModalOpen}
+            userId={editUserId}
+            onClose={handleCloseEditModal}
+            onUserUpdated={handleUserUpdated}
           />
         </motion.div>
       </Container>

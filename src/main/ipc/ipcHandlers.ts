@@ -44,6 +44,23 @@ function initializeMainDatabase() {
       )
     `);
 
+    // Create agencies table if it doesn't exist
+    mainDb.exec(`
+      CREATE TABLE IF NOT EXISTS agencies (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        database_path TEXT NOT NULL UNIQUE,
+        contact_person TEXT,
+        phone TEXT,
+        email TEXT,
+        address TEXT,
+        status TEXT NOT NULL DEFAULT 'active',
+        settings TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    `);
+
     // Check if any users exist, if not create default super admin
     const userCountStmt = mainDb.prepare('SELECT COUNT(*) as count FROM users');
     const userCount = userCountStmt.get();
@@ -443,6 +460,27 @@ async function handleAuthenticate(_event: IpcMainInvokeEvent, credentials: any):
       };
     }
 
+    // Check agency status for admin users
+    if (user.role === 'admin' && user.agency_id) {
+      try {
+        // Get agency information from agencies table
+        const getAgencyStmt = db.prepare('SELECT status FROM agencies WHERE id = ?');
+        const agency = getAgencyStmt.get(user.agency_id);
+
+        if (agency && agency.status !== 'active') {
+          console.log('❌ Authentication failed - agency is inactive');
+          return {
+            success: false,
+            error: 'Your agency has been deactivated by the super admin. Please contact support for assistance.',
+            timestamp: Date.now(),
+          };
+        }
+      } catch (agencyError) {
+        console.error('⚠️ Error checking agency status:', agencyError);
+        // Continue with authentication but log the issue
+      }
+    }
+
     // Authentication successful - reset login attempts and update last login
     const updateLoginStmt = db.prepare(`
       UPDATE users 
@@ -685,6 +723,20 @@ async function handleListUsers(_event: IpcMainInvokeEvent, params: any): Promise
     const totalResult = countStmt.get(...countParams) as { count: number };
     const total = totalResult.count;
 
+    // Get agency information for users who have agency_id
+    const agencyIds = [...new Set(users.filter((user: any) => user.agency_id).map((user: any) => user.agency_id))];
+    const agencies: Record<string, string> = {};
+
+    if (agencyIds.length > 0) {
+      const agencyQuery = `SELECT id, name FROM agencies WHERE id IN (${agencyIds.map(() => '?').join(',')})`;
+      const agencyStmt = db.prepare(agencyQuery);
+      const agencyResults = agencyStmt.all(...agencyIds);
+
+      agencyResults.forEach((agency: any) => {
+        agencies[agency.id] = agency.name;
+      });
+    }
+
     // Map users to expected format
     const mappedUsers = users.map((user: any) => ({
       id: user.id,
@@ -696,6 +748,7 @@ async function handleListUsers(_event: IpcMainInvokeEvent, params: any): Promise
       roleName: user.role.charAt(0).toUpperCase() + user.role.slice(1).replace('_', ' '),
       status: user.status,
       agencyId: user.agency_id,
+      agencyName: user.agency_id ? agencies[user.agency_id] || 'Unknown Agency' : undefined,
       createdAt: new Date(user.created_at).toISOString(),
       lastLoginAt: user.last_login_at ? new Date(user.last_login_at).toISOString() : null,
       isAccountLocked: user.locked_until ? user.locked_until > Date.now() : false,
@@ -1168,73 +1221,91 @@ async function handleAgencyUpdate(_event: IpcMainInvokeEvent, updateData: any): 
       };
     }
 
-    // For real agencies, find and update the database
+    // Update agency in main database
+    const db = initializeMainDatabase();
+
+    // Check if agency exists in main database
+    const agencyRecord = db.prepare('SELECT * FROM agencies WHERE id = ?').get(updateData.agencyId);
+
+    if (!agencyRecord) {
+      throw new Error('Agency not found in main database');
+    }
+
+    console.log('📊 Found agency in main database:', agencyRecord.name);
+
+    // Update the agency record in main database
+    const updateQuery = db.prepare(`
+      UPDATE agencies 
+      SET name = ?, contact_person = ?, email = ?, phone = ?, address = ?, status = ?, updated_at = ?
+      WHERE id = ?
+    `);
+
+    const result = updateQuery.run(
+      updateData.name || agencyRecord.name,
+      updateData.contactPerson || agencyRecord.contact_person,
+      updateData.email || agencyRecord.email,
+      updateData.phone || agencyRecord.phone,
+      updateData.address || agencyRecord.address,
+      updateData.status || agencyRecord.status,
+      Date.now(),
+      updateData.agencyId
+    );
+
+    if (result.changes === 0) {
+      throw new Error('No records were updated in main database');
+    }
+
+    console.log('✅ Main database updated successfully');
+    const updatedAgencyName = updateData.name || agencyRecord.name;
+
+    // Also update the agency's own database if it exists
     const agenciesDir = join(process.cwd(), 'data', 'agencies');
+    if (existsSync(agenciesDir)) {
+      const files = require('fs').readdirSync(agenciesDir);
+      const dbFiles = files.filter((file: string) => file.endsWith('.db'));
 
-    if (!existsSync(agenciesDir)) {
-      throw new Error('Agencies directory does not exist');
-    }
+      for (const dbFile of dbFiles) {
+        try {
+          const dbPath = join(agenciesDir, dbFile);
+          const Database = require('better-sqlite3');
+          const agencyDb = new Database(dbPath);
 
-    // Find the agency database file
-    const files = require('fs').readdirSync(agenciesDir);
-    const dbFiles = files.filter((file: string) => file.endsWith('.db'));
+          // Check if this database contains our agency
+          const agencyInOwnDb = agencyDb.prepare('SELECT * FROM agencies WHERE id = ?').get(updateData.agencyId);
 
-    let agencyFound = false;
-    let updatedAgencyName = updateData.name;
+          if (agencyInOwnDb) {
+            console.log('📊 Updating agency in its own database:', dbFile);
 
-    for (const dbFile of dbFiles) {
-      try {
-        const dbPath = join(agenciesDir, dbFile);
-        const Database = require('better-sqlite3');
-        const db = new Database(dbPath);
+            // Update the agency record in its own database
+            const updateOwnDbQuery = agencyDb.prepare(`
+              UPDATE agencies 
+              SET name = ?, contact_person = ?, email = ?, phone = ?, address = ?, status = ?, updated_at = ?
+              WHERE id = ?
+            `);
 
-        // Check if this database contains our agency
-        const agencyRecord = db.prepare('SELECT * FROM agencies WHERE id = ?').get(updateData.agencyId);
+            updateOwnDbQuery.run(
+              updateData.name || agencyInOwnDb.name,
+              updateData.contactPerson || agencyInOwnDb.contact_person,
+              updateData.email || agencyInOwnDb.email,
+              updateData.phone || agencyInOwnDb.phone,
+              updateData.address || agencyInOwnDb.address,
+              updateData.status || agencyInOwnDb.status,
+              Date.now(),
+              updateData.agencyId
+            );
 
-        if (agencyRecord) {
-          agencyFound = true;
-          console.log('📊 Found agency in database:', dbFile);
-
-          // Update the agency record
-          const updateQuery = db.prepare(`
-            UPDATE agencies 
-            SET name = ?, contact_person = ?, email = ?, phone = ?, address = ?, updated_at = ?
-            WHERE id = ?
-          `);
-
-          const result = updateQuery.run(
-            updateData.name || agencyRecord.name,
-            updateData.contactPerson || agencyRecord.contact_person,
-            updateData.email || agencyRecord.email,
-            updateData.phone || agencyRecord.phone,
-            updateData.address || agencyRecord.address,
-            Date.now(),
-            updateData.agencyId
-          );
-
-          db.close();
-
-          if (result.changes > 0) {
-            console.log('✅ Agency database updated successfully');
-            updatedAgencyName = updateData.name || agencyRecord.name;
-            break;
-          } else {
-            throw new Error('No records were updated');
+            console.log('✅ Agency own database updated successfully');
           }
-        } else {
-          db.close();
-        }
-      } catch (dbError) {
-        console.warn(
-          'Failed to update agency database:',
-          dbFile,
-          dbError instanceof Error ? dbError.message : 'Unknown error'
-        );
-      }
-    }
 
-    if (!agencyFound) {
-      throw new Error('Agency not found in any database');
+          agencyDb.close();
+        } catch (dbError) {
+          console.warn(
+            'Failed to update agency own database:',
+            dbFile,
+            dbError instanceof Error ? dbError.message : 'Unknown error'
+          );
+        }
+      }
     }
 
     const responseData = {

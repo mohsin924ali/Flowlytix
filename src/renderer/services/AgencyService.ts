@@ -57,6 +57,22 @@ export interface CreateAgencyParams {
   currency?: string;
 }
 
+export interface UpdateAgencyParams {
+  name?: string;
+  contactPerson?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  status?: 'active' | 'inactive' | 'suspended';
+  allowCreditSales?: boolean;
+  defaultCreditDays?: number;
+  maxCreditLimit?: number;
+  requireApprovalForOrders?: boolean;
+  enableInventoryTracking?: boolean;
+  taxRate?: number;
+  currency?: string;
+}
+
 export interface CreateAgencyResult {
   agencyId: string;
   name: string;
@@ -174,7 +190,7 @@ export class AgencyService {
    */
   public static async updateAgency(
     agencyId: string,
-    params: Partial<CreateAgencyParams>
+    params: UpdateAgencyParams
   ): Promise<{ success: boolean; message: string }> {
     try {
       // Validate parameters
@@ -190,8 +206,23 @@ export class AgencyService {
         throw new Error('Invalid phone number format');
       }
 
+      // Get current user for updatedBy field
+      const sessionData = localStorage.getItem('flowlytix_auth_session');
+      if (!sessionData) {
+        throw new Error('User not authenticated');
+      }
+
+      const { user: currentUser } = JSON.parse(sessionData);
+      if (!currentUser || !currentUser.id) {
+        throw new Error('User not authenticated');
+      }
+
       // Call IPC API
-      const response = await window.electronAPI.agency.updateAgency({ agencyId, ...params });
+      const response = await window.electronAPI.agency.updateAgency({
+        agencyId,
+        updatedBy: currentUser.id,
+        ...params,
+      });
 
       if (!response.success) {
         throw new Error(response.error || 'Failed to update agency');

@@ -145,9 +145,12 @@ export const AgencyEditModal: React.FC<AgencyEditModalProps> = ({
       errors.email = 'Please enter a valid email address';
     }
 
-    // Phone validation
-    if (data.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(data.phone.replace(/[\s\-\(\)]/g, ''))) {
-      errors.phone = 'Please enter a valid phone number';
+    // Phone validation - more lenient to accept various formats
+    if (data.phone && data.phone.trim()) {
+      const cleanPhone = data.phone.replace(/[\s\-\(\)\.]/g, '');
+      if (!/^[\+]?[\d]{7,15}$/.test(cleanPhone)) {
+        errors.phone = 'Please enter a valid phone number (7-15 digits)';
+      }
     }
 
     return errors;
@@ -179,25 +182,48 @@ export const AgencyEditModal: React.FC<AgencyEditModalProps> = ({
    */
   const handleSubmit = useCallback(
     async (event: React.FormEvent) => {
+      console.log('🔄 AgencyEditModal: Form submission started');
       event.preventDefault();
 
-      if (!agency) return;
+      if (!agency) {
+        console.error('❌ AgencyEditModal: No agency provided');
+        return;
+      }
+
+      console.log('📝 AgencyEditModal: Form data:', formData);
 
       // Validate form
       const errors = validateForm(formData);
+      console.log('✅ AgencyEditModal: Validation errors:', errors);
+
       if (Object.keys(errors).length > 0) {
+        console.log('❌ AgencyEditModal: Form validation failed');
         setFormErrors(errors);
         return;
       }
 
+      // Additional safety check - ensure minimum required data
+      if (!formData.name || formData.name.trim().length === 0) {
+        console.log('❌ AgencyEditModal: Agency name is required');
+        setFormErrors({ name: 'Agency name is required' });
+        return;
+      }
+
       try {
+        console.log('🚀 AgencyEditModal: Starting submission...');
         setSubmitting(true);
+
         await onSubmit(agency.id, formData);
+
+        console.log('✅ AgencyEditModal: Submission successful');
         onClose();
       } catch (error) {
-        console.error('Failed to update agency:', error);
+        console.error('❌ AgencyEditModal: Submission failed:', error);
+        // Show error to user
+        setFormErrors({ name: error instanceof Error ? error.message : 'Update failed' });
       } finally {
         setSubmitting(false);
+        console.log('🏁 AgencyEditModal: Submission completed');
       }
     },
     [agency, formData, validateForm, onSubmit, onClose]
@@ -283,14 +309,14 @@ export const AgencyEditModal: React.FC<AgencyEditModalProps> = ({
           </DialogTitle>
 
           {/* Content */}
-          <DialogContent sx={{ pt: 3 }}>
-            {error && (
-              <Alert severity='error' sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
+          <Box component='form' onSubmit={handleSubmit}>
+            <DialogContent sx={{ pt: 3 }}>
+              {error && (
+                <Alert severity='error' sx={{ mb: 3 }}>
+                  {error}
+                </Alert>
+              )}
 
-            <Box component='form' onSubmit={handleSubmit}>
               <Grid container spacing={3}>
                 {/* Agency Name */}
                 <Grid item xs={12} md={8}>
@@ -418,38 +444,44 @@ export const AgencyEditModal: React.FC<AgencyEditModalProps> = ({
                   />
                 </Grid>
               </Grid>
-            </Box>
-          </DialogContent>
+            </DialogContent>
 
-          {/* Actions */}
-          <DialogActions
-            sx={{
-              p: 3,
-              pt: 2,
-              background: 'rgba(0, 0, 0, 0.02)',
-              borderTop: '1px solid rgba(0, 0, 0, 0.05)',
-            }}
-          >
-            <Button onClick={handleClose} disabled={submitting} startIcon={<CancelIcon />} sx={{ mr: 1 }}>
-              Cancel
-            </Button>
-
-            <Button
-              onClick={handleSubmit}
-              disabled={submitting || loading}
-              variant='contained'
-              startIcon={submitting ? <CircularProgress size={16} /> : <SaveIcon />}
+            {/* Actions */}
+            <DialogActions
               sx={{
-                minWidth: 120,
-                background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #4338ca 0%, #513ff2 100%)',
-                },
+                p: 3,
+                pt: 2,
+                background: 'rgba(0, 0, 0, 0.02)',
+                borderTop: '1px solid rgba(0, 0, 0, 0.05)',
               }}
             >
-              {submitting ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </DialogActions>
+              <Button onClick={handleClose} disabled={submitting} startIcon={<CancelIcon />} sx={{ mr: 1 }}>
+                Cancel
+              </Button>
+
+              <Button
+                type='submit'
+                disabled={submitting || loading}
+                variant='contained'
+                startIcon={submitting ? <CircularProgress size={16} /> : <SaveIcon />}
+                onClick={(e) => {
+                  console.log('🖱️ AgencyEditModal: Save button clicked');
+                  console.log('🖱️ Button disabled state:', submitting || loading);
+                  console.log('🖱️ Form data at click:', formData);
+                  console.log('🖱️ Agency at click:', agency);
+                }}
+                sx={{
+                  minWidth: 120,
+                  background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #4338ca 0%, #513ff2 100%)',
+                  },
+                }}
+              >
+                {submitting ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogActions>
+          </Box>
         </Dialog>
       )}
     </AnimatePresence>

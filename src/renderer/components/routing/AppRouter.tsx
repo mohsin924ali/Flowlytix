@@ -14,6 +14,7 @@ import { AdminPanelPage } from '../../pages/AdminPanelPage';
 import { UsersPage } from '../../pages/UsersPage';
 import { AgenciesPage } from '../../pages/AgenciesPage';
 import { EmployeesPage } from '../../pages/EmployeesPage';
+import { DashboardLayout } from '../templates';
 import { ROUTES } from '../../constants/navigation.constants';
 import { useAuthStore } from '../../store/auth.store';
 import logoMainSrc from '../../assets/images/logo-main.svg';
@@ -37,54 +38,56 @@ const pageTransition = {
  * Placeholder page component for routes under development
  */
 const PlaceholderPage: React.FC<{ title: string; description: string }> = ({ title, description }) => (
-  <motion.div
-    initial='initial'
-    animate='in'
-    exit='out'
-    variants={pageVariants}
-    transition={pageTransition}
-    style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '60vh',
-      textAlign: 'center',
-      padding: '2rem',
-    }}
-  >
-    <div
+  <DashboardLayout title={title}>
+    <motion.div
+      initial='initial'
+      animate='in'
+      exit='out'
+      variants={pageVariants}
+      transition={pageTransition}
       style={{
-        fontSize: '4rem',
-        marginBottom: '1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '60vh',
+        textAlign: 'center',
+        padding: '2rem',
       }}
     >
-      🚧
-    </div>
-    <h1
-      style={{
-        fontSize: '2rem',
-        fontWeight: 'bold',
-        marginBottom: '0.5rem',
-        background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
-        backgroundClip: 'text',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-      }}
-    >
-      {title}
-    </h1>
-    <p
-      style={{
-        fontSize: '1.1rem',
-        color: '#666',
-        maxWidth: '600px',
-        lineHeight: 1.6,
-      }}
-    >
-      {description}
-    </p>
-  </motion.div>
+      <div
+        style={{
+          fontSize: '4rem',
+          marginBottom: '1rem',
+        }}
+      >
+        🚧
+      </div>
+      <h1
+        style={{
+          fontSize: '2rem',
+          fontWeight: 'bold',
+          marginBottom: '0.5rem',
+          background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
+          backgroundClip: 'text',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+        }}
+      >
+        {title}
+      </h1>
+      <p
+        style={{
+          fontSize: '1.1rem',
+          color: '#666',
+          maxWidth: '600px',
+          lineHeight: 1.6,
+        }}
+      >
+        {description}
+      </p>
+    </motion.div>
+  </DashboardLayout>
 );
 
 /**

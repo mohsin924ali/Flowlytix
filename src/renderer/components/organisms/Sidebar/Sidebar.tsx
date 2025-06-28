@@ -357,7 +357,117 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 transition={{ duration: 0.2 }}
                 style={{ display: 'flex', alignItems: 'center', gap: 12 }}
               >
-                <Logo variant='image' size='medium' circular={true} src={logoSrc} />
+                {/* Animated Logo Container */}
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{
+                    duration: 1,
+                    delay: 0.2,
+                    type: 'spring',
+                    stiffness: 200,
+                    damping: 20,
+                  }}
+                  style={{
+                    position: 'relative',
+                    display: 'inline-block',
+                  }}
+                >
+                  {/* Logo Background with Glow Effect */}
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
+                      borderRadius: '0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 8px 20px rgba(81, 63, 242, 0.3)',
+                      position: 'relative',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {/* Animated Glow */}
+                    <motion.div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                        borderRadius: '0.75rem',
+                      }}
+                      animate={{
+                        opacity: [0.5, 0.8, 0.5],
+                        scale: [1, 1.05, 1],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                      }}
+                    />
+
+                    {/* Logo */}
+                    <img
+                      src={logoSrc}
+                      alt='Flowlytix Logo'
+                      style={{
+                        width: 24,
+                        height: 24,
+                        objectFit: 'contain',
+                        position: 'relative',
+                        zIndex: 10,
+                      }}
+                    />
+
+                    {/* Corner Decorations */}
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 2,
+                        right: 2,
+                        width: 6,
+                        height: 6,
+                        background: 'rgba(255, 255, 255, 0.3)',
+                        borderRadius: '50%',
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        bottom: 2,
+                        left: 2,
+                        width: 4,
+                        height: 4,
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        borderRadius: '50%',
+                      }}
+                    />
+                  </Box>
+
+                  {/* Floating Ring Animation */}
+                  <motion.div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: 40,
+                      height: 40,
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '0.75rem',
+                    }}
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      rotate: [0, 360],
+                      opacity: [0.3, 0.6, 0.3],
+                    }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  />
+                </motion.div>
+
                 <Typography
                   variant='h6'
                   sx={{
@@ -374,7 +484,93 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </AnimatePresence>
 
-          {isCollapsed && <Logo variant='image' size='compact' circular={true} src={logoSrc} />}
+          {isCollapsed && (
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{
+                duration: 1,
+                delay: 0.2,
+                type: 'spring',
+                stiffness: 200,
+                damping: 20,
+              }}
+              style={{
+                position: 'relative',
+                display: 'inline-block',
+              }}
+            >
+              {/* Logo Background with Glow Effect */}
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
+                  borderRadius: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 6px 16px rgba(81, 63, 242, 0.3)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Animated Glow */}
+                <motion.div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    borderRadius: '0.5rem',
+                  }}
+                  animate={{
+                    opacity: [0.5, 0.8, 0.5],
+                    scale: [1, 1.05, 1],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                />
+
+                {/* Logo */}
+                <img
+                  src={logoSrc}
+                  alt='Flowlytix Logo'
+                  style={{
+                    width: 20,
+                    height: 20,
+                    objectFit: 'contain',
+                    position: 'relative',
+                    zIndex: 10,
+                  }}
+                />
+              </Box>
+
+              {/* Floating Ring Animation */}
+              <motion.div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: 32,
+                  height: 32,
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '0.5rem',
+                }}
+                animate={{
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 360],
+                  opacity: [0.3, 0.6, 0.3],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              />
+            </motion.div>
+          )}
         </Box>
 
         {/* Navigation Menu */}
