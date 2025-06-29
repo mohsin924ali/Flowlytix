@@ -47,10 +47,19 @@ export const useAuthStore = create<AuthStore>()(
           });
 
           try {
-            // Check if Electron API is available
+            // Check if Electron API is available with retry
             if (typeof window === 'undefined' || !window.electronAPI) {
-              console.log('❌ Auth Store: Electron API not available');
-              throw new Error(ERROR_MESSAGES.ELECTRON_API_UNAVAILABLE);
+              console.log('❌ Auth Store: Electron API not available immediately, waiting...');
+
+              // Wait a bit for the API to be available
+              await new Promise((resolve) => setTimeout(resolve, 500));
+
+              if (!window.electronAPI) {
+                console.log('❌ Auth Store: Electron API still not available after wait');
+                throw new Error(ERROR_MESSAGES.ELECTRON_API_UNAVAILABLE);
+              }
+
+              console.log('✅ Auth Store: Electron API became available after wait');
             }
 
             console.log('✅ Auth Store: Electron API available, calling AuthService.authenticate...');
@@ -77,7 +86,7 @@ export const useAuthStore = create<AuthStore>()(
                 useAgencyStore.getState().setCurrentAgency({
                   id: result.user.agency.id,
                   name: result.user.agency.name,
-                  status: result.user.agency.status,
+                  status: (result.user.agency.status as 'active' | 'inactive' | 'suspended') || 'active',
                   contactPerson: result.user.agency.contactPerson,
                   phone: result.user.agency.phone,
                   email: result.user.agency.email,

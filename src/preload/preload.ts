@@ -45,7 +45,7 @@ interface ElectronAPI {
   // Agency management
   agency: {
     createAgency: (data: CreateAgencyRequest) => Promise<AgencyResult>;
-    getAgencies: () => Promise<AgenciesResult>;
+    getAgencies: (params?: any) => Promise<AgenciesResult>;
     getAgencyById: (params: { agencyId: string }) => Promise<AgencyResult>;
     updateAgency: (data: UpdateAgencyRequest) => Promise<AgencyResult>;
   };
@@ -853,7 +853,7 @@ interface ListUsersResult {
   error?: string;
 }
 
-// Agency types
+// Agency types - Updated to match backend schema
 interface CreateAgencyRequest {
   name: string;
   databasePath: string;
@@ -861,21 +861,26 @@ interface CreateAgencyRequest {
   email?: string;
   phone?: string;
   address?: string;
-  createdBy: string;
-  settings: {
-    allowCreditSales: boolean;
-    defaultCreditDays: number;
-    maxCreditLimit: number;
-    requireApprovalForOrders: boolean;
-    enableInventoryTracking: boolean;
-    taxRate: number;
-    currency: string;
-    businessHours: {
-      start: string;
-      end: string;
-      timezone: string;
-    };
-  };
+  requestedBy: string;
+
+  // Business settings as flat structure (matching backend schema)
+  allowCreditSales: boolean;
+  defaultCreditDays: number;
+  maxCreditLimit: number;
+  requireApprovalForOrders: boolean;
+  enableInventoryTracking: boolean;
+  taxRate: number;
+  currency: string;
+
+  // Business hours
+  businessHoursStart: string;
+  businessHoursEnd: string;
+  businessHoursTimezone: string;
+
+  // Notification settings
+  notificationsLowStock: boolean;
+  notificationsOverduePayments: boolean;
+  notificationsNewOrders: boolean;
 }
 
 interface UpdateAgencyRequest {
@@ -971,7 +976,7 @@ const electronAPI: ElectronAPI = {
   // Agency management
   agency: {
     createAgency: (data) => ipcRenderer.invoke('agency:create-agency', data),
-    getAgencies: () => ipcRenderer.invoke('agency:get-agencies'),
+    getAgencies: (params) => ipcRenderer.invoke('agency:get-agencies', params),
     getAgencyById: (params) => ipcRenderer.invoke('agency:get-agency-by-id', params),
     updateAgency: (data) => ipcRenderer.invoke('agency:update-agency', data),
   },

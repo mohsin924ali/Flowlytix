@@ -109,7 +109,9 @@ export function AgenciesPage(): JSX.Element {
       setLoading(true);
       setError(null);
 
-      console.log('🏢 Loading agencies from AgenciesPage...');
+      console.log('🏢 AgenciesPage: Starting to load agencies...');
+      console.log('🏢 AgenciesPage: Current filters:', { searchValue, statusFilter, page, pageSize });
+
       const result = await AgencyService.listAgencies({
         page: page + 1, // Convert to 1-based for backend
         pageSize,
@@ -117,11 +119,25 @@ export function AgenciesPage(): JSX.Element {
         ...(statusFilter && { status: statusFilter }),
       });
 
-      console.log('🏢 Agencies loaded in AgenciesPage:', result);
+      console.log('🏢 AgenciesPage: Agencies loaded successfully:', result);
+      console.log('🏢 AgenciesPage: Number of agencies received:', result.agencies.length);
+      console.log('🏢 AgenciesPage: Total count:', result.totalCount);
+
       setAgencies(result.agencies);
       setTotalCount(result.totalCount);
+
+      if (result.agencies.length > 0) {
+        console.log('🏢 AgenciesPage: Sample agency data:', result.agencies[0]);
+      } else {
+        console.warn('⚠️ AgenciesPage: No agencies returned from service');
+      }
     } catch (err) {
-      console.error('❌ Failed to load agencies in AgenciesPage:', err);
+      console.error('❌ AgenciesPage: Failed to load agencies:', err);
+      console.error('❌ AgenciesPage: Error details:', {
+        name: err instanceof Error ? err.name : 'Unknown',
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+      });
       setError(err instanceof Error ? err.message : 'Failed to load agencies');
     } finally {
       setLoading(false);
@@ -177,36 +193,75 @@ export function AgenciesPage(): JSX.Element {
   }, []);
 
   /**
-   * Handle edit agency
+   * Handle edit agency - force fresh data reload
    */
-  const handleEditAgency = useCallback((agency: Agency) => {
-    setEditingAgency(agency);
-    setEditModalOpen(true);
-  }, []);
+  const handleEditAgency = useCallback(
+    async (agency: Agency) => {
+      try {
+        console.log('📝 AgenciesPage: Edit requested for agency:', agency.id);
+
+        // Force reload fresh data from backend to get complete settings
+        console.log('🔄 AgenciesPage: Forcing fresh data reload before edit...');
+        await loadAgencies();
+
+        // Give a small delay to ensure state update completes
+        setTimeout(() => {
+          // Find the fresh agency data from the newly loaded agencies
+          const freshAgency = agencies.find((a) => a.id === agency.id);
+          if (freshAgency) {
+            console.log('📝 AgenciesPage: Using fresh agency data for edit:', freshAgency);
+            setEditingAgency(freshAgency);
+          } else {
+            console.warn('⚠️ AgenciesPage: Could not find fresh agency data, using passed agency:', agency);
+            setEditingAgency(agency);
+          }
+          setEditModalOpen(true);
+        }, 100);
+      } catch (error) {
+        console.error('❌ AgenciesPage: Error reloading data for edit:', error);
+        // Fallback to using the passed agency if reload fails
+        setEditingAgency(agency);
+        setEditModalOpen(true);
+      }
+    },
+    [agencies, loadAgencies]
+  );
 
   /**
-   * Handle agency update
+   * Handle comprehensive agency update with settings
    */
   const handleAgencyUpdate = useCallback(
     async (agencyId: string, formData: any) => {
       try {
-        // Build update object with only defined values
-        const updateData: UpdateAgencyParams = {};
-        if (formData.name !== undefined) updateData.name = formData.name;
-        if (formData.contactPerson !== undefined) updateData.contactPerson = formData.contactPerson;
-        if (formData.email !== undefined) updateData.email = formData.email;
-        if (formData.phone !== undefined) updateData.phone = formData.phone;
-        if (formData.address !== undefined) updateData.address = formData.address;
-        if (formData.status !== undefined) updateData.status = formData.status;
+        console.log('🔄 AgenciesPage: Handling comprehensive agency update for:', agencyId);
+        console.log('📝 AgenciesPage: Update data received:', formData);
+
+        // Build comprehensive update object
+        const updateData: UpdateAgencyParams = {
+          // Basic Information
+          name: formData.name,
+          contactPerson: formData.contactPerson,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          status: formData.status,
+
+          // Comprehensive Settings (if provided)
+          ...(formData.settings && { settings: formData.settings }),
+        };
+
+        console.log('📤 AgenciesPage: Sending comprehensive update to service:', updateData);
 
         await AgencyService.updateAgency(agencyId, updateData);
 
-        // Refresh the list
+        console.log('✅ AgenciesPage: Agency updated successfully');
+
+        // Refresh the list to show updated data
         await loadAgencies();
         setEditModalOpen(false);
         setEditingAgency(null);
       } catch (error) {
-        console.error('Failed to update agency:', error);
+        console.error('❌ AgenciesPage: Failed to update agency:', error);
         throw error;
       }
     },

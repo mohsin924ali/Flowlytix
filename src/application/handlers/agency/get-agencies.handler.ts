@@ -48,52 +48,96 @@ export class GetAgenciesHandler {
    */
   async handle(query: GetAgenciesQuery): Promise<GetAgenciesQueryResult> {
     try {
+      console.log('🏢 GetAgenciesHandler: Starting query handling with:', {
+        requestedBy: query.requestedBy,
+        limit: query.limit,
+        offset: query.offset,
+      });
+
       // Step 1: Validate query structure
       validateGetAgenciesQuery(query);
+      console.log('✅ GetAgenciesHandler: Query validation passed');
 
       // Step 2: Validate business rules
       validateAgenciesQueryBusinessRules(query);
+      console.log('✅ GetAgenciesHandler: Business rules validation passed');
 
       // Step 3: Get the requesting user for authorization
       const requestingUser = await this.userRepository.findById(query.requestedBy);
       if (!requestingUser) {
+        console.error('❌ GetAgenciesHandler: Requesting user not found:', query.requestedBy);
         throw new Error('Requesting user not found');
       }
 
-      // Step 4: Authorization check - user needs MANAGE_SETTINGS permission to view agencies
-      if (!requestingUser.hasPermission(Permission.MANAGE_SETTINGS)) {
+      console.log('✅ GetAgenciesHandler: Found requesting user:', {
+        id: requestingUser.id,
+        email: requestingUser.email?.value,
+        role: requestingUser.role.value,
+        permissions: Array.from(requestingUser.role.permissions),
+      });
+
+      // Step 4: Authorization check - user needs READ_AGENCY or MANAGE_SETTINGS permission to view agencies
+      if (
+        !requestingUser.hasPermission(Permission.READ_AGENCY) &&
+        !requestingUser.hasPermission(Permission.MANAGE_SETTINGS)
+      ) {
+        console.error('❌ GetAgenciesHandler: Insufficient permissions:', {
+          hasReadAgency: requestingUser.hasPermission(Permission.READ_AGENCY),
+          hasManageSettings: requestingUser.hasPermission(Permission.MANAGE_SETTINGS),
+          userPermissions: Array.from(requestingUser.role.permissions),
+        });
         throw new Error('Insufficient permissions to view agencies');
       }
 
+      console.log('✅ GetAgenciesHandler: Permission check passed');
+
       // Step 5: Apply role-based filtering
       const searchCriteria = this.buildSearchCriteria(query, requestingUser);
+      console.log('🔍 GetAgenciesHandler: Built search criteria:', searchCriteria);
 
       // Step 6: Execute search through repository
       const searchResult = await this.agencyRepository.search(searchCriteria);
+      console.log('🔍 GetAgenciesHandler: Repository search result:', {
+        agencyCount: searchResult.agencies.length,
+        total: searchResult.total,
+        hasMore: searchResult.hasMore,
+      });
 
       // Step 7: Apply role-based filtering for non-super-admin users
       let filteredAgencies = searchResult.agencies;
       let filteredTotal = searchResult.total;
 
       if (requestingUser.role.value !== SystemRole.SUPER_ADMIN) {
+        console.log('🔍 GetAgenciesHandler: Applying role-based filtering for non-super-admin');
         // Agency admins can only see their assigned agency
         if (requestingUser.role.value === SystemRole.ADMIN && requestingUser.agencyId) {
           filteredAgencies = searchResult.agencies.filter((agency) => agency.id === requestingUser.agencyId);
           filteredTotal = filteredAgencies.length;
+          console.log('🔍 GetAgenciesHandler: Filtered to user agency:', {
+            userAgencyId: requestingUser.agencyId,
+            filteredCount: filteredAgencies.length,
+          });
         } else {
           // Users without agency assignment see no agencies
           filteredAgencies = [];
           filteredTotal = 0;
+          console.log('🔍 GetAgenciesHandler: No agency assignment, clearing results');
         }
+      } else {
+        console.log('✅ GetAgenciesHandler: Super admin - no filtering applied');
       }
 
       // Step 8: Convert agencies to summary results
       const agencySummaries: AgencySummary[] = filteredAgencies.map((agency) => this.convertAgencyToSummary(agency));
+      console.log('🔍 GetAgenciesHandler: Converted to summaries:', {
+        summaryCount: agencySummaries.length,
+        sampleSummary: agencySummaries[0] || null,
+      });
 
       // Step 9: Calculate pagination metadata
       const hasMore = filteredTotal > query.offset + query.limit;
 
-      return {
+      const result = {
         success: true,
         agencies: agencySummaries,
         total: filteredTotal,
@@ -102,6 +146,14 @@ export class GetAgenciesHandler {
         hasMore,
         searchCriteria: this.sanitizeSearchCriteria(query),
       };
+
+      console.log('✅ GetAgenciesHandler: Returning successful result:', {
+        success: result.success,
+        agencyCount: result.agencies.length,
+        total: result.total,
+      });
+
+      return result;
     } catch (error) {
       console.error('Get agencies handler error:', {
         query: {
@@ -167,9 +219,9 @@ export class GetAgenciesHandler {
   }
 
   /**
-   * Converts agency entity to summary representation
+   * Converts agency entity to complete representation with all settings for editing
    * @param agency - Agency entity
-   * @returns AgencySummary for API response
+   * @returns AgencySummary with complete settings for API response
    */
   private convertAgencyToSummary(agency: Agency): AgencySummary {
     return {
@@ -180,8 +232,31 @@ export class GetAgenciesHandler {
       email: agency.email ? agency.email.value : null,
       status: agency.status,
       isOperational: agency.isOperational(),
+
+      // Include ALL settings for editing - not just summary
       allowsCreditSales: agency.settings.allowCreditSales,
       currency: agency.settings.currency,
+
+      // Include complete financial settings
+      defaultCreditDays: agency.settings.defaultCreditDays,
+      maxCreditLimit: agency.settings.maxCreditLimit,
+      taxRate: agency.settings.taxRate,
+      requireApprovalForOrders: agency.settings.requireApprovalForOrders,
+
+      // Include operational settings
+      enableInventoryTracking: agency.settings.enableInventoryTracking,
+
+      // Include business hours
+      businessHoursStart: agency.settings.businessHours.start,
+      businessHoursEnd: agency.settings.businessHours.end,
+      businessHoursTimezone: agency.settings.businessHours.timezone,
+
+      // Include notification settings
+      notificationsLowStock: agency.settings.notifications.lowStock,
+      notificationsOverduePayments: agency.settings.notifications.overduePayments,
+      notificationsNewOrders: agency.settings.notifications.newOrders,
+
+      // Include standard fields
       databasePath: agency.databasePath,
       createdAt: agency.createdAt,
       updatedAt: agency.updatedAt,

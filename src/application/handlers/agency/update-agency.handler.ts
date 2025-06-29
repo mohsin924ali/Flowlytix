@@ -59,17 +59,25 @@ export class UpdateAgencyHandler {
    */
   async handle(command: UpdateAgencyCommand): Promise<UpdateAgencyResult> {
     try {
+      console.log('🔄 UpdateAgencyHandler: Starting handle method with command:', JSON.stringify(command, null, 2));
+
       // Validate command structure
+      console.log('🔍 UpdateAgencyHandler: Starting command structure validation...');
       validateUpdateAgencyCommand(command);
+      console.log('✅ UpdateAgencyHandler: Command structure validation passed');
 
       // Validate business rules
+      console.log('🔍 UpdateAgencyHandler: Starting business rules validation...');
       validateUpdateAgencyBusinessRules(command);
+      console.log('✅ UpdateAgencyHandler: Business rules validation passed');
 
       // Get the user who is updating this agency (for authorization)
+      console.log('🔍 UpdateAgencyHandler: Looking up updating user:', command.updatedBy);
       let updatingUser;
       try {
         updatingUser = await this.userRepository.findById(command.updatedBy);
         if (!updatingUser) {
+          console.log('❌ UpdateAgencyHandler: Updating user not found');
           return {
             success: false,
             agencyId: command.agencyId,
@@ -79,7 +87,9 @@ export class UpdateAgencyHandler {
             code: 'USER_NOT_FOUND_ERROR',
           };
         }
+        console.log('✅ UpdateAgencyHandler: Found updating user:', updatingUser.email);
       } catch (error) {
+        console.log('❌ UpdateAgencyHandler: Error finding updating user:', error);
         return {
           success: false,
           agencyId: command.agencyId,

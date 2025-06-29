@@ -5,7 +5,7 @@
  * Implements WCAG 2.1 AA accessibility standards
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Visibility, VisibilityOff, Email, Lock, Login as LoginIcon } from '@mui/icons-material';
@@ -106,9 +106,36 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   });
 
   /**
-   * Check if Electron API is available
+   * Check if Electron API is available with retry mechanism
    */
-  const isElectronAPIAvailable = typeof window !== 'undefined' && window.electronAPI;
+  const [isElectronAPIAvailable, setIsElectronAPIAvailable] = useState(false);
+
+  useEffect(() => {
+    let retryCount = 0;
+    const maxRetries = 10;
+    const retryDelay = 100;
+
+    const checkElectronAPI = () => {
+      console.log(`🔍 LoginForm: Checking Electron API availability (attempt ${retryCount + 1})`);
+
+      if (typeof window !== 'undefined' && window.electronAPI) {
+        console.log('✅ LoginForm: Electron API is available');
+        setIsElectronAPIAvailable(true);
+        return;
+      }
+
+      retryCount++;
+      if (retryCount < maxRetries) {
+        console.log(`⏳ LoginForm: Electron API not ready, retrying in ${retryDelay}ms...`);
+        setTimeout(checkElectronAPI, retryDelay);
+      } else {
+        console.error('❌ LoginForm: Electron API failed to load after max retries');
+        setIsElectronAPIAvailable(false);
+      }
+    };
+
+    checkElectronAPI();
+  }, []);
 
   return (
     <motion.div variants={formVariants} initial='hidden' animate='visible'>

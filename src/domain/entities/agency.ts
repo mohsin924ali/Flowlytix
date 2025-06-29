@@ -226,8 +226,13 @@ export class Agency {
 
     if (updates.email !== undefined) {
       this.validateEmailString(updates.email);
-      // Email validation will be handled by Email value object when implemented
-      this._email = undefined; // Placeholder until Email VO is available
+      // Store email as string until Email VO is implemented
+      // We need to create a temporary Email-like object to maintain type compatibility
+      if (updates.email.trim() === '') {
+        this._email = undefined;
+      } else {
+        this._email = { value: updates.email.trim() } as Email;
+      }
     }
 
     if (updates.address !== undefined) {
@@ -465,7 +470,7 @@ export class Agency {
       databasePath: params.databasePath.trim(),
       contactPerson: params.contactPerson?.trim(),
       phone: params.phone?.trim(),
-      email: undefined, // Will be set when Email VO is implemented
+      email: params.email ? ({ value: params.email.trim() } as Email) : undefined,
       address: params.address?.trim(),
       settings,
       status: params.status || AgencyStatus.ACTIVE,
@@ -499,7 +504,28 @@ export class Agency {
     let settings: AgencySettings;
 
     try {
-      settings = JSON.parse(persistenceData.settings) as AgencySettings;
+      const parsedSettings = JSON.parse(persistenceData.settings);
+
+      // Normalize boolean values that might be stored as integers (1/0) in the database
+      settings = {
+        allowCreditSales: Boolean(parsedSettings.allowCreditSales),
+        defaultCreditDays: Number(parsedSettings.defaultCreditDays),
+        maxCreditLimit: Number(parsedSettings.maxCreditLimit),
+        requireApprovalForOrders: Boolean(parsedSettings.requireApprovalForOrders),
+        enableInventoryTracking: Boolean(parsedSettings.enableInventoryTracking),
+        taxRate: Number(parsedSettings.taxRate),
+        currency: String(parsedSettings.currency),
+        businessHours: {
+          start: String(parsedSettings.businessHours?.start || '09:00'),
+          end: String(parsedSettings.businessHours?.end || '17:00'),
+          timezone: String(parsedSettings.businessHours?.timezone || 'UTC'),
+        },
+        notifications: {
+          lowStock: Boolean(parsedSettings.notifications?.lowStock ?? true),
+          overduePayments: Boolean(parsedSettings.notifications?.overduePayments ?? true),
+          newOrders: Boolean(parsedSettings.notifications?.newOrders ?? false),
+        },
+      };
     } catch (error) {
       throw new AgencyValidationError('settings', 'Invalid JSON format in settings');
     }
@@ -510,7 +536,7 @@ export class Agency {
       databasePath: persistenceData.databasePath,
       contactPerson: persistenceData.contactPerson,
       phone: persistenceData.phone,
-      email: undefined, // Will be set when Email VO is implemented
+      email: persistenceData.email ? ({ value: persistenceData.email } as Email) : undefined,
       address: persistenceData.address,
       settings,
       status: persistenceData.status,
@@ -681,6 +707,53 @@ export class Agency {
 
     if (!settings.currency || typeof settings.currency !== 'string' || settings.currency.length !== 3) {
       throw new AgencyValidationError('settings.currency', 'currency must be a 3-character currency code');
+    }
+
+    // Validate businessHours
+    if (!settings.businessHours || typeof settings.businessHours !== 'object') {
+      throw new AgencyValidationError('settings.businessHours', 'businessHours must be an object');
+    }
+
+    if (!settings.businessHours.start || typeof settings.businessHours.start !== 'string') {
+      throw new AgencyValidationError('settings.businessHours.start', 'businessHours.start must be a string');
+    }
+
+    if (!settings.businessHours.end || typeof settings.businessHours.end !== 'string') {
+      throw new AgencyValidationError('settings.businessHours.end', 'businessHours.end must be a string');
+    }
+
+    if (!settings.businessHours.timezone || typeof settings.businessHours.timezone !== 'string') {
+      throw new AgencyValidationError('settings.businessHours.timezone', 'businessHours.timezone must be a string');
+    }
+
+    // Validate time format (HH:MM)
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(settings.businessHours.start)) {
+      throw new AgencyValidationError('settings.businessHours.start', 'businessHours.start must be in HH:MM format');
+    }
+
+    if (!timeRegex.test(settings.businessHours.end)) {
+      throw new AgencyValidationError('settings.businessHours.end', 'businessHours.end must be in HH:MM format');
+    }
+
+    // Validate notifications
+    if (!settings.notifications || typeof settings.notifications !== 'object') {
+      throw new AgencyValidationError('settings.notifications', 'notifications must be an object');
+    }
+
+    if (typeof settings.notifications.lowStock !== 'boolean') {
+      throw new AgencyValidationError('settings.notifications.lowStock', 'notifications.lowStock must be a boolean');
+    }
+
+    if (typeof settings.notifications.overduePayments !== 'boolean') {
+      throw new AgencyValidationError(
+        'settings.notifications.overduePayments',
+        'notifications.overduePayments must be a boolean'
+      );
+    }
+
+    if (typeof settings.notifications.newOrders !== 'boolean') {
+      throw new AgencyValidationError('settings.notifications.newOrders', 'notifications.newOrders must be a boolean');
     }
   }
 

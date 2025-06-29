@@ -42,10 +42,14 @@ let db: Database.Database;
 // let connection: DatabaseConnection;
 
 /**
+ * Proper Handler instances - Using architecturally correct implementations
+ */
+let agencyHandler: AgencyIpcHandler;
+
+/**
  * Basic Handler instances - Minimal Working Set
  */
 // let authHandler: AuthIpcHandler;
-// let agencyHandler: AgencyIpcHandler;
 // let customerHandler: CustomerIpcHandler;
 // let productHandler: ProductIpcHandler;
 // let orderHandler: OrderIpcHandler;
@@ -89,9 +93,9 @@ async function registerWorkingHandlers(): Promise<void> {
     console.log('🔐 Registering Authentication handlers...');
     await registerBasicAuthHandler();
 
-    // Register basic agency handler for listing (working)
+    // Register PROPER agency handler that implements full multi-tenant architecture
     console.log('🏢 Registering Agency handlers...');
-    await registerBasicAgencyHandler();
+    await registerProperAgencyHandler();
 
     // Register placeholder handlers for other domains (to prevent "handler not found" errors)
     console.log('📋 Registering Placeholder handlers...');
@@ -390,7 +394,7 @@ function getDefaultAgencySettings() {
  * Initialize database connection and schema
  */
 async function initializeDatabase(): Promise<void> {
-  const dataDir = join(__dirname, '..', '..', 'data');
+  const dataDir = join(process.cwd(), 'data');
   const dbPath = join(dataDir, 'main.db');
 
   // Ensure data directory exists
@@ -669,6 +673,12 @@ export async function cleanupIpcHandlers(): Promise<void> {
   try {
     console.log('🧹 Cleaning up IPC handlers...');
 
+    // Cleanup proper agency handler
+    if (agencyHandler && agencyHandler.unregisterHandlers) {
+      agencyHandler.unregisterHandlers();
+      console.log('✅ Agency handler cleaned up');
+    }
+
     // TODO: Cleanup CQRS handlers when re-enabled
     // if (databaseHandler && databaseHandler.unregisterHandlers) {
     //   databaseHandler.unregisterHandlers();
@@ -699,8 +709,8 @@ function logHandlerStatistics(): void {
     // Basic authentication handler (placeholder implementation)
     console.log(`  🔐 Auth: Basic implementation (login working)`);
 
-    // Basic agency handler (placeholder implementation)
-    console.log(`  🏢 Agency: Basic implementation`);
+    // Proper agency handler (full multi-tenant implementation)
+    console.log(`  🏢 Agency: Full multi-tenant implementation`);
 
     // Placeholder handlers
     console.log(`  📦 Product: Placeholder (Phase 2.2)`);
@@ -1190,255 +1200,46 @@ async function registerBasicAuthHandler(): Promise<void> {
 }
 
 /**
- * Register basic agency handler for Phase 2.1
+ * Register PROPER agency handler that implements full multi-tenant architecture
  */
-async function registerBasicAgencyHandler(): Promise<void> {
-  const { ipcMain } = await import('electron');
+async function registerProperAgencyHandler(): Promise<void> {
+  try {
+    console.log('🏗️ Initializing proper agency repositories...');
 
-  ipcMain.handle('agency:get-agencies', async (event, request) => {
-    try {
-      console.log('📝 Processing agency:get-agencies request:', request);
-      const db = getDatabase(); // Use the correct database reference
+    // Create proper DatabaseConnection instance
+    const dataDir = join(process.cwd(), 'data');
+    const dbPath = join(dataDir, 'main.db');
 
-      // Build query with optional filters
-      let whereClause = "WHERE status != 'deleted'";
-      const params: any[] = [];
+    const dbConfig = {
+      filename: dbPath,
+      inMemory: false,
+      readonly: false,
+      timeout: 5000,
+    };
 
-      if (request?.search) {
-        whereClause += ' AND name LIKE ?';
-        params.push(`%${request.search}%`);
-      }
+    const connection = DatabaseConnection.getInstance(dbConfig);
+    await connection.connect();
 
-      if (request?.status) {
-        whereClause += ' AND status = ?';
-        params.push(request.status);
-      }
+    // Initialize infrastructure layer with proper repositories
+    const agencyRepository = new SqliteAgencyRepository(connection);
+    const userRepository = new SqliteUserRepository(connection);
 
-      // Get total count
-      const countQuery = `SELECT COUNT(*) as count FROM agencies ${whereClause}`;
-      const totalResult = db.prepare(countQuery).get(...params) as { count: number };
-      const totalCount = totalResult.count;
+    console.log('🎯 Creating proper AgencyIpcHandler...');
 
-      // Get agencies with pagination
-      const limit = request?.limit || request?.pageSize || 50;
-      const offset = request?.offset || (request?.page ? (request.page - 1) * limit : 0);
+    // Create and register the proper AgencyIpcHandler that implements BOTH operations:
+    // 1. Agency registration in main DB
+    // 2. Separate agency database creation
+    agencyHandler = AgencyIpcHandler.create(agencyRepository, userRepository);
+    agencyHandler.registerHandlers();
 
-      const agenciesQuery = `
-        SELECT * FROM agencies ${whereClause}
-        ORDER BY ${request?.sortBy === 'name' ? 'name' : 'created_at'} ${request?.sortOrder || 'desc'}
-        LIMIT ? OFFSET ?
-      `;
-
-      const agencyRows = db.prepare(agenciesQuery).all(...params, limit, offset) as any[];
-
-      const agencies = agencyRows.map((agency) => ({
-        id: agency.id,
-        name: agency.name,
-        databasePath: agency.database_path,
-        contactPerson: agency.contact_person,
-        phone: agency.phone,
-        email: agency.email,
-        address: agency.address,
-        status: agency.status,
-        createdAt: agency.created_at,
-        settings: agency.settings
-          ? JSON.parse(agency.settings)
-          : {
-              allowCreditSales: true,
-              defaultCreditDays: 30,
-              maxCreditLimit: 50000,
-              requireApprovalForOrders: false,
-              enableInventoryTracking: true,
-              taxRate: 0.15,
-              currency: 'USD',
-              businessHours: { start: '09:00', end: '17:00', timezone: 'UTC' },
-              notifications: { lowStock: true, overduePayments: true, newOrders: true },
-            },
-      }));
-
-      // Follow CQRS Query Response pattern - consistent with user listing
-      const responseData = {
-        success: true,
-        agencies,
-        total: totalCount,
-        limit,
-        offset,
-        hasMore: totalCount > offset + limit,
-      };
-
-      console.log('✅ Successfully listed agencies:', agencies.length);
-      return {
-        success: true,
-        data: responseData, // Proper CQRS response format
-        timestamp: Date.now(),
-      };
-    } catch (error) {
-      console.error('❌ Agency handler error:', error);
-      return {
-        success: false,
-        error: 'Failed to get agencies',
-        timestamp: Date.now(),
-      };
-    }
-  });
-
-  // Add required agency operations
-  ipcMain.handle('agency:create-agency', async (event, request) => {
-    try {
-      console.log('📝 Processing agency:create-agency request');
-      const db = getDatabase();
-
-      const agencyId = `agency-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const now = Date.now();
-
-      const settings = {
-        allowCreditSales: request.allowCreditSales || true,
-        defaultCreditDays: request.defaultCreditDays || 30,
-        maxCreditLimit: request.maxCreditLimit || 50000,
-        requireApprovalForOrders: request.requireApprovalForOrders || false,
-        enableInventoryTracking: request.enableInventoryTracking || true,
-        taxRate: request.taxRate || 0.15,
-        currency: request.currency || 'USD',
-        businessHours: request.businessHours || { start: '09:00', end: '17:00', timezone: 'UTC' },
-        notifications: request.notifications || { lowStock: true, overduePayments: true, newOrders: true },
-      };
-
-      // Check if created_by column exists (database migration compatibility)
-      let hasCreatedByColumn = false;
-      try {
-        const columns = db.prepare('PRAGMA table_info(agencies)').all() as Array<{ name: string }>;
-        hasCreatedByColumn = columns.some((col) => col.name === 'created_by');
-      } catch (error) {
-        console.warn('⚠️ Could not check table schema:', error);
-      }
-
-      if (hasCreatedByColumn) {
-        // Use full INSERT with created_by column (new schema)
-        db.prepare(
-          `
-          INSERT INTO agencies (
-            id, name, database_path, contact_person, phone, email, address,
-            settings, status, created_at, updated_at, created_by
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-        ).run(
-          agencyId,
-          request.name,
-          `${agencyId}.db`,
-          request.contactPerson || null,
-          request.phone || null,
-          request.email || null,
-          request.address || null,
-          JSON.stringify(settings),
-          'active',
-          now,
-          now,
-          'system'
-        );
-      } else {
-        // Use INSERT without created_by column (legacy schema compatibility)
-        console.log('⚠️ Using legacy schema compatibility mode for agencies table');
-        db.prepare(
-          `
-          INSERT INTO agencies (
-            id, name, database_path, contact_person, phone, email, address,
-            settings, status, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-        ).run(
-          agencyId,
-          request.name,
-          `${agencyId}.db`,
-          request.contactPerson || null,
-          request.phone || null,
-          request.email || null,
-          request.address || null,
-          JSON.stringify(settings),
-          'active',
-          now,
-          now
-        );
-      }
-
-      console.log('✅ Agency created successfully:', agencyId);
-      return {
-        success: true,
-        data: { agencyId },
-        timestamp: Date.now(),
-      };
-    } catch (error) {
-      console.error('❌ Error creating agency:', error);
-      return {
-        success: false,
-        error: 'Failed to create agency',
-        timestamp: Date.now(),
-      };
-    }
-  });
-
-  ipcMain.handle('agency:update-agency', async (event, request) => {
-    try {
-      console.log('📝 Processing agency:update-agency request');
-      const db = getDatabase();
-
-      const updateFields = [];
-      const params = [];
-
-      if (request.name !== undefined) {
-        updateFields.push('name = ?');
-        params.push(request.name);
-      }
-      if (request.contactPerson !== undefined) {
-        updateFields.push('contact_person = ?');
-        params.push(request.contactPerson);
-      }
-      if (request.phone !== undefined) {
-        updateFields.push('phone = ?');
-        params.push(request.phone);
-      }
-      if (request.email !== undefined) {
-        updateFields.push('email = ?');
-        params.push(request.email);
-      }
-      if (request.address !== undefined) {
-        updateFields.push('address = ?');
-        params.push(request.address);
-      }
-      if (request.status !== undefined) {
-        updateFields.push('status = ?');
-        params.push(request.status);
-      }
-
-      updateFields.push('updated_at = ?');
-      params.push(Date.now());
-      params.push(request.agencyId);
-
-      const updateQuery = `UPDATE agencies SET ${updateFields.join(', ')} WHERE id = ?`;
-      db.prepare(updateQuery).run(...params);
-
-      console.log('✅ Agency updated successfully:', request.agencyId);
-      return {
-        success: true,
-        data: {
-          success: true,
-          message: 'Agency updated successfully',
-          agencyId: request.agencyId,
-        },
-        timestamp: Date.now(),
-      };
-    } catch (error) {
-      console.error('❌ Error updating agency:', error);
-      return {
-        success: false,
-        error: 'Failed to update agency',
-        timestamp: Date.now(),
-      };
-    }
-  });
-
-  console.log('✅ Working agency handlers registered (get-agencies, create-agency, update-agency)');
-
-  console.log('✅ Phase 2.1: Basic agency handlers registered');
+    console.log('✅ Working agency handlers registered (get-agencies, create-agency, update-agency)');
+    console.log('✅ Phase 2.1: Multi-tenant agency handlers registered with FULL functionality');
+    console.log('  🏢 Main DB registration: ✅ ENABLED');
+    console.log('  📁 Separate agency DB creation: ✅ ENABLED');
+  } catch (error) {
+    console.error('❌ Failed to register proper agency handler:', error);
+    throw error;
+  }
 }
 
 /**

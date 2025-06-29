@@ -94,7 +94,7 @@ export const GetAgencyByIdRequestSchema = z.object({
 export const CreateAgencyRequestSchema = z.object({
   name: z.string().min(1).max(255),
   contactPerson: z.string().max(100).optional(),
-  email: z.string().email().optional(),
+  email: z.string().email('Invalid email format').max(255, 'Email too long').or(z.literal('')).optional(),
   phone: z.string().max(20).optional(),
   address: z.string().max(500).optional(),
   databasePath: z.string().min(1),
@@ -136,7 +136,7 @@ export const CreateAgencyRequestSchema = z.object({
  * Update agency request schema for IPC validation
  */
 export const UpdateAgencyRequestSchema = z.object({
-  agencyId: z.string().uuid('Invalid agency ID format'),
+  agencyId: z.string().min(1, 'Agency ID is required').max(100, 'Agency ID too long'),
 
   name: z
     .string()
@@ -159,7 +159,7 @@ export const UpdateAgencyRequestSchema = z.object({
     .nullable()
     .optional(),
 
-  email: z.string().email('Invalid email format').max(255, 'Email too long').nullable().optional(),
+  email: z.string().email('Invalid email format').max(255, 'Email too long').or(z.literal('')).optional(),
 
   address: z.string().max(500, 'Address too long').nullable().optional(),
 
@@ -559,8 +559,15 @@ export class AgencyIpcHandler {
     const startTime = Date.now();
 
     try {
+      console.log('📝 IPC UpdateAgency: Raw request received:', JSON.stringify(request, null, 2));
+
       // Step 1: Validate input
       const validatedRequest = UpdateAgencyRequestSchema.parse(request);
+
+      console.log(
+        '✅ IPC UpdateAgency: Validation passed, validated request:',
+        JSON.stringify(validatedRequest, null, 2)
+      );
 
       // Step 2: Convert to application command
       const command: any = {
@@ -639,6 +646,8 @@ export class AgencyIpcHandler {
         }
       }
 
+      console.log('📤 IPC UpdateAgency: Command to be sent to handler:', JSON.stringify(command, null, 2));
+
       // Step 3: Execute command through application handler
       const result = await this.updateAgencyHandler.handle(command);
 
@@ -669,6 +678,12 @@ export class AgencyIpcHandler {
         duration: Date.now() - startTime,
       };
     } catch (error) {
+      console.error('❌ IPC UpdateAgency: Error caught:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : 'Unknown',
+        request: JSON.stringify(request, null, 2),
+      });
       return this.getSafeErrorResponse(error as Error, 'update-agency', startTime);
     }
   }
@@ -693,11 +708,28 @@ export class AgencyIpcHandler {
   private getSafeErrorResponse(error: Error, operation: AgencyOperation, startTime: number): AgencyIpcResponse {
     let errorMessage = 'An unexpected error occurred';
     let errorCode = 'AGENCY_UNKNOWN_ERROR';
+    let validationErrors: Record<string, string[]> | undefined;
 
     // Handle known error types
     if (error.name === 'ZodError') {
       errorMessage = 'Invalid input data';
       errorCode = 'AGENCY_VALIDATION_ERROR';
+
+      // In development, show detailed validation errors
+      if (process.env.NODE_ENV === 'development') {
+        const zodError = error as any;
+        console.log('🔍 Detailed Zod validation errors:', zodError.errors);
+
+        // Format validation errors for better debugging
+        validationErrors = {};
+        zodError.errors.forEach((err: any) => {
+          const path = err.path.join('.');
+          if (!validationErrors![path]) {
+            validationErrors![path] = [];
+          }
+          validationErrors![path].push(err.message);
+        });
+      }
     } else if (
       error.message.includes('Creating user not found') ||
       error.message.includes('Requesting user not found')
@@ -729,12 +761,14 @@ export class AgencyIpcHandler {
         error: error.message,
         stack: error.stack,
         code: errorCode,
+        validationErrors,
       });
     }
 
     return {
       success: false,
       error: errorMessage,
+      ...(validationErrors && { validationErrors }),
       timestamp: Date.now(),
       operation,
       duration: Date.now() - startTime,

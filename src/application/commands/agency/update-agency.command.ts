@@ -68,7 +68,7 @@ const AgencyBusinessSettingsSchema = z.object({
  * Zod schema for update agency command validation
  */
 export const UpdateAgencyCommandSchema = z.object({
-  agencyId: z.string().uuid('Invalid agency ID format'),
+  agencyId: z.string().min(1, 'Agency ID is required').max(100, 'Agency ID too long'),
 
   name: z
     .string()
@@ -92,7 +92,7 @@ export const UpdateAgencyCommandSchema = z.object({
     .nullable()
     .optional(),
 
-  email: z.string().email('Invalid email format').max(255, 'Email too long').nullable().optional(),
+  email: z.string().email('Invalid email format').max(255, 'Email too long').or(z.literal('')).optional(),
 
   address: z.string().max(500, 'Address too long').nullable().optional(),
 

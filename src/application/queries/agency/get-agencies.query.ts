@@ -82,7 +82,7 @@ export const GetAgenciesQuerySchema = z.object({
 export type GetAgenciesQuery = z.infer<typeof GetAgenciesQuerySchema>;
 
 /**
- * Agency Summary interface for query results
+ * Agency Summary interface for query results - includes complete settings for editing
  */
 export interface AgencySummary {
   readonly id: string;
@@ -92,8 +92,31 @@ export interface AgencySummary {
   readonly email: string | null;
   readonly status: AgencyStatus;
   readonly isOperational: boolean;
+
+  // Basic settings (existing)
   readonly allowsCreditSales: boolean;
   readonly currency: string;
+
+  // Complete financial settings
+  readonly defaultCreditDays: number;
+  readonly maxCreditLimit: number;
+  readonly taxRate: number;
+  readonly requireApprovalForOrders: boolean;
+
+  // Operational settings
+  readonly enableInventoryTracking: boolean;
+
+  // Business hours settings
+  readonly businessHoursStart: string;
+  readonly businessHoursEnd: string;
+  readonly businessHoursTimezone: string;
+
+  // Notification settings
+  readonly notificationsLowStock: boolean;
+  readonly notificationsOverduePayments: boolean;
+  readonly notificationsNewOrders: boolean;
+
+  // Standard fields
   readonly databasePath: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;
