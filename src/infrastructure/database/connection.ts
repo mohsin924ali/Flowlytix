@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
+import { getConnectionPool } from './connection-pool';
 
 /**
  * Database connection configuration
@@ -58,131 +59,131 @@ export class DatabaseConnection {
   }
 
   /**
-   * Get singleton instance of database connection
-   * @param config - Database configuration (only used on first call)
-   * @returns DatabaseConnection instance
+   * Get singleton instance
+   * @param config - Database configuration
    */
-  public static getInstance(config?: DatabaseConfig): DatabaseConnection {
+  public static getInstance(config: DatabaseConfig): DatabaseConnection {
     if (!DatabaseConnection.instance) {
-      if (!config) {
-        throw new DatabaseConfigurationError('Configuration required for first connection');
-      }
       DatabaseConnection.instance = new DatabaseConnection(config);
     }
     return DatabaseConnection.instance;
   }
 
   /**
-   * Establish database connection with retry logic
-   * @returns Promise<void>
-   * @throws {DatabaseConnectionError} When connection fails
+   * Reset instance (for testing)
+   */
+  public static resetInstance(): void {
+    if (DatabaseConnection.instance) {
+      DatabaseConnection.instance.close();
+      DatabaseConnection.instance = null;
+    }
+  }
+
+  /**
+   * Validate database configuration
+   * @param config - Database configuration to validate
+   * @private
+   */
+  private validateConfig(config: DatabaseConfig): DatabaseConfig {
+    if (!config.filename && !config.inMemory) {
+      throw new DatabaseConfigurationError('Either filename or inMemory must be specified');
+    }
+
+    if (config.fileMustExist && !config.filename) {
+      throw new DatabaseConfigurationError('fileMustExist requires filename to be specified');
+    }
+
+    if (config.timeout && config.timeout < 1000) {
+      throw new DatabaseConfigurationError('Timeout must be at least 1000ms');
+    }
+
+    return {
+      ...config,
+      timeout: config.timeout || 5000,
+    };
+  }
+
+  /**
+   * Connect to the database
    */
   public async connect(): Promise<void> {
-    if (this.isConnected && this.database) {
+    if (this.isConnected) {
       return;
     }
 
-    while (this.connectionAttempts < this.maxConnectionAttempts) {
-      try {
-        this.connectionAttempts++;
-        this.totalConnectionAttempts++;
-        await this.establishConnection();
-        this.configureDatabase();
-        this.isConnected = true;
-        this.connectionAttempts = 0; // Reset on success
-        return;
-      } catch (error) {
-        if (this.connectionAttempts >= this.maxConnectionAttempts) {
-          throw new DatabaseConnectionError(
-            `Failed to connect after ${this.maxConnectionAttempts} attempts`,
-            error as Error
-          );
-        }
+    try {
+      this.connectionAttempts++;
+      this.totalConnectionAttempts++;
 
-        // Exponential backoff retry
-        const delay = Math.pow(2, this.connectionAttempts) * 1000;
-        await this.delay(delay);
+      await this.establishConnection();
+      this.configureDatabase();
+
+      this.isConnected = true;
+      this.connectionAttempts = 0;
+
+      console.log(`✅ Database: Connected to ${this.config.filename || ':memory:'}`);
+    } catch (error) {
+      if (this.connectionAttempts < this.maxConnectionAttempts) {
+        console.warn(`⚠️ Database: Connection attempt ${this.connectionAttempts} failed, retrying...`);
+        await this.connect();
+      } else {
+        throw new DatabaseConnectionError(
+          `Failed to connect after ${this.maxConnectionAttempts} attempts`,
+          error as Error
+        );
       }
     }
   }
 
   /**
-   * Close database connection safely
-   * @returns Promise<void>
+   * Close the database connection
    */
   public async close(): Promise<void> {
-    if (this.database) {
-      try {
-        this.database.close();
-        this.database = null;
-        this.isConnected = false;
-        this.connectionAttempts = 0;
-      } catch (error) {
-        throw new DatabaseConnectionError('Failed to close database connection', error as Error);
-      }
+    if (!this.isConnected || !this.database) {
+      return;
+    }
+
+    try {
+      this.database.close();
+      this.database = null;
+      this.isConnected = false;
+
+      console.log(`✅ Database: Closed connection to ${this.config.filename || ':memory:'}`);
+    } catch (error) {
+      throw new DatabaseConnectionError('Failed to close database connection', error as Error);
     }
   }
 
   /**
-   * Get database instance
-   * @returns Database instance
-   * @throws {DatabaseConnectionError} When not connected
+   * Get the database instance
    */
   public getDatabase(): Database.Database {
-    if (!this.database || !this.isConnected) {
-      throw new DatabaseConnectionError('Database not connected. Call connect() first.');
+    if (!this.isConnected || !this.database) {
+      throw new DatabaseConnectionError('Not connected to database');
     }
     return this.database;
   }
 
   /**
-   * Check if database is connected
-   * @returns True if connected
+   * Check if connected to database
    */
-  public isDbConnected(): boolean {
+  public isConnectedToDatabase(): boolean {
     return this.isConnected && this.database !== null;
   }
 
   /**
-   * Execute health check query
-   * @returns Promise<boolean> - True if healthy
+   * Get connection statistics
    */
-  public async healthCheck(): Promise<boolean> {
-    try {
-      if (!this.database) {
-        return false;
-      }
-
-      const result = this.database.prepare('SELECT 1 as health').get();
-      return Boolean(result && (result as { health: number }).health === 1);
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Get database statistics for monitoring
-   * @returns Database statistics
-   */
-  public getStats(): {
+  public getConnectionStats(): {
     isConnected: boolean;
-    connectionAttempts: number;
-    filename: string;
-    inMemory: boolean;
+    totalAttempts: number;
+    currentAttempts: number;
   } {
     return {
       isConnected: this.isConnected,
-      connectionAttempts: this.isConnected ? 0 : this.totalConnectionAttempts,
-      filename: this.config.filename,
-      inMemory: this.config.inMemory || false,
+      totalAttempts: this.totalConnectionAttempts,
+      currentAttempts: this.connectionAttempts,
     };
-  }
-
-  /**
-   * Reset singleton instance (for testing)
-   */
-  public static resetInstance(): void {
-    DatabaseConnection.instance = null;
   }
 
   /**
@@ -191,17 +192,22 @@ export class DatabaseConnection {
    */
   private async establishConnection(): Promise<void> {
     try {
-      // Ensure database directory exists
-      if (!this.config.inMemory) {
-        this.ensureDatabaseDirectory();
+      // For in-memory database, create directly
+      if (this.config.inMemory) {
+        this.database = new Database(':memory:', {
+          readonly: this.config.readonly || false,
+          timeout: this.config.timeout || 5000,
+          verbose: this.config.verbose ? console.log : undefined,
+        });
+        return;
       }
 
-      // Create database connection
-      this.database = new Database(this.config.filename, {
-        readonly: this.config.readonly || false,
-        fileMustExist: this.config.fileMustExist || false,
-        timeout: this.config.timeout || 5000,
-        verbose: this.config.verbose ? console.log : undefined,
+      // For file-based database, use the connection pool
+      const pool = getConnectionPool();
+      this.database = await pool.getConnection('main', {
+        databasePath: this.config.filename,
+        readonly: this.config.readonly ?? false,
+        timeout: this.config.timeout ?? 5000,
       });
     } catch (error) {
       throw new DatabaseConnectionError(`Failed to establish connection to ${this.config.filename}`, error as Error);
@@ -230,62 +236,6 @@ export class DatabaseConnection {
     } catch (error) {
       throw new DatabaseConnectionError('Failed to configure database performance settings', error as Error);
     }
-  }
-
-  /**
-   * Ensure database directory exists
-   * @private
-   */
-  private ensureDatabaseDirectory(): void {
-    const dbPath = join(this.config.filename, '..');
-
-    // Check if path is valid (not root, invalid, or contains null bytes)
-    if (
-      dbPath === '/' ||
-      dbPath.includes('/invalid/') ||
-      dbPath.startsWith('/non/existent/') ||
-      this.config.filename.includes('\0')
-    ) {
-      throw new DatabaseConnectionError(`Invalid database path: ${dbPath}`);
-    }
-
-    if (!existsSync(dbPath)) {
-      try {
-        mkdirSync(dbPath, { recursive: true });
-      } catch (error) {
-        throw new DatabaseConnectionError(`Failed to create database directory: ${dbPath}`, error as Error);
-      }
-    }
-  }
-
-  /**
-   * Validate database configuration
-   * @param config - Configuration to validate
-   * @returns Validated configuration
-   * @private
-   */
-  private validateConfig(config: DatabaseConfig): DatabaseConfig {
-    if (!config.filename) {
-      throw new DatabaseConfigurationError('Database filename is required');
-    }
-
-    if (config.timeout && config.timeout < 1000) {
-      throw new DatabaseConfigurationError('Timeout must be at least 1000ms');
-    }
-
-    return {
-      ...config,
-      timeout: config.timeout || 5000,
-    };
-  }
-
-  /**
-   * Utility method for delays
-   * @param ms - Milliseconds to delay
-   * @private
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

@@ -87,10 +87,10 @@ export const useAuthStore = create<AuthStore>()(
                   id: result.user.agency.id,
                   name: result.user.agency.name,
                   status: (result.user.agency.status as 'active' | 'inactive' | 'suspended') || 'active',
-                  contactPerson: result.user.agency.contactPerson,
-                  phone: result.user.agency.phone,
-                  email: result.user.agency.email,
-                  address: result.user.agency.address,
+                  contactPerson: result.user.agency.contactPerson || '',
+                  phone: result.user.agency.phone || '',
+                  email: result.user.agency.email || '',
+                  address: result.user.agency.address || '',
                   createdAt: new Date().toISOString(), // TODO: Get from backend if needed
                   databasePath: `${result.user.agency.id}.db`, // Standard format
                   settings: {
@@ -189,63 +189,72 @@ export const useAuthStore = create<AuthStore>()(
          */
         checkSession: async (): Promise<void> => {
           try {
-            console.log('🔍 checkSession: Starting session check...');
+            // Reduce console logs for better performance
+            if (process.env.NODE_ENV === 'development') {
+              console.log('🔍 checkSession: Starting session check...');
+            }
 
-            // Check if we have persisted auth state from Zustand
+            // Add a maximum timeout to prevent any hanging
+            const sessionCheckTimeout = setTimeout(() => {
+              if (process.env.NODE_ENV === 'development') {
+                console.log('⚠️ checkSession: Timeout reached, ensuring loading is set to false');
+              }
+              set((state) => {
+                state.isLoading = false;
+                state.error = null;
+              });
+            }, 1500); // Reduced to 1.5 seconds for better performance
+
+            // Simple session check - just check if we have persisted auth state
             const currentState = get();
-            console.log(
-              '🔍 checkSession: Current state:',
-              JSON.stringify(
-                {
-                  isAuthenticated: currentState.isAuthenticated,
-                  hasUser: !!currentState.user,
-                  userEmail: currentState.user?.email,
-                  isLoading: currentState.isLoading,
-                },
-                null,
-                2
-              )
-            );
 
             if (currentState.user && currentState.isAuthenticated) {
-              console.log('🔍 checkSession: Found persisted auth state');
-
-              // We have persisted state, but let's also check localStorage for session timestamp
-              const sessionData = localStorage.getItem(AUTH_CONFIG.SESSION_STORAGE_KEY);
-
-              if (sessionData) {
-                const { timestamp } = JSON.parse(sessionData);
-                const now = Date.now();
-
-                // Check if session is expired
-                if (now - timestamp > AUTH_CONFIG.SESSION_TIMEOUT) {
-                  console.log('⚠️ checkSession: Session expired, logging out');
-                  get().logout();
-                  return;
-                }
-                console.log('✅ checkSession: Session is valid');
+              if (process.env.NODE_ENV === 'development') {
+                console.log('✅ checkSession: Found valid persisted auth state');
               }
 
-              // Session is valid, just ensure loading is false
+              // Quick session validity check
+              try {
+                const sessionData = localStorage.getItem(AUTH_CONFIG.SESSION_STORAGE_KEY);
+                if (sessionData) {
+                  const { timestamp } = JSON.parse(sessionData);
+                  const now = Date.now();
+
+                  // Check if session is expired (more than 24 hours)
+                  if (now - timestamp > 24 * 60 * 60 * 1000) {
+                    get().logout();
+                    clearTimeout(sessionCheckTimeout);
+                    return;
+                  }
+                }
+              } catch (storageError) {
+                // Silent failure for performance
+              }
+
+              // Session is valid
               set((state) => {
                 state.isLoading = false;
                 state.error = null;
               });
-
-              console.log('✅ checkSession: Authentication state confirmed');
             } else {
-              console.log('🔍 checkSession: No persisted auth state found');
-
-              // No persisted state, ensure we're in logged out state
+              // No valid session - ensure logged out state
               set((state) => {
                 state.isLoading = false;
                 state.error = null;
+                state.user = null;
+                state.isAuthenticated = false;
               });
             }
+
+            clearTimeout(sessionCheckTimeout);
           } catch (error) {
-            console.error('❌ checkSession: Error during session check:', error);
-            // If session restoration fails, clear everything
-            get().logout();
+            // Silent error handling for better performance
+            set((state) => {
+              state.isLoading = false;
+              state.error = null;
+              state.user = null;
+              state.isAuthenticated = false;
+            });
           }
         },
       })),

@@ -346,9 +346,123 @@ export class DatabaseMigration {
       checksum: this.generateChecksum(BUSINESS_PERFORMANCE_OPTIMIZATIONS.join('\n')),
     });
 
-    // Migration 7: Phase 2 Order Processing - Lot allocation persistence
+    // Migration 7: Multi-tenant database support
     this.addMigration({
       version: 7,
+      description: 'Add multi-tenant database support with connection pooling',
+      up: [
+        // Add agency database tracking
+        `CREATE TABLE IF NOT EXISTS agency_databases (
+          id TEXT PRIMARY KEY NOT NULL,
+          agency_id TEXT NOT NULL,
+          database_path TEXT NOT NULL UNIQUE,
+          status TEXT NOT NULL DEFAULT 'active',
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          last_connected_at INTEGER,
+          connection_count INTEGER NOT NULL DEFAULT 0,
+          
+          FOREIGN KEY (agency_id) REFERENCES agencies(id) ON DELETE CASCADE,
+          CONSTRAINT agency_databases_status_valid CHECK (status IN ('active', 'inactive', 'migrating', 'error'))
+        ) STRICT;`,
+
+        // Add agency database connection tracking
+        `CREATE TABLE IF NOT EXISTS agency_database_connections (
+          id TEXT PRIMARY KEY NOT NULL,
+          agency_id TEXT NOT NULL,
+          database_id TEXT NOT NULL,
+          connected_at INTEGER NOT NULL,
+          disconnected_at INTEGER,
+          connection_status TEXT NOT NULL DEFAULT 'active',
+          error_message TEXT,
+          
+          FOREIGN KEY (agency_id) REFERENCES agencies(id) ON DELETE CASCADE,
+          FOREIGN KEY (database_id) REFERENCES agency_databases(id) ON DELETE CASCADE,
+          CONSTRAINT agency_connections_status_valid CHECK (connection_status IN ('active', 'closed', 'error'))
+        ) STRICT;`,
+
+        // Add indexes for performance
+        `CREATE INDEX IF NOT EXISTS idx_agency_databases_agency ON agency_databases(agency_id);`,
+        `CREATE INDEX IF NOT EXISTS idx_agency_databases_status ON agency_databases(status);`,
+        `CREATE INDEX IF NOT EXISTS idx_agency_databases_path ON agency_databases(database_path);`,
+        `CREATE INDEX IF NOT EXISTS idx_agency_connections_agency ON agency_database_connections(agency_id);`,
+        `CREATE INDEX IF NOT EXISTS idx_agency_connections_database ON agency_database_connections(database_id);`,
+        `CREATE INDEX IF NOT EXISTS idx_agency_connections_status ON agency_database_connections(connection_status);`,
+
+        // Add triggers for audit logging
+        `CREATE TRIGGER IF NOT EXISTS audit_agency_databases_insert
+         AFTER INSERT ON agency_databases
+         BEGIN
+           INSERT INTO audit_log (
+             id, table_name, record_id, operation, new_values, 
+             changed_at
+           ) VALUES (
+             lower(hex(randomblob(16))), 'agency_databases', NEW.id, 'INSERT',
+             json_object('agency_id', NEW.agency_id, 'database_path', NEW.database_path, 'status', NEW.status),
+             unixepoch()
+           );
+         END;`,
+
+        `CREATE TRIGGER IF NOT EXISTS audit_agency_databases_update
+         AFTER UPDATE ON agency_databases
+         BEGIN
+           INSERT INTO audit_log (
+             id, table_name, record_id, operation, old_values, new_values,
+             changed_at
+           ) VALUES (
+             lower(hex(randomblob(16))), 'agency_databases', NEW.id, 'UPDATE',
+             json_object('status', OLD.status, 'last_connected_at', OLD.last_connected_at),
+             json_object('status', NEW.status, 'last_connected_at', NEW.last_connected_at),
+             unixepoch()
+           );
+         END;`,
+
+        `CREATE TRIGGER IF NOT EXISTS audit_agency_connections_insert
+         AFTER INSERT ON agency_database_connections
+         BEGIN
+           INSERT INTO audit_log (
+             id, table_name, record_id, operation, new_values, 
+             changed_at
+           ) VALUES (
+             lower(hex(randomblob(16))), 'agency_database_connections', NEW.id, 'INSERT',
+             json_object('agency_id', NEW.agency_id, 'database_id', NEW.database_id, 
+                        'connection_status', NEW.connection_status),
+             unixepoch()
+           );
+         END;`,
+
+        `CREATE TRIGGER IF NOT EXISTS audit_agency_connections_update
+         AFTER UPDATE ON agency_database_connections
+         BEGIN
+           INSERT INTO audit_log (
+             id, table_name, record_id, operation, old_values, new_values,
+             changed_at
+           ) VALUES (
+             lower(hex(randomblob(16))), 'agency_database_connections', NEW.id, 'UPDATE',
+             json_object('connection_status', OLD.connection_status, 'disconnected_at', OLD.disconnected_at),
+             json_object('connection_status', NEW.connection_status, 'disconnected_at', NEW.disconnected_at),
+             unixepoch()
+           );
+         END;`,
+      ],
+      down: [
+        'DROP TRIGGER IF EXISTS audit_agency_connections_update;',
+        'DROP TRIGGER IF EXISTS audit_agency_connections_insert;',
+        'DROP TRIGGER IF EXISTS audit_agency_databases_update;',
+        'DROP TRIGGER IF EXISTS audit_agency_databases_insert;',
+        'DROP TABLE IF EXISTS agency_database_connections;',
+        'DROP TABLE IF EXISTS agency_databases;',
+      ],
+      checksum: this.generateChecksum(
+        ['agency_databases', 'agency_database_connections', 'audit_agency_databases', 'audit_agency_connections'].join(
+          '\n'
+        )
+      ),
+    });
+
+    // Migration 8: Phase 2 Order Processing - Lot allocation persistence
+    this.addMigration({
+      version: 8,
       description: 'Phase 2: Add order item lot allocation persistence for complete inventory traceability',
       up: [
         'CREATE TABLE IF NOT EXISTS order_item_lot_allocations (' +

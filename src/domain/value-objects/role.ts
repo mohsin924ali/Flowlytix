@@ -56,6 +56,12 @@ export enum Permission {
   UPDATE_EMPLOYEE = 'employee:update',
   DELETE_EMPLOYEE = 'employee:delete',
 
+  // Area management permissions
+  CREATE_AREA = 'area:create',
+  VIEW_AREA = 'area:view',
+  UPDATE_AREA = 'area:update',
+  DELETE_AREA = 'area:delete',
+
   // Report permissions
   VIEW_REPORTS = 'report:view',
   GENERATE_REPORTS = 'report:generate',
@@ -299,6 +305,12 @@ export class Role {
           Permission.READ_EMPLOYEE,
           Permission.UPDATE_EMPLOYEE,
           Permission.DELETE_EMPLOYEE,
+
+          // Area management
+          Permission.CREATE_AREA,
+          Permission.VIEW_AREA,
+          Permission.UPDATE_AREA,
+          Permission.DELETE_AREA,
 
           // Report access
           Permission.VIEW_REPORTS,

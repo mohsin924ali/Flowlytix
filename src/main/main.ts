@@ -20,6 +20,30 @@ try {
   process.exit(1);
 }
 
+// Fix GPU-related loading issues but keep some acceleration for performance
+// Balance between stability and performance
+if (app) {
+  // Only disable problematic GPU features, keep basic acceleration
+  app.commandLine.appendSwitch('--disable-gpu-sandbox');
+  app.commandLine.appendSwitch('--enable-gpu-rasterization');
+  app.commandLine.appendSwitch('--enable-zero-copy');
+
+  // Performance optimizations
+  app.commandLine.appendSwitch('--enable-hardware-acceleration');
+  app.commandLine.appendSwitch('--enable-smooth-scrolling');
+  app.commandLine.appendSwitch('--enable-fast-unload');
+
+  // Memory optimizations
+  app.commandLine.appendSwitch('--max-old-space-size', '4096');
+  app.commandLine.appendSwitch('--optimize-for-size');
+
+  // Additional flags for stability on macOS while maintaining performance
+  if (process.platform === 'darwin') {
+    app.commandLine.appendSwitch('--disable-dev-shm-usage');
+    app.commandLine.appendSwitch('--enable-quartz-compositor');
+  }
+}
+
 class ElectronApp {
   private mainWindow: InstanceType<typeof BrowserWindow> | null = null;
 
@@ -117,6 +141,29 @@ class ElectronApp {
     console.log('Preload script path:', preloadPath);
     console.log('Preload script exists:', require('fs').existsSync(preloadPath));
 
+    // Enable logging for all processes
+    process.env.ELECTRON_ENABLE_LOGGING = '1';
+    process.env.ELECTRON_ENABLE_STACK_DUMPING = '1';
+
+    // Configure console to show timestamps
+    const originalConsoleLog = console.log;
+    const originalConsoleError = console.error;
+    const originalConsoleWarn = console.warn;
+    const originalConsoleInfo = console.info;
+
+    console.log = (...args) => {
+      originalConsoleLog(new Date().toISOString(), '|', ...args);
+    };
+    console.error = (...args) => {
+      originalConsoleError(new Date().toISOString(), '|', ...args);
+    };
+    console.warn = (...args) => {
+      originalConsoleWarn(new Date().toISOString(), '|', ...args);
+    };
+    console.info = (...args) => {
+      originalConsoleInfo(new Date().toISOString(), '|', ...args);
+    };
+
     const windowOptions: Electron.BrowserWindowConstructorOptions = {
       width: 1400,
       height: 900,
@@ -131,8 +178,14 @@ class ElectronApp {
         webSecurity: true,
         sandbox: false, // Required for preload script
         preload: preloadPath,
-        spellcheck: true,
+        spellcheck: false, // Disable spellcheck for better performance
         devTools: isDev(),
+        // Performance optimizations
+        backgroundThrottling: false, // Keep background tabs active for better performance
+        // V8 optimizations
+        v8CacheOptions: 'code',
+        // Enable experimental features for better performance
+        experimentalFeatures: true,
       },
     };
 

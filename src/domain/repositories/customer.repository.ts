@@ -34,6 +34,7 @@ export interface CustomerSearchCriteria {
   readonly city?: string;
   readonly state?: string;
   readonly country?: string;
+  readonly areaId?: string;
   readonly hasOutstandingBalance?: boolean;
   readonly hasOverduePayments?: boolean;
   readonly creditLimitMin?: number;

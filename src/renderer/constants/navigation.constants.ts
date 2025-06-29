@@ -17,6 +17,7 @@ import {
   Assessment,
   AccountBalance,
   SupervisorAccount,
+  Map,
 } from '@mui/icons-material';
 import type { NavigationRoute } from '../types/navigation.types';
 
@@ -56,6 +57,9 @@ export const ROUTES = {
   AGENCIES_LIST: '/agencies',
   AGENCIES_CREATE: '/agencies/create',
   AGENCIES_DETAILS: '/agencies/:id',
+
+  AREAS: '/areas',
+  AREAS_LIST: '/areas',
 
   EMPLOYEES: '/employees',
   EMPLOYEES_LIST: '/employees',
@@ -193,6 +197,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
 /**
  * System navigation routes
  * Profile removed as it's available in header banner
+ * Admin Panel now accessible to agency admins with restricted modules
  */
 export const SYSTEM_ROUTES: NavigationRoute[] = [
   {
@@ -201,9 +206,8 @@ export const SYSTEM_ROUTES: NavigationRoute[] = [
     path: ROUTES.ADMIN_PANEL,
     icon: SupervisorAccount,
     requiresAuth: true,
-    description: 'Central administration panel for super administrators',
+    description: 'Central administration panel for administrators',
     group: 'system',
-    requiredRole: 'super_admin',
     children: [
       {
         id: 'admin-users',
@@ -213,6 +217,14 @@ export const SYSTEM_ROUTES: NavigationRoute[] = [
         requiresAuth: true,
         description: 'Manage system users and administrators',
         requiredRole: 'super_admin',
+      },
+      {
+        id: 'admin-areas',
+        label: 'Area Management',
+        path: ROUTES.AREAS,
+        icon: Map,
+        requiresAuth: true,
+        description: 'Manage areas and territories',
       },
       {
         id: 'admin-agencies',
@@ -230,7 +242,7 @@ export const SYSTEM_ROUTES: NavigationRoute[] = [
         icon: SupervisorAccount,
         requiresAuth: true,
         description: 'Manage agency employees',
-        requiredRole: 'super_admin',
+        requiredRole: 'admin',
       },
       {
         id: 'admin-settings',
@@ -239,7 +251,7 @@ export const SYSTEM_ROUTES: NavigationRoute[] = [
         icon: Settings,
         requiresAuth: true,
         description: 'Configure system-wide settings',
-        requiredRole: 'super_admin',
+        requiredRole: 'admin',
       },
     ],
   },

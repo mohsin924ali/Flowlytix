@@ -13,6 +13,7 @@ import { DashboardPage } from '../../pages/DashboardPage';
 import { AdminPanelPage } from '../../pages/AdminPanelPage';
 import { UsersPage } from '../../pages/UsersPage';
 import { AgenciesPage } from '../../pages/AgenciesPage';
+import { AreasPage } from '../../pages/AreasPage';
 import { EmployeesPage } from '../../pages/EmployeesPage';
 import { DashboardLayout } from '../templates';
 import { ROUTES } from '../../constants/navigation.constants';
@@ -271,6 +272,16 @@ export const AppRouter: React.FC = () => {
           }
         />
 
+        {/* Area Routes */}
+        <Route
+          path='/areas'
+          element={
+            <ProtectedRoute>
+              <AreasPage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Employee Routes */}
         <Route
           path='/employees'
@@ -377,7 +388,7 @@ export const AppRouter: React.FC = () => {
         <Route
           path='/admin'
           element={
-            <ProtectedRoute requiredPermissions={['SUPER_ADMIN']}>
+            <ProtectedRoute>
               <AdminPanelPage />
             </ProtectedRoute>
           }

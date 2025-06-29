@@ -50,6 +50,23 @@ interface ElectronAPI {
     updateAgency: (data: UpdateAgencyRequest) => Promise<AgencyResult>;
   };
 
+  // Agency context management (for multi-tenant operations)
+  setAgencyContext: (params: { agencyId: string; userId: string; agencyName?: string }) => Promise<any>;
+  clearAgencyContext: () => Promise<any>;
+  getAgencyContext: (params: { userId: string }) => Promise<any>;
+  validateAgencyContext: () => Promise<any>;
+
+  // Area management
+  area: {
+    createArea: (data: any) => Promise<any>;
+    updateArea: (data: any) => Promise<any>;
+    deleteArea: (data: any) => Promise<any>;
+    getAreas: (data: any) => Promise<any>;
+    getAreaById: (data: any) => Promise<any>;
+    getAreaByCode: (data: any) => Promise<any>;
+    getAreaStats: (data: any) => Promise<any>;
+  };
+
   // Business domain operations
   inventory: {
     getProducts: (filters?: ProductFilters) => Promise<Product[]>;
@@ -981,6 +998,23 @@ const electronAPI: ElectronAPI = {
     updateAgency: (data) => ipcRenderer.invoke('agency:update-agency', data),
   },
 
+  // Agency context management (for multi-tenant operations)
+  setAgencyContext: (params) => ipcRenderer.invoke('agency-context:set', params),
+  clearAgencyContext: () => ipcRenderer.invoke('agency-context:clear'),
+  getAgencyContext: (params) => ipcRenderer.invoke('agency-context:get', params),
+  validateAgencyContext: () => ipcRenderer.invoke('agency-context:validate'),
+
+  // Area management
+  area: {
+    createArea: (data) => ipcRenderer.invoke('area:create', data),
+    updateArea: (data) => ipcRenderer.invoke('area:update', data),
+    deleteArea: (data) => ipcRenderer.invoke('area:delete', data),
+    getAreas: (data) => ipcRenderer.invoke('area:get-all', data),
+    getAreaById: (data) => ipcRenderer.invoke('area:get-by-id', data),
+    getAreaByCode: (data) => ipcRenderer.invoke('area:get-by-code', data),
+    getAreaStats: (data) => ipcRenderer.invoke('area:get-stats', data),
+  },
+
   // Business domain operations
   inventory: {
     getProducts: (filters) => ipcRenderer.invoke('inventory:get-products', filters),
@@ -1075,6 +1109,8 @@ function isValidChannel(channel: string): boolean {
     'database:',
     'auth:',
     'agency:',
+    'agency-context:',
+    'area:',
     'product:',
     'customer:',
     'order:',
