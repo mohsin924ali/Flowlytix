@@ -15,6 +15,16 @@ import { UsersPage } from '../../pages/UsersPage';
 import { AgenciesPage } from '../../pages/AgenciesPage';
 import { AreasPage } from '../../pages/AreasPage';
 import { EmployeesPage } from '../../pages/EmployeesPage';
+import { CustomersPage } from '../../pages/CustomersPage';
+import { ProductsPage } from '../../pages/ProductsPage';
+import { OrdersPage } from '../../pages/OrdersPage';
+import { ShippingPage } from '../../pages/ShippingPage';
+import { AnalyticsPage } from '../../pages/AnalyticsPage';
+import { SalesAnalyticsPage } from '../../pages/SalesAnalyticsPage';
+import { CustomerAnalyticsPage } from '../../pages/CustomerAnalyticsPage';
+import { ProductAnalyticsPage } from '../../pages/ProductAnalyticsPage';
+import { ProfilePage } from '../../pages/ProfilePage';
+import { SettingsPage } from '../../pages/SettingsPage';
 import { DashboardLayout } from '../templates';
 import { ROUTES } from '../../constants/navigation.constants';
 import { useAuthStore } from '../../store/auth.store';
@@ -140,10 +150,7 @@ export const AppRouter: React.FC = () => {
           path='/customers'
           element={
             <ProtectedRoute>
-              <PlaceholderPage
-                title='Customer Management'
-                description='Comprehensive customer relationship management system. Manage customer profiles, track interactions, and analyze customer behavior patterns.'
-              />
+              <CustomersPage />
             </ProtectedRoute>
           }
         />
@@ -175,10 +182,7 @@ export const AppRouter: React.FC = () => {
           path='/products'
           element={
             <ProtectedRoute>
-              <PlaceholderPage
-                title='Product Catalog'
-                description='Manage your complete product inventory with advanced categorization, pricing, and stock management.'
-              />
+              <ProductsPage />
             </ProtectedRoute>
           }
         />
@@ -210,10 +214,7 @@ export const AppRouter: React.FC = () => {
           path='/orders'
           element={
             <ProtectedRoute>
-              <PlaceholderPage
-                title='Order Management'
-                description='Comprehensive order processing system with real-time tracking, fulfillment management, and customer communication.'
-              />
+              <OrdersPage />
             </ProtectedRoute>
           }
         />
@@ -319,10 +320,7 @@ export const AppRouter: React.FC = () => {
           path='/shipping'
           element={
             <ProtectedRoute>
-              <PlaceholderPage
-                title='Shipping Management'
-                description='Comprehensive shipping and logistics management with real-time tracking and delivery coordination.'
-              />
+              <ShippingPage />
             </ProtectedRoute>
           }
         />
@@ -343,10 +341,7 @@ export const AppRouter: React.FC = () => {
           path='/analytics'
           element={
             <ProtectedRoute>
-              <PlaceholderPage
-                title='Analytics Dashboard'
-                description='Comprehensive business analytics with real-time insights, performance metrics, and predictive analytics.'
-              />
+              <AnalyticsPage />
             </ProtectedRoute>
           }
         />
@@ -354,10 +349,7 @@ export const AppRouter: React.FC = () => {
           path='/analytics/sales'
           element={
             <ProtectedRoute>
-              <PlaceholderPage
-                title='Sales Analytics'
-                description='Detailed sales performance analysis with trends, forecasting, and revenue optimization insights.'
-              />
+              <SalesAnalyticsPage />
             </ProtectedRoute>
           }
         />
@@ -365,10 +357,7 @@ export const AppRouter: React.FC = () => {
           path='/analytics/customers'
           element={
             <ProtectedRoute>
-              <PlaceholderPage
-                title='Customer Analytics'
-                description='Customer behavior analysis, segmentation insights, and lifetime value calculations.'
-              />
+              <CustomerAnalyticsPage />
             </ProtectedRoute>
           }
         />
@@ -376,10 +365,7 @@ export const AppRouter: React.FC = () => {
           path='/analytics/products'
           element={
             <ProtectedRoute>
-              <PlaceholderPage
-                title='Product Analytics'
-                description='Product performance metrics, inventory optimization, and demand forecasting analytics.'
-              />
+              <ProductAnalyticsPage />
             </ProtectedRoute>
           }
         />
@@ -405,10 +391,7 @@ export const AppRouter: React.FC = () => {
           path='/profile'
           element={
             <ProtectedRoute>
-              <PlaceholderPage
-                title='User Profile'
-                description='Manage your user profile, preferences, and account settings.'
-              />
+              <ProfilePage />
             </ProtectedRoute>
           }
         />
@@ -416,10 +399,7 @@ export const AppRouter: React.FC = () => {
           path='/settings'
           element={
             <ProtectedRoute>
-              <PlaceholderPage
-                title='Application Settings'
-                description='Configure application settings, user preferences, and system configurations.'
-              />
+              <SettingsPage />
             </ProtectedRoute>
           }
         />

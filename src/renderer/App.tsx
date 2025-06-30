@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { theme } from './utils/theme';
 import { useAuthStore } from './store/auth.store';
 import { AppRouter } from './components/routing';
+import { MockDataProvider } from './mocks';
 
 /**
  * Loading component optimized for performance
@@ -99,11 +100,13 @@ export const App: React.FC = () => {
   }
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <BrowserRouter>
-        <AppRouter />
-      </BrowserRouter>
-    </ThemeProvider>
+    <MockDataProvider enabled={true}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <BrowserRouter>
+          <AppRouter />
+        </BrowserRouter>
+      </ThemeProvider>
+    </MockDataProvider>
   );
 };
