@@ -5,7 +5,8 @@
  * Uses simplified approach without heavy services.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useTimeout } from '../utils/performance.utils';
 import {
   Box,
   Grid,
@@ -100,9 +101,18 @@ export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // Use performance utility for timeout management
+  const { setManagedTimeout } = useTimeout();
+
+  // Automatically hide success message with managed timeout
+  useEffect(() => {
+    if (showSuccess) {
+      setManagedTimeout(() => setShowSuccess(false), 3000);
+    }
+  }, [showSuccess, setManagedTimeout]);
+
   const handleSave = () => {
     setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
   };
 
   const handleSettingChange = (section: string, key: string, value: any) => {

@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "./dist/preload",
+    "rootDir": "./src/preload",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "isolatedModules": false,
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["src/preload/**/*"],
+  "exclude": ["node_modules", "dist", "src/renderer", "src/main"]
+}

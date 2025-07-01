@@ -38,19 +38,37 @@ export class MockAuthService {
   static async authenticate(credentials: LoginCredentials): Promise<AuthResult> {
     try {
       console.log('🔑 MockAuthService.authenticate called with:');
-      console.log('- Email:', credentials.email);
-      console.log('- Password length:', credentials.password.length);
+      console.log('- Email:', credentials?.email);
+      console.log('- Password length:', credentials?.password?.length);
+      console.log('- Credentials type:', typeof credentials);
+      console.log('- Credentials:', credentials);
+
+      // Validate credentials object
+      if (!credentials) {
+        console.error('❌ MockAuthService: No credentials provided');
+        return {
+          success: false,
+          error: 'No credentials provided',
+        };
+      }
 
       // Simulate network delay
       await this.delay();
 
       // Validate input
       if (!credentials.email || !credentials.password) {
+        console.error('❌ MockAuthService: Email or password missing');
         return {
           success: false,
           error: 'Email and password are required',
         };
       }
+
+      console.log('🔍 MockAuthService: Looking for user with email:', credentials.email);
+      console.log(
+        '🔍 MockAuthService: Available users:',
+        mockUsers.map((u) => u.email)
+      );
 
       // Find user by email
       const user = mockUsers.find((u) => u.email.toLowerCase() === credentials.email.toLowerCase());
@@ -62,6 +80,8 @@ export class MockAuthService {
           error: 'Invalid email or password',
         };
       }
+
+      console.log('🔍 MockAuthService: Found user:', { id: user.id, email: user.email, role: user.role });
 
       // Check password (in real app, this would be hashed)
       if (user.password !== credentials.password) {
@@ -75,7 +95,12 @@ export class MockAuthService {
       // Successful authentication
       console.log('✅ MockAuthService: Authentication successful');
 
-      return {
+      console.log('🔍 MockAuthService: Building result object...');
+      console.log('- User data:', user);
+      console.log('- User agencyId:', user.agencyId);
+      console.log('- User agency:', user.agency);
+
+      const result = {
         success: true,
         user: {
           id: user.id,
@@ -88,8 +113,12 @@ export class MockAuthService {
           ...(user.agency && { agency: user.agency }),
         },
       };
+
+      console.log('✅ MockAuthService: Built result:', result);
+      return result;
     } catch (error) {
       console.error('💥 MockAuthService: Authentication error:', error);
+      console.error('💥 MockAuthService: Error stack:', error instanceof Error ? error.stack : 'No stack');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Authentication failed',

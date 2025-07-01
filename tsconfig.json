@@ -37,6 +37,5 @@
     }
   },
   "include": ["src/renderer/**/*", "vite.renderer.config.ts"],
-  "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "./tsconfig.renderer.json" }]
+  "exclude": ["node_modules", "dist"]
 }

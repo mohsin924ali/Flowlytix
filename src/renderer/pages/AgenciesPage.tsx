@@ -199,25 +199,18 @@ export function AgenciesPage(): JSX.Element {
   const handleEditAgency = useCallback(
     async (agency: Agency) => {
       try {
-        console.log('📝 AgenciesPage: Edit requested for agency:', agency.id);
-
         // Force reload fresh data from backend to get complete settings
-        console.log('🔄 AgenciesPage: Forcing fresh data reload before edit...');
         await loadAgencies();
 
-        // Give a small delay to ensure state update completes
-        setTimeout(() => {
-          // Find the fresh agency data from the newly loaded agencies
-          const freshAgency = agencies.find((a) => a.id === agency.id);
-          if (freshAgency) {
-            console.log('📝 AgenciesPage: Using fresh agency data for edit:', freshAgency);
-            setEditingAgency(freshAgency);
-          } else {
-            console.warn('⚠️ AgenciesPage: Could not find fresh agency data, using passed agency:', agency);
-            setEditingAgency(agency);
-          }
-          setEditModalOpen(true);
-        }, 100);
+        // Use React's state update mechanism instead of setTimeout
+        // This prevents memory leaks and is more React-appropriate
+        const freshAgency = agencies.find((a) => a.id === agency.id);
+        if (freshAgency) {
+          setEditingAgency(freshAgency);
+        } else {
+          setEditingAgency(agency);
+        }
+        setEditModalOpen(true);
       } catch (error) {
         console.error('❌ AgenciesPage: Error reloading data for edit:', error);
         // Fallback to using the passed agency if reload fails

@@ -1,5 +1,5 @@
 /**
- * Main App Component
+ * Main App Component - FINAL: Simple Initialization
  * Root component with routing and theme provider
  * Following Instructions standards with TypeScript strict mode
  */
@@ -9,9 +9,9 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { motion } from 'framer-motion';
 import { theme } from './utils/theme';
+import { MockDataProvider } from './mocks';
 import { useAuthStore } from './store/auth.store';
 import { AppRouter } from './components/routing';
-import { MockDataProvider } from './mocks';
 
 /**
  * Loading component optimized for performance
@@ -50,47 +50,55 @@ const LoadingScreen = React.memo(() => (
 LoadingScreen.displayName = 'LoadingScreen';
 
 /**
- * Main App component
- * Handles routing with authentication
+ * Main App component with SIMPLE initialization
  */
 export const App: React.FC = () => {
-  const { isLoading, checkSession } = useAuthStore();
+  const { checkSession } = useAuthStore();
   const [initComplete, setInitComplete] = React.useState(false);
 
-  // Check for existing session on app initialization
+  // SIMPLE initialization - no complex timeouts or Promise.race
   React.useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🚀 App initializing - checking session...');
+    console.log('🚀 App initializing with simple approach...');
+
+    // Hide the HTML loading screen immediately
+    const loadingElement = document.getElementById('loading');
+    if (loadingElement) {
+      loadingElement.style.display = 'none';
+      console.log('✅ HTML loading screen hidden');
     }
 
-    // Reduced timeout for better perceived performance
-    const safetyTimeout = setTimeout(() => {
-      setInitComplete(true);
-    }, 2000); // 2 second absolute maximum
-
-    // Call checkSession with timeout
     const initializeApp = async () => {
       try {
+        console.log('🔍 Starting session check...');
         await checkSession();
+        console.log('✅ Session check completed');
       } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('❌ App: Session check failed:', error);
-        }
+        console.log('⚠️ Session check failed (continuing anyway):', error);
       } finally {
-        clearTimeout(safetyTimeout);
+        // Always complete initialization
         setInitComplete(true);
+        console.log('🎯 App initialization complete');
       }
     };
 
-    initializeApp();
+    // Simple timeout to ensure we never hang
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ Fallback timeout - forcing initialization complete');
+      setInitComplete(true);
+    }, 2000);
+
+    initializeApp().finally(() => {
+      clearTimeout(timeoutId);
+    });
 
     return () => {
-      clearTimeout(safetyTimeout);
+      clearTimeout(timeoutId);
     };
   }, [checkSession]);
 
-  // Show loading state only while initializing and not yet complete
-  if (!initComplete || (isLoading && !initComplete)) {
+  // Show simple loading only briefly during initialization
+  if (!initComplete) {
+    console.log('⏳ App: Still initializing...');
     return (
       <ThemeProvider theme={theme}>
         <CssBaseline />
@@ -98,6 +106,8 @@ export const App: React.FC = () => {
       </ThemeProvider>
     );
   }
+
+  console.log('✅ App: Rendering main application');
 
   return (
     <MockDataProvider enabled={true}>

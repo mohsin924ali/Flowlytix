@@ -46,43 +46,52 @@ export class AuthService {
         throw new Error('Electron API not available');
       }
 
-      console.log('🔗 Calling electronAPI.auth.authenticateUser...');
       console.log('🔗 Available electronAPI methods:', Object.keys(window.electronAPI));
-      console.log('🔗 Available auth methods:', Object.keys(window.electronAPI.auth));
 
-      // Call the main process via IPC
-      const result = await window.electronAPI.auth.authenticateUser({
-        email: credentials.email,
-        password: credentials.password,
-      });
+      // Check if auth API is available in electronAPI
+      if (window.electronAPI.auth) {
+        console.log('🔗 Using electronAPI.auth');
+        console.log('🔗 Available auth methods:', Object.keys(window.electronAPI.auth));
 
-      console.log('📡 IPC Response received:', result);
-      console.log('📡 IPC Response type:', typeof result);
-      console.log('📡 IPC Response keys:', Object.keys(result || {}));
+        const result = await window.electronAPI.auth.authenticateUser({
+          email: credentials.email,
+          password: credentials.password,
+        });
 
-      if (result.success && result.user) {
-        console.log('✅ Authentication successful, user:', result.user);
+        console.log('📡 IPC Response received:', result);
 
-        // Use the user data from the IPC response (including agency info)
-        return {
-          success: true,
-          user: {
-            id: result.user.id,
-            email: result.user.email,
-            firstName: result.user.firstName,
-            lastName: result.user.lastName,
-            role: result.user.role,
-            permissions: result.user.permissions || [],
-            agencyId: result.user.agencyId,
-            agency: result.user.agency, // Pass through complete agency information
-          },
-        };
+        if (result.success && result.user) {
+          console.log('✅ Authentication successful, user:', result.user);
+          return {
+            success: true,
+            user: {
+              id: result.user.id,
+              email: result.user.email,
+              firstName: result.user.firstName,
+              lastName: result.user.lastName,
+              role: result.user.role,
+              permissions: result.user.permissions || [],
+              agencyId: result.user.agencyId,
+              agency: result.user.agency,
+            },
+          };
+        } else {
+          console.log('❌ Authentication failed:', result.message || result.error);
+          return {
+            success: false,
+            error: result.message || result.error || 'Authentication failed',
+          };
+        }
       } else {
-        console.log('❌ Authentication failed:', result.message || result.error);
-        return {
-          success: false,
-          error: result.message || result.error || 'Authentication failed',
-        };
+        // Fallback to mock authentication
+        console.log('🔗 Electron auth API not available, using MockAuthService');
+
+        // Import and use MockAuthService directly
+        const { MockAuthService } = await import('../mocks/services/MockAuthService');
+        const result = await MockAuthService.authenticate(credentials);
+
+        console.log('📡 MockAuthService Response:', result);
+        return result;
       }
     } catch (error) {
       console.error('💥 Authentication service error:', error);

@@ -5,7 +5,8 @@
  * Uses simplified approach without heavy services.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useTimeout } from '../utils/performance.utils';
 import {
   Box,
   Grid,
@@ -97,10 +98,19 @@ export const ProfilePage: React.FC = () => {
   const [editing, setEditing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // Use performance utility for timeout management
+  const { setManagedTimeout } = useTimeout();
+
+  // Automatically hide success message with managed timeout
+  useEffect(() => {
+    if (showSuccess) {
+      setManagedTimeout(() => setShowSuccess(false), 3000);
+    }
+  }, [showSuccess, setManagedTimeout]);
+
   const handleSave = () => {
     setEditing(false);
     setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
   };
 
   const handlePreferenceChange = (key: string, value: boolean | string) => {

@@ -17,7 +17,7 @@ import { useAgencyStore } from './agency.store';
 const initialState = {
   user: null,
   isAuthenticated: false,
-  isLoading: true, // Start with loading true, will be set to false after session check
+  isLoading: false, // Start with loading false for better UX in Electron
   error: null,
 };
 
@@ -30,6 +30,9 @@ export const useAuthStore = create<AuthStore>()(
     persist(
       immer((set, get) => ({
         ...initialState,
+
+        // Add initialization logging
+        _hydrated: false,
 
         /**
          * Login action
@@ -168,7 +171,8 @@ export const useAuthStore = create<AuthStore>()(
           });
 
           // Clear agency store on logout
-          useAgencyStore.getState().clearCurrentAgency();
+          const { clearCurrentAgency } = useAgencyStore.getState();
+          clearCurrentAgency();
 
           // Clear session data
           localStorage.removeItem(AUTH_CONFIG.SESSION_STORAGE_KEY);
@@ -188,74 +192,73 @@ export const useAuthStore = create<AuthStore>()(
          * Check existing session
          */
         checkSession: async (): Promise<void> => {
-          try {
-            // Reduce console logs for better performance
-            if (process.env.NODE_ENV === 'development') {
-              console.log('🔍 checkSession: Starting session check...');
-            }
+          console.log('🔍 Auth Store: Checking session...');
 
-            // Add a maximum timeout to prevent any hanging
-            const sessionCheckTimeout = setTimeout(() => {
-              if (process.env.NODE_ENV === 'development') {
-                console.log('⚠️ checkSession: Timeout reached, ensuring loading is set to false');
-              }
+          return new Promise((resolve) => {
+            try {
+              // Set loading to true at the start of session check
               set((state) => {
-                state.isLoading = false;
-                state.error = null;
+                state.isLoading = true;
               });
-            }, 1500); // Reduced to 1.5 seconds for better performance
 
-            // Simple session check - just check if we have persisted auth state
-            const currentState = get();
+              // Simple and fast session check
+              const currentState = get();
+              console.log('📊 Auth Store: Current state:', {
+                hasUser: !!currentState.user,
+                isAuthenticated: currentState.isAuthenticated,
+                isLoading: currentState.isLoading,
+              });
 
-            if (currentState.user && currentState.isAuthenticated) {
-              if (process.env.NODE_ENV === 'development') {
-                console.log('✅ checkSession: Found valid persisted auth state');
-              }
-
-              // Quick session validity check
+              // Check localStorage for persisted session
               try {
                 const sessionData = localStorage.getItem(AUTH_CONFIG.SESSION_STORAGE_KEY);
                 if (sessionData) {
-                  const { timestamp } = JSON.parse(sessionData);
+                  const { user, timestamp } = JSON.parse(sessionData);
                   const now = Date.now();
 
                   // Check if session is expired (more than 24 hours)
                   if (now - timestamp > 24 * 60 * 60 * 1000) {
+                    console.log('⏰ Auth Store: Session expired, logging out');
                     get().logout();
-                    clearTimeout(sessionCheckTimeout);
+                    resolve();
                     return;
                   }
+
+                  // Session is valid, restore user state
+                  console.log('✅ Auth Store: Valid session found, restoring user');
+                  set((state) => {
+                    state.user = user;
+                    state.isAuthenticated = true;
+                    state.isLoading = false;
+                    state.error = null;
+                  });
+                  resolve();
+                  return;
                 }
               } catch (storageError) {
-                // Silent failure for performance
+                console.log('⚠️ Auth Store: Storage error, clearing session:', storageError);
               }
 
-              // Session is valid
-              set((state) => {
-                state.isLoading = false;
-                state.error = null;
-              });
-            } else {
-              // No valid session - ensure logged out state
+              // No valid session found
+              console.log('❌ Auth Store: No valid session found');
               set((state) => {
                 state.isLoading = false;
                 state.error = null;
                 state.user = null;
                 state.isAuthenticated = false;
               });
+              resolve();
+            } catch (error) {
+              console.log('💥 Auth Store: Session check error:', error);
+              set((state) => {
+                state.isLoading = false;
+                state.error = null;
+                state.user = null;
+                state.isAuthenticated = false;
+              });
+              resolve(); // Always resolve, never reject to prevent hanging
             }
-
-            clearTimeout(sessionCheckTimeout);
-          } catch (error) {
-            // Silent error handling for better performance
-            set((state) => {
-              state.isLoading = false;
-              state.error = null;
-              state.user = null;
-              state.isAuthenticated = false;
-            });
-          }
+          });
         },
       })),
       {

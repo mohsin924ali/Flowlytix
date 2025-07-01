@@ -210,11 +210,89 @@ export const configureMocks = () => {
     },
   };
 
-  // Replace window.electronAPI with mock
-  (window as any).electronAPI = mockElectronAPI;
+  // Handle both browser and Electron environments
+  if (!(window as any).electronAPI) {
+    // Browser mode - replace entire electronAPI with mock
+    (window as any).electronAPI = mockElectronAPI;
+    console.log('✅ Mock electron API configured successfully (browser mode)');
+    console.log('🎭 Available mock APIs:', Object.keys(mockElectronAPI));
+  } else {
+    // Electron mode - create a proxy wrapper since both the object and its properties are read-only
+    console.log('🔌 Real Electron API detected - creating proxy wrapper');
+    console.log('🔌 Existing APIs:', Object.keys((window as any).electronAPI));
 
-  console.log('✅ Mock electron API configured successfully');
-  console.log('🎭 Available mock APIs:', Object.keys(mockElectronAPI));
+    const originalElectronAPI = (window as any).electronAPI;
+
+    // Create a proxy that intercepts property access
+    const proxyElectronAPI = new Proxy(originalElectronAPI, {
+      get(target, prop) {
+        // If the property exists on the original API, return it
+        if (prop in target) {
+          return target[prop];
+        }
+
+        // If the property exists in our mock API, return it
+        if (prop in mockElectronAPI) {
+          console.log(`🔀 Proxy: Routing ${String(prop)} to mock API`);
+          return (mockElectronAPI as any)[prop];
+        }
+
+        // Property doesn't exist in either
+        console.log(`❌ Proxy: Property ${String(prop)} not found in either API`);
+        return undefined;
+      },
+
+      has(target, prop) {
+        // Check if property exists in either original or mock API
+        return prop in target || prop in mockElectronAPI;
+      },
+
+      ownKeys(target) {
+        // Return all keys from both original and mock APIs
+        const originalKeys = Object.keys(target);
+        const mockKeys = Object.keys(mockElectronAPI);
+        const allKeys = [...new Set([...originalKeys, ...mockKeys])];
+        console.log('🔀 Proxy: Available keys:', allKeys);
+        return allKeys;
+      },
+
+      getOwnPropertyDescriptor(target, prop) {
+        // Return descriptor for properties from either API
+        if (prop in target) {
+          return Object.getOwnPropertyDescriptor(target, prop);
+        }
+        if (prop in mockElectronAPI) {
+          return Object.getOwnPropertyDescriptor(mockElectronAPI as any, prop);
+        }
+        return undefined;
+      },
+    });
+
+    // Try to replace the electronAPI with our proxy
+    try {
+      // Use Object.defineProperty to override the read-only property
+      Object.defineProperty(window, 'electronAPI', {
+        value: proxyElectronAPI,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      });
+      console.log('✅ Successfully replaced electronAPI with proxy wrapper');
+    } catch (error) {
+      console.warn('⚠️ Could not replace electronAPI, using fallback approach');
+      console.warn('⚠️ Error:', error);
+
+      // Fallback: Create a global variable that services can use
+      (window as any).__mockElectronAPI = mockElectronAPI;
+      console.log('✅ Created fallback __mockElectronAPI');
+    }
+
+    console.log('🔌 Final available APIs:', Object.keys((window as any).electronAPI));
+    console.log('🔌 Auth API available:', !!(window as any).electronAPI.auth);
+    console.log('🔌 Direct auth check:', (window as any).electronAPI.auth);
+    console.log('🔌 Proxy auth check:', proxyElectronAPI.auth);
+    console.log('🔌 Mock auth check:', mockElectronAPI.auth);
+  }
 
   return mockElectronAPI;
 };

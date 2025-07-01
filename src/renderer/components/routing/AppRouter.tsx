@@ -106,7 +106,15 @@ const PlaceholderPage: React.FC<{ title: string; description: string }> = ({ tit
  */
 export const AppRouter: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, isLoading } = useAuthStore();
+
+  // Debug logging for router state
+  console.log('🔀 AppRouter render:', {
+    isAuthenticated: Boolean(isAuthenticated),
+    hasUser: !!user,
+    isLoading: Boolean(isLoading),
+    currentPath: window.location.pathname,
+  });
 
   /**
    * Navigate to dashboard when authentication state changes to true

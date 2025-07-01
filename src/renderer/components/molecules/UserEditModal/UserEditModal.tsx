@@ -10,7 +10,8 @@
  * @version 1.0.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useTimeout } from '../../../utils/performance.utils';
 import {
   Dialog,
   DialogTitle,
@@ -48,6 +49,9 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({ open, userId, onCl
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // Use performance utility for timeout management
+  const { setManagedTimeout, clearExistingTimeout } = useTimeout();
+
   /**
    * Reset form when modal opens/closes
    */
@@ -67,6 +71,8 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({ open, userId, onCl
       setSuccess(null);
     }
   }, [open, userId]);
+
+  // Timeout cleanup is handled automatically by useTimeout hook
 
   /**
    * Handle form submission
@@ -89,7 +95,9 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({ open, userId, onCl
 
       setSuccess('User updated successfully');
       onUserUpdated();
-      setTimeout(() => {
+
+      // Use managed timeout to prevent memory leaks
+      setManagedTimeout(() => {
         onClose();
       }, 1500);
     } catch (err) {
