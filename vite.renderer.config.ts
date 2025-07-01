@@ -1,44 +1,34 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'node:path';
-import { fileURLToPath, URL } from 'node:url';
-
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  root: '.',
+  root: 'src/renderer',
   base: './',
-  publicDir: 'public',
   build: {
-    outDir: 'dist/renderer',
+    outDir: '../../dist',
     emptyOutDir: true,
-    target: 'chrome120',
-    minify: false,
-    sourcemap: false,
-    rollupOptions: {
-      input: resolve(__dirname, 'index.html'),
-    },
-    chunkSizeWarningLimit: 2000,
-    assetsDir: 'assets',
-    copyPublicDir: true,
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      '@': path.resolve(__dirname, 'src/renderer'),
+      '@/components': path.resolve(__dirname, 'src/renderer/components'),
+      '@/pages': path.resolve(__dirname, 'src/renderer/pages'),
+      '@/hooks': path.resolve(__dirname, 'src/renderer/hooks'),
+      '@/services': path.resolve(__dirname, 'src/renderer/services'),
+      '@/store': path.resolve(__dirname, 'src/renderer/store'),
+      '@/types': path.resolve(__dirname, 'src/renderer/types'),
+      '@/utils': path.resolve(__dirname, 'src/renderer/utils'),
+      '@/mocks': path.resolve(__dirname, 'src/renderer/mocks'),
     },
-  },
-  optimizeDeps: {
-    include: ['react', 'react-dom'],
   },
   server: {
     port: 3000,
-    strictPort: true,
-    host: '127.0.0.1',
+    host: true,
   },
-  define: {
-    __APP_VERSION__: JSON.stringify('1.0.0'),
-    __DEV__: JSON.stringify(process.env.NODE_ENV === 'development'),
+  preview: {
+    port: 3000,
+    host: true,
   },
-  assetsInclude: ['**/*.svg', '**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.ico'],
 });

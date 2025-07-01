@@ -239,30 +239,38 @@ export const AreaFormModal: React.FC<AreaFormModalProps> = ({
     setErrors({});
 
     try {
-      // Check if electron API is available
-      if (!window.electronAPI?.area) {
-        throw new Error('Area API not available');
-      }
+      // Use MockAreaService instead of IPC
+      const { MockAreaService } = await import('../../../mocks/services/MockAreaService');
 
       if (isEditMode && area) {
         // Update existing area
         const updateData = {
-          id: area.id,
+          areaId: area.id,
           areaName: formData.areaName.trim(),
-          description: formData.description.trim() || null,
-          latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-          longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-          status: formData.status,
+          description: formData.description.trim() || undefined,
+          status: formData.status as 'ACTIVE' | 'INACTIVE' | 'SUSPENDED',
+          latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
+          longitude: formData.longitude ? parseFloat(formData.longitude) : undefined,
+          updatedBy: currentUserId,
         };
 
-        const result = await window.electronAPI.area.updateArea(updateData);
-
-        if (result.data) {
-          onSuccess(result.data);
-          onClose();
-        } else {
-          throw new Error(result.error || 'Failed to update area');
-        }
+        const updatedArea = await MockAreaService.updateArea(updateData);
+        // Convert MockAreaService Area to component Area format
+        const resultArea: Area = {
+          id: updatedArea.id,
+          agencyId: updatedArea.agencyId,
+          areaCode: updatedArea.areaCode,
+          areaName: updatedArea.areaName,
+          description: updatedArea.description,
+          latitude: updatedArea.latitude,
+          longitude: updatedArea.longitude,
+          status: updatedArea.status as 'ACTIVE' | 'INACTIVE',
+          createdAt: updatedArea.createdAt.toISOString(),
+          updatedAt: updatedArea.updatedAt?.toISOString() || new Date().toISOString(),
+          createdBy: updatedArea.createdBy,
+        };
+        onSuccess(resultArea);
+        onClose();
       } else {
         // Create new area
         const createData = {
@@ -275,14 +283,23 @@ export const AreaFormModal: React.FC<AreaFormModalProps> = ({
           createdBy: currentUserId,
         };
 
-        const result = await window.electronAPI.area.createArea(createData);
-
-        if (result.data) {
-          onSuccess(result.data);
-          onClose();
-        } else {
-          throw new Error(result.error || 'Failed to create area');
-        }
+        const createdArea = await MockAreaService.createArea(createData);
+        // Convert MockAreaService Area to component Area format
+        const resultArea: Area = {
+          id: createdArea.id,
+          agencyId: createdArea.agencyId,
+          areaCode: createdArea.areaCode,
+          areaName: createdArea.areaName,
+          description: createdArea.description,
+          latitude: createdArea.latitude,
+          longitude: createdArea.longitude,
+          status: createdArea.status as 'ACTIVE' | 'INACTIVE',
+          createdAt: createdArea.createdAt.toISOString(),
+          updatedAt: new Date().toISOString(),
+          createdBy: createdArea.createdBy,
+        };
+        onSuccess(resultArea);
+        onClose();
       }
     } catch (error) {
       console.error('Area form submission error:', error);

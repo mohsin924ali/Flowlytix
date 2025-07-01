@@ -56,7 +56,7 @@ import {
 } from '@mui/icons-material';
 import { useAuthStore } from '../store/auth.store';
 import { DashboardLayout } from '../components/templates';
-import { AreaService, Area, CreateAreaRequest } from '../services/AreaService';
+import { MockAreaService as AreaService, Area, CreateAreaRequest } from '../mocks/services/MockAreaService';
 import { AreaFormModal } from '../components/molecules/AreaFormModal';
 
 /**

@@ -1,86 +1,18 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.renderer.tsbuildinfo",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "outDir": "dist/renderer",
-    "noEmit": false,
-    "composite": true,
-    "tsBuildInfoFile": "dist/renderer/.tsbuildinfo"
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "types": ["vite/client", "@testing-library/jest-dom"]
   },
-  "include": [
-    "src/renderer/**/*",
-    "src/components/**/*",
-    "src/hooks/**/*",
-    "src/utils/**/*",
-    "src/types/**/*",
-    "src/constants/**/*",
-    "src/services/**/*",
-    "src/stores/**/*",
-    "src/domain/**/*",
-    "src/infrastructure/**/*",
-    "src/application/**/*",
-    "src/presentation/**/*"
-  ],
-  "exclude": [
-    "src/main/**/*",
-    "src/preload/**/*",
-
-    // Exclude problematic domain files (renderer shouldn't need these directly)
-    "src/domain/entities/shipping.ts",
-    "src/domain/entities/user.ts",
-    "src/domain/entities/product.ts",
-    "src/domain/entities/order.ts",
-    "src/domain/entities/employee.ts",
-    "src/domain/entities/report.ts",
-    "src/domain/services/shipping.service.ts",
-    "src/domain/value-objects/money.ts",
-    "src/domain/value-objects/lot-batch.ts",
-    "src/domain/value-objects/role.ts",
-
-    // Exclude problematic infrastructure files (renderer uses services, not direct infrastructure)
-    "src/infrastructure/repositories/employee.repository.ts",
-    "src/infrastructure/repositories/order.repository.ts",
-    "src/infrastructure/repositories/shipping.repository.ts",
-    "src/infrastructure/repositories/product.repository.ts",
-    "src/infrastructure/repositories/lot-batch.repository.ts",
-    "src/infrastructure/services/sales-analytics.service.ts",
-    "src/infrastructure/services/payment-gateway.service.ts",
-    "src/infrastructure/services/shipping.service.ts",
-
-    // Exclude problematic application files (renderer uses IPC, not direct handlers)
-    "src/application/handlers/analytics/**/*",
-    "src/application/handlers/product/**/*",
-    "src/application/handlers/order/**/*",
-    "src/application/handlers/shipping/**/*",
-    "src/application/handlers/lot-batch/**/*",
-    "src/application/handlers/employee/**/*",
-    "src/application/commands/product/**/*",
-    "src/application/commands/order/**/*",
-    "src/application/commands/shipping/**/*",
-    "src/application/commands/lot-batch/**/*",
-    "src/application/commands/employee/**/*",
-    "src/application/queries/product/**/*",
-    "src/application/queries/analytics/**/*",
-    "src/application/queries/order/**/*",
-    "src/application/queries/shipping/**/*",
-    "src/application/queries/lot-batch/**/*",
-
-    // Exclude index files that re-export problematic modules
-    "src/domain/index.ts",
-    "src/domain/entities/index.ts",
-    "src/domain/value-objects/index.ts",
-    "src/domain/services/index.ts",
-    "src/domain/repositories/index.ts",
-    "src/application/index.ts",
-    "src/application/handlers/index.ts",
-    "src/application/commands/index.ts",
-    "src/application/queries/index.ts",
-    "src/infrastructure/index.ts",
-    "src/infrastructure/repositories/index.ts",
-    "src/infrastructure/services/index.ts"
-  ]
+  "include": ["src/renderer/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"]
 }

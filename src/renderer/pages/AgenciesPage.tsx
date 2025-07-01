@@ -57,7 +57,8 @@ import {
   Person as PersonIcon,
   LocationOn as LocationIcon,
 } from '@mui/icons-material';
-import { Agency, CreateAgencyParams, UpdateAgencyParams, AgencyService } from '../services/AgencyService';
+import { Agency, CreateAgencyParams, UpdateAgencyParams } from '../services/AgencyService';
+import { MockAgencyService } from '../mocks/services/MockAgencyService';
 import { AgencyEditModal } from '../components/molecules/AgencyEditModal';
 import { DashboardLayout } from '../components/templates';
 
@@ -112,7 +113,7 @@ export function AgenciesPage(): JSX.Element {
       console.log('🏢 AgenciesPage: Starting to load agencies...');
       console.log('🏢 AgenciesPage: Current filters:', { searchValue, statusFilter, page, pageSize });
 
-      const result = await AgencyService.listAgencies({
+      const result = await MockAgencyService.listAgencies({
         page: page + 1, // Convert to 1-based for backend
         pageSize,
         ...(searchValue && { search: searchValue }),
@@ -252,7 +253,7 @@ export function AgenciesPage(): JSX.Element {
 
         console.log('📤 AgenciesPage: Sending comprehensive update to service:', updateData);
 
-        await AgencyService.updateAgency(agencyId, updateData);
+        await MockAgencyService.updateAgency(agencyId, updateData);
 
         console.log('✅ AgenciesPage: Agency updated successfully');
 
@@ -285,7 +286,7 @@ export function AgenciesPage(): JSX.Element {
   const handleCreateAgency = useCallback(async () => {
     try {
       setCreating(true);
-      await AgencyService.createAgency(createForm);
+      await MockAgencyService.createAgency(createForm);
       setCreateDialogOpen(false);
       setCreateForm({
         name: '',

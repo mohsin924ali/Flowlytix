@@ -60,7 +60,7 @@ import { motion } from 'framer-motion';
 import { DashboardLayout } from '../components/templates';
 import { UserCreateModal, type UserCreateFormData } from '../components/molecules';
 import { UserEditModal } from '../components/molecules/UserEditModal/UserEditModal';
-import { useUsers } from '../hooks/useUsers';
+import { useMockUsers } from '../hooks/useMockUsers';
 import type { UserListItem } from '../services/UsersService';
 
 /**
@@ -277,7 +277,7 @@ export const UsersPage: React.FC = () => {
     refetch,
     clearError,
     resetFilters,
-  } = useUsers();
+  } = useMockUsers();
 
   // Create user modal state
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -333,23 +333,25 @@ export const UsersPage: React.FC = () => {
         setCreating(true);
         setCreateError(null);
 
-        // Call the Electron API to create user
-        if (window.electronAPI?.auth?.createUser) {
-          await window.electronAPI.auth.createUser({
-            email: userData.email,
-            password: userData.password,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            role: userData.role,
-            agencyId: userData.agencyId,
-            createdBy: '1', // Current user ID - should come from auth context
-          });
+        // Use MockAuthService instead of IPC
+        const { MockAuthService } = await import('../mocks/services/MockAuthService');
+        const result = await MockAuthService.createUser({
+          email: userData.email,
+          password: userData.password,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          role: userData.role,
+          ...(userData.agencyId && { agencyId: userData.agencyId }),
+          createdBy: '550e8400-e29b-41d4-a716-446655440000', // Mock user ID
+        });
 
+        if (result.success) {
+          console.log('✅ User created successfully');
           // Refresh the users list
           await refetch();
           setCreateModalOpen(false);
         } else {
-          throw new Error('User creation API not available');
+          throw new Error(result.error || 'Failed to create user');
         }
       } catch (error) {
         console.error('Failed to create user:', error);
