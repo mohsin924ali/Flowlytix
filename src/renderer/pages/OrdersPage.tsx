@@ -403,7 +403,7 @@ export const OrdersPage: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [filters, setFilters] = useState<OrderFilters>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+
   const [tabValue, setTabValue] = useState(0);
 
   /**
@@ -415,7 +415,7 @@ export const OrdersPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await OrderService.getOrders(currentAgency.id, page, viewMode === 'cards' ? 12 : 20, filters);
+      const response = await OrderService.getOrders(currentAgency.id, page, 20, filters);
       setOrders(response.orders);
       setTotalPages(response.totalPages);
       setTotal(response.total);
@@ -424,7 +424,7 @@ export const OrdersPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentAgency, page, filters, viewMode]);
+  }, [currentAgency, page, filters]);
 
   /**
    * Initial load
@@ -599,17 +599,6 @@ export const OrdersPage: React.FC = () => {
                     <Button variant='outlined' startIcon={<Download />}>
                       Export
                     </Button>
-                    <FormControl size='small' sx={{ minWidth: 120 }}>
-                      <InputLabel>View</InputLabel>
-                      <Select
-                        value={viewMode}
-                        onChange={(e) => setViewMode(e.target.value as 'cards' | 'table')}
-                        label='View'
-                      >
-                        <MenuItem value='cards'>Cards</MenuItem>
-                        <MenuItem value='table'>Table</MenuItem>
-                      </Select>
-                    </FormControl>
                   </Box>
                 </Grid>
               </Grid>
@@ -764,28 +753,13 @@ export const OrdersPage: React.FC = () => {
             </Alert>
           )}
 
-          {/* Orders Display */}
-          {viewMode === 'cards' ? (
-            <Grid container spacing={3}>
-              {orders.map((order) => (
-                <Grid item xs={12} sm={6} md={4} key={order.id}>
-                  <OrderCard
-                    order={order}
-                    onEdit={handleEditOrder}
-                    onView={handleViewOrder}
-                    onUpdateStatus={handleUpdateOrderStatus}
-                  />
-                </Grid>
-              ))}
-            </Grid>
-          ) : (
-            <OrderTable
-              orders={orders}
-              onEdit={handleEditOrder}
-              onView={handleViewOrder}
-              onUpdateStatus={handleUpdateOrderStatus}
-            />
-          )}
+          {/* Orders Table */}
+          <OrderTable
+            orders={orders}
+            onEdit={handleEditOrder}
+            onView={handleViewOrder}
+            onUpdateStatus={handleUpdateOrderStatus}
+          />
 
           {/* Empty State */}
           {orders.length === 0 && !loading && (

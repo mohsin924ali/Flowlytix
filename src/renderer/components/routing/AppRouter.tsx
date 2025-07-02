@@ -16,7 +16,7 @@ import { AgenciesPage } from '../../pages/AgenciesPage';
 import { AreasPage } from '../../pages/AreasPage';
 import { EmployeesPage } from '../../pages/EmployeesPage';
 import { CustomersPage } from '../../pages/CustomersPage';
-import { ProductsPage } from '../../pages/ProductsPage';
+import InventoryPage from '../../pages/InventoryPage';
 import { OrdersPage } from '../../pages/OrdersPage';
 import { ShippingPage } from '../../pages/ShippingPage';
 import { AnalyticsPage } from '../../pages/AnalyticsPage';
@@ -185,34 +185,17 @@ export const AppRouter: React.FC = () => {
           }
         />
 
-        {/* Product Routes */}
+        {/* Product Routes - Redirected to Inventory */}
+        <Route path='/products' element={<Navigate to='/inventory' replace />} />
+        <Route path='/products/create' element={<Navigate to='/inventory' replace />} />
+        <Route path='/products/:id' element={<Navigate to='/inventory' replace />} />
+
+        {/* Inventory Routes */}
         <Route
-          path='/products'
+          path='/inventory'
           element={
             <ProtectedRoute>
-              <ProductsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/products/create'
-          element={
-            <ProtectedRoute>
-              <PlaceholderPage
-                title='Add New Product'
-                description='Create new products with detailed specifications, pricing, and inventory management.'
-              />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/products/:id'
-          element={
-            <ProtectedRoute>
-              <PlaceholderPage
-                title='Product Details'
-                description='View and edit product information, manage inventory levels, and track product performance.'
-              />
+              <InventoryPage />
             </ProtectedRoute>
           }
         />

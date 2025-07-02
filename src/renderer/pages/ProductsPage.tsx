@@ -39,6 +39,13 @@ import {
   Divider,
   Badge,
   Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
 } from '@mui/material';
 import {
   Search,
@@ -61,6 +68,7 @@ import {
   LocalOffer,
   Category,
   Scale,
+  Assessment,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardLayout } from '../components/templates';
@@ -75,6 +83,9 @@ import ProductService, {
   CreateProductData,
   CreateProductSchema,
 } from '../services/ProductService';
+import { InventoryAnalytics } from '../components/molecules';
+import { ProductDetailsModal } from '../components/molecules/ProductDetailsModal';
+import StockMovementModal from '../components/molecules/StockMovementModal/StockMovementModal';
 
 /**
  * Animation variants
@@ -574,6 +585,10 @@ export const ProductsPage: React.FC = () => {
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [detailsProduct, setDetailsProduct] = useState<Product | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [analyticsRefreshTrigger, setAnalyticsRefreshTrigger] = useState(0);
 
   /**
    * Load products data
@@ -654,6 +669,8 @@ export const ProductsPage: React.FC = () => {
       }
       await loadProducts();
       setFormDialogOpen(false);
+      // Trigger analytics refresh
+      setAnalyticsRefreshTrigger((prev) => prev + 1);
     } catch (err: any) {
       setError(err.message || 'Failed to save product');
     } finally {
@@ -681,6 +698,8 @@ export const ProductsPage: React.FC = () => {
       await loadProducts();
       setDeleteDialogOpen(false);
       setProductToDelete(null);
+      // Trigger analytics refresh
+      setAnalyticsRefreshTrigger((prev) => prev + 1);
     } catch (err: any) {
       setError(err.message || 'Failed to delete product');
     } finally {
@@ -692,9 +711,20 @@ export const ProductsPage: React.FC = () => {
    * Handle view product
    */
   const handleViewProduct = (product: Product) => {
-    // TODO: Navigate to product details page
-    console.log('View product:', product);
+    setDetailsProduct(product);
+    setDetailsModalOpen(true);
   };
+
+  /**
+   * Handle product update from details modal
+   */
+  const handleProductUpdated = useCallback(async (updatedProduct: Product) => {
+    // Update the product in the current list
+    setProducts((prev) => prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p)));
+
+    // Trigger analytics refresh
+    setAnalyticsRefreshTrigger((prev) => prev + 1);
+  }, []);
 
   const lowStockProducts = products.filter((p) => p.currentStock <= p.reorderLevel && p.currentStock > 0);
   const outOfStockProducts = products.filter((p) => p.currentStock === 0);
@@ -727,9 +757,19 @@ export const ProductsPage: React.FC = () => {
               <Typography variant='h4' sx={{ fontWeight: 700 }}>
                 Product Management
               </Typography>
-              <Button variant='contained' startIcon={<Add />} onClick={handleCreateProduct} sx={{ px: 3 }}>
-                Add Product
-              </Button>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <Button
+                  variant='outlined'
+                  startIcon={<Assessment />}
+                  onClick={() => setShowAnalytics(!showAnalytics)}
+                  color='info'
+                >
+                  {showAnalytics ? 'Hide' : 'Show'} Analytics
+                </Button>
+                <Button variant='contained' startIcon={<Add />} onClick={handleCreateProduct} sx={{ px: 3 }}>
+                  Add Product
+                </Button>
+              </Box>
             </Box>
 
             {/* Search and Filters */}
@@ -760,10 +800,34 @@ export const ProductsPage: React.FC = () => {
                     <Button variant='outlined' startIcon={<Upload />}>
                       Import
                     </Button>
+                    <Button
+                      variant={showAnalytics ? 'contained' : 'outlined'}
+                      startIcon={<Assessment />}
+                      onClick={() => setShowAnalytics(!showAnalytics)}
+                    >
+                      Analytics
+                    </Button>
                   </Box>
                 </Grid>
               </Grid>
             </Box>
+
+            {/* Analytics Section */}
+            <AnimatePresence>
+              {showAnalytics && currentAgency && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <Box sx={{ mb: 4 }}>
+                    <InventoryAnalytics agencyId={currentAgency.id} refreshTrigger={analyticsRefreshTrigger} />
+                  </Box>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Filters Panel */}
             <AnimatePresence>
@@ -913,19 +977,138 @@ export const ProductsPage: React.FC = () => {
             </Alert>
           )}
 
-          {/* Products Grid */}
-          <Grid container spacing={3}>
-            {products.map((product) => (
-              <Grid item xs={12} sm={6} md={4} key={product.id}>
-                <ProductCard
-                  product={product}
-                  onEdit={handleEditProduct}
-                  onDelete={handleDeleteProduct}
-                  onView={handleViewProduct}
-                />
-              </Grid>
-            ))}
-          </Grid>
+          {/* Inventory Analytics Toggle */}
+          {showAnalytics && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <InventoryAnalytics agencyId={currentAgency?.id || ''} key={analyticsRefreshTrigger} />
+            </motion.div>
+          )}
+
+          {/* Products Table */}
+          <TableContainer component={Paper} sx={{ mb: 3 }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Product</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>SKU</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Category</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Stock</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Cost Price</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Selling Price</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Stock Value</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {products.map((product) => {
+                  const stockValue = product.currentStock * product.costPrice;
+                  const profit = product.sellingPrice - product.costPrice;
+                  const profitMargin = product.costPrice > 0 ? (profit / product.costPrice) * 100 : 0;
+
+                  return (
+                    <TableRow key={product.id} hover sx={{ '&:hover': { backgroundColor: 'action.hover' } }}>
+                      <TableCell>
+                        <Box>
+                          <Typography variant='body2' sx={{ fontWeight: 600 }}>
+                            {product.name}
+                          </Typography>
+                          <Typography variant='caption' color='text.secondary'>
+                            {product.description || 'No description'}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
+                          {product.sku}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant='body2'>{product.category.replace('_', ' ')}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box>
+                          <Typography variant='body2' sx={{ fontWeight: 600, mb: 0.5 }}>
+                            {product.currentStock} / {product.maxStockLevel}
+                          </Typography>
+                          <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mb: 0.5 }}>
+                            Reorder at: {product.reorderLevel}
+                          </Typography>
+                          <StockIndicator product={product} />
+                          {product.reservedStock > 0 && (
+                            <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mt: 0.5 }}>
+                              Reserved: {product.reservedStock}
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={<StatusIcon status={product.status} />}
+                          label={product.status.replace('_', ' ')}
+                          size='small'
+                          color={
+                            product.status === ProductStatus.ACTIVE
+                              ? 'success'
+                              : product.status === ProductStatus.INACTIVE
+                                ? 'warning'
+                                : product.status === ProductStatus.DISCONTINUED
+                                  ? 'error'
+                                  : 'default'
+                          }
+                          variant='outlined'
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant='body2' sx={{ color: 'error.main' }}>
+                          ${product.costPrice.toFixed(2)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant='body2' sx={{ color: 'success.main' }}>
+                          ${product.sellingPrice.toFixed(2)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box>
+                          <Typography variant='body2' sx={{ fontWeight: 600 }}>
+                            ${stockValue.toLocaleString()}
+                          </Typography>
+                          <Typography variant='caption' color='text.secondary'>
+                            {profitMargin.toFixed(1)}% margin
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                          <Tooltip title='View Details & Manage Inventory'>
+                            <IconButton size='small' onClick={() => handleViewProduct(product)} color='primary'>
+                              <Visibility fontSize='small' />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title='Edit Product'>
+                            <IconButton size='small' onClick={() => handleEditProduct(product)} color='info'>
+                              <Edit fontSize='small' />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title='Delete Product'>
+                            <IconButton size='small' onClick={() => handleDeleteProduct(product)} color='error'>
+                              <Delete fontSize='small' />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
           {/* Empty State */}
           {products.length === 0 && !loading && (
@@ -983,6 +1166,13 @@ export const ProductsPage: React.FC = () => {
             </Button>
           </DialogActions>
         </Dialog>
+
+        <ProductDetailsModal
+          open={detailsModalOpen}
+          product={detailsProduct}
+          onClose={() => setDetailsModalOpen(false)}
+          onProductUpdated={handleProductUpdated}
+        />
       </motion.div>
     </DashboardLayout>
   );

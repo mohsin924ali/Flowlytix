@@ -42,6 +42,9 @@ export const ROUTES = {
   PRODUCTS_CREATE: '/products/create',
   PRODUCTS_DETAILS: '/products/:id',
 
+  INVENTORY: '/inventory',
+  INVENTORY_DASHBOARD: '/inventory',
+
   ORDERS: '/orders',
   ORDERS_LIST: '/orders',
   ORDERS_CREATE: '/orders/create',
@@ -105,12 +108,12 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
     group: 'business',
   },
   {
-    id: 'products',
-    label: 'Product Management',
-    path: ROUTES.PRODUCTS,
+    id: 'inventory',
+    label: 'Inventory Management',
+    path: ROUTES.INVENTORY,
     icon: Inventory,
     requiresAuth: true,
-    description: 'Product catalog and inventory management',
+    description: 'Comprehensive inventory and product management with multi-warehouse support',
     group: 'business',
   },
   {

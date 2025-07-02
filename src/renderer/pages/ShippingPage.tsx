@@ -30,6 +30,8 @@ import {
   TextField,
   InputAdornment,
   LinearProgress,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   LocalShipping,
@@ -284,7 +286,7 @@ export const ShippingPage: React.FC = () => {
               fullWidth
               placeholder='Search shipments...'
               value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position='start'>
@@ -350,14 +352,82 @@ export const ShippingPage: React.FC = () => {
               </CardContent>
             </Card>
           ) : (
-            // Card view
-            <Grid container spacing={3}>
-              {filteredShipments.map((shipment) => (
-                <Grid item xs={12} sm={6} md={4} key={shipment.id}>
-                  <ShipmentCard shipment={shipment} />
-                </Grid>
-              ))}
-            </Grid>
+            // Shipments Table
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Shipment</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell>Route</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Progress</TableCell>
+                    <TableCell>Estimated Delivery</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredShipments.map((shipment) => (
+                    <TableRow key={shipment.id} hover>
+                      <TableCell>
+                        <Box>
+                          <Typography variant='body2' sx={{ fontWeight: 600 }}>
+                            {shipment.trackingNumber}
+                          </Typography>
+                          <Typography variant='caption' color='text.secondary'>
+                            Order: {shipment.orderId}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant='body2'>{shipment.customerName}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box>
+                          <Typography variant='body2'>
+                            {shipment.origin} → {shipment.destination}
+                          </Typography>
+                          <Typography variant='caption' color='text.secondary'>
+                            {shipment.carrier}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={shipment.status}
+                          color={getStatusColor(shipment.status) as any}
+                          size='small'
+                          variant='outlined'
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 120 }}>
+                          <LinearProgress variant='determinate' value={shipment.progress} sx={{ width: 80 }} />
+                          <Typography variant='body2'>{shipment.progress}%</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant='body2'>{shipment.estimatedDelivery.toLocaleDateString()}</Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title='View Details'>
+                            <IconButton size='small' color='primary'>
+                              <Visibility fontSize='small' />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title='Track'>
+                            <IconButton size='small' color='info'>
+                              <TrackChanges fontSize='small' />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
 
           {/* Empty State */}

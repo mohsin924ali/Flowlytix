@@ -9,3 +9,6 @@ export { AgencyEditModal, type AgencyEditModalProps, type AgencyEditFormData } f
 export { UserCreateModal, type UserCreateModalProps, type UserCreateFormData } from './UserCreateModal';
 export { UserEditModal, type UserEditModalProps } from './UserEditModal';
 export { AreaFormModal, type AreaFormModalProps, type Area } from './AreaFormModal';
+export * from './ProductDetailsModal';
+export * from './InventoryAnalytics';
+export * from './StockMovementModal';

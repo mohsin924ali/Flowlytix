@@ -822,11 +822,16 @@ export const CustomersPage: React.FC = () => {
                             label='Min Credit Limit'
                             type='number'
                             value={filters.creditLimitMin || ''}
-                            onChange={(e) =>
-                              handleFilterChange({
-                                creditLimitMin: parseFloat(e.target.value) || undefined,
-                              })
-                            }
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value);
+                              const newFilters = { ...filters };
+                              if (isNaN(value)) {
+                                delete newFilters.creditLimitMin;
+                              } else {
+                                newFilters.creditLimitMin = value;
+                              }
+                              handleFilterChange(newFilters);
+                            }}
                             InputProps={{
                               startAdornment: <InputAdornment position='start'>$</InputAdornment>,
                             }}
@@ -838,11 +843,16 @@ export const CustomersPage: React.FC = () => {
                             label='Max Credit Limit'
                             type='number'
                             value={filters.creditLimitMax || ''}
-                            onChange={(e) =>
-                              handleFilterChange({
-                                creditLimitMax: parseFloat(e.target.value) || undefined,
-                              })
-                            }
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value);
+                              const newFilters = { ...filters };
+                              if (isNaN(value)) {
+                                delete newFilters.creditLimitMax;
+                              } else {
+                                newFilters.creditLimitMax = value;
+                              }
+                              handleFilterChange(newFilters);
+                            }}
                             InputProps={{
                               startAdornment: <InputAdornment position='start'>$</InputAdornment>,
                             }}
@@ -915,19 +925,124 @@ export const CustomersPage: React.FC = () => {
             </Alert>
           )}
 
-          {/* Customers Grid */}
-          <Grid container spacing={3}>
-            {customers.map((customer) => (
-              <Grid item xs={12} sm={6} md={4} key={customer.id}>
-                <CustomerCard
-                  customer={customer}
-                  onEdit={handleEditCustomer}
-                  onDelete={handleDeleteCustomer}
-                  onView={handleViewCustomer}
-                />
-              </Grid>
-            ))}
-          </Grid>
+          {/* Customers Table */}
+          <TableContainer component={Paper} sx={{ mb: 3 }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Customer</TableCell>
+                  <TableCell>Code</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Contact</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Credit Limit</TableCell>
+                  <TableCell>Outstanding</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {customers.map((customer) => (
+                  <TableRow key={customer.id} hover sx={{ '&:hover': { backgroundColor: 'action.hover' } }}>
+                    <TableCell>
+                      <Box>
+                        <Typography variant='body2' sx={{ fontWeight: 600 }}>
+                          {customer.fullName}
+                        </Typography>
+                        {customer.companyName && (
+                          <Typography variant='caption' color='text.secondary'>
+                            {customer.companyName}
+                          </Typography>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
+                        {customer.customerCode}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={customer.customerType.replace('_', ' ')}
+                        size='small'
+                        variant='outlined'
+                        color={customer.customerType === 'CORPORATE' ? 'primary' : 'default'}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box>
+                        <Typography variant='body2' sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Email fontSize='small' />
+                          {customer.email}
+                        </Typography>
+                        {customer.phone && (
+                          <Typography
+                            variant='caption'
+                            color='text.secondary'
+                            sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                          >
+                            <Phone fontSize='small' />
+                            {customer.phone}
+                          </Typography>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        icon={<StatusIcon status={customer.status} />}
+                        label={customer.status.replace('_', ' ')}
+                        size='small'
+                        color={
+                          customer.status === 'ACTIVE'
+                            ? 'success'
+                            : customer.status === 'INACTIVE'
+                              ? 'warning'
+                              : customer.status === 'SUSPENDED'
+                                ? 'error'
+                                : 'default'
+                        }
+                        variant='outlined'
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant='body2' sx={{ color: 'info.main' }}>
+                        ${customer.creditLimit.toLocaleString()}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography
+                        variant='body2'
+                        sx={{
+                          color: customer.outstandingBalance > 0 ? 'error.main' : 'success.main',
+                          fontWeight: customer.outstandingBalance > 0 ? 600 : 400,
+                        }}
+                      >
+                        ${customer.outstandingBalance.toLocaleString()}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Tooltip title='View Details'>
+                          <IconButton size='small' onClick={() => handleViewCustomer(customer)} color='primary'>
+                            <Visibility fontSize='small' />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title='Edit Customer'>
+                          <IconButton size='small' onClick={() => handleEditCustomer(customer)} color='info'>
+                            <Edit fontSize='small' />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title='Delete Customer'>
+                          <IconButton size='small' onClick={() => handleDeleteCustomer(customer)} color='error'>
+                            <Delete fontSize='small' />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
           {/* Empty State */}
           {customers.length === 0 && !loading && (
