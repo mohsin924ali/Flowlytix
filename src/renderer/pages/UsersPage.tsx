@@ -16,7 +16,7 @@
  * @version 1.0.0
  */
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -43,16 +43,24 @@ import {
   TablePagination,
   IconButton,
   Tooltip,
+  Button,
+  Fab,
 } from '@mui/material';
 import {
   Search as SearchIcon,
   Person as PersonIcon,
   Refresh as RefreshIcon,
   FilterList as FilterIcon,
+  Add as AddIcon,
+  PersonAdd as PersonAddIcon,
+  Business as BusinessIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { DashboardLayout } from '../components/templates';
-import { useUsers } from '../hooks/useUsers';
+import { UserCreateModal, type UserCreateFormData } from '../components/molecules';
+import { UserEditModal } from '../components/molecules/UserEditModal/UserEditModal';
+import { useMockUsers } from '../hooks/useMockUsers';
 import type { UserListItem } from '../services/UsersService';
 
 /**
@@ -144,7 +152,8 @@ const formatDate = (date: Date): string => {
 const UsersTable: React.FC<{
   users: readonly UserListItem[];
   isLoading: boolean;
-}> = ({ users, isLoading }) => {
+  onEditUser: (userId: string) => void;
+}> = ({ users, isLoading, onEditUser }) => {
   if (isLoading) {
     return (
       <Box display='flex' justifyContent='center' alignItems='center' minHeight={200}>
@@ -175,9 +184,10 @@ const UsersTable: React.FC<{
             <TableCell>Name</TableCell>
             <TableCell>Email</TableCell>
             <TableCell>Role</TableCell>
+            <TableCell>Agency</TableCell>
             <TableCell>Status</TableCell>
             <TableCell>Created</TableCell>
-            <TableCell>Last Login</TableCell>
+            <TableCell>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -214,6 +224,18 @@ const UsersTable: React.FC<{
                 />
               </TableCell>
               <TableCell>
+                {user.agencyName ? (
+                  <Box display='flex' alignItems='center' gap={1}>
+                    <BusinessIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant='body2'>{user.agencyName}</Typography>
+                  </Box>
+                ) : (
+                  <Typography variant='body2' color='text.secondary' fontStyle='italic'>
+                    No agency
+                  </Typography>
+                )}
+              </TableCell>
+              <TableCell>
                 <Chip label={user.status} size='small' color={getStatusColor(user.status)} variant='filled' />
               </TableCell>
               <TableCell>
@@ -222,9 +244,13 @@ const UsersTable: React.FC<{
                 </Typography>
               </TableCell>
               <TableCell>
-                <Typography variant='body2' color='text.secondary'>
-                  {user.lastLoginAt ? formatDate(user.lastLoginAt) : 'Never'}
-                </Typography>
+                <Box display='flex' gap={1}>
+                  <Tooltip title='Edit User'>
+                    <IconButton size='small' onClick={() => onEditUser(user.id)}>
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
               </TableCell>
             </TableRow>
           ))}
@@ -251,7 +277,16 @@ export const UsersPage: React.FC = () => {
     refetch,
     clearError,
     resetFilters,
-  } = useUsers();
+  } = useMockUsers();
+
+  // Create user modal state
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  // Edit user modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editUserId, setEditUserId] = useState<string | null>(null);
 
   /**
    * Handle search input change
@@ -289,25 +324,95 @@ export const UsersPage: React.FC = () => {
     setPagination({ limit: parseInt(event.target.value, 10), page: 1 });
   };
 
+  /**
+   * Handle create user
+   */
+  const handleCreateUser = useCallback(
+    async (userData: UserCreateFormData): Promise<void> => {
+      try {
+        setCreating(true);
+        setCreateError(null);
+
+        // Use MockAuthService instead of IPC
+        const { MockAuthService } = await import('../mocks/services/MockAuthService');
+        const result = await MockAuthService.createUser({
+          email: userData.email,
+          password: userData.password,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          role: userData.role,
+          ...(userData.agencyId && { agencyId: userData.agencyId }),
+          createdBy: '550e8400-e29b-41d4-a716-446655440000', // Mock user ID
+        });
+
+        if (result.success) {
+          console.log('✅ User created successfully');
+          // Refresh the users list
+          await refetch();
+          setCreateModalOpen(false);
+        } else {
+          throw new Error(result.error || 'Failed to create user');
+        }
+      } catch (error) {
+        console.error('Failed to create user:', error);
+        setCreateError(error instanceof Error ? error.message : 'Failed to create user');
+      } finally {
+        setCreating(false);
+      }
+    },
+    [refetch]
+  );
+
+  /**
+   * Handle open create modal
+   */
+  const handleOpenCreateModal = useCallback(() => {
+    setCreateError(null);
+    setCreateModalOpen(true);
+  }, []);
+
+  /**
+   * Handle close create modal
+   */
+  const handleCloseCreateModal = useCallback(() => {
+    if (!creating) {
+      setCreateModalOpen(false);
+      setCreateError(null);
+    }
+  }, [creating]);
+
+  /**
+   * Handle edit user
+   */
+  const handleEditUser = useCallback((userId: string) => {
+    setEditUserId(userId);
+    setEditModalOpen(true);
+  }, []);
+
+  /**
+   * Handle close edit modal
+   */
+  const handleCloseEditModal = useCallback(() => {
+    setEditModalOpen(false);
+    setEditUserId(null);
+  }, []);
+
+  /**
+   * Handle user updated
+   */
+  const handleUserUpdated = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
   return (
-    <DashboardLayout title='Users'>
-      <Container maxWidth='xl' sx={{ py: 2 }}>
+    <DashboardLayout>
+      <Container maxWidth='xl' sx={{ py: 3 }}>
         <motion.div variants={containerVariants} initial='hidden' animate='visible'>
           {/* Header */}
           <motion.div variants={itemVariants}>
             <Box sx={{ mb: 4 }}>
-              <Typography
-                variant='h4'
-                sx={{
-                  fontWeight: 'bold',
-                  background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  mb: 1,
-                }}
-              >
-                User Management
+              <Typography variant='h4' fontWeight='600' color='text.primary' gutterBottom>
+                Users Management
               </Typography>
               <Typography variant='body1' color='text.secondary'>
                 Manage and monitor user accounts across your organization
@@ -390,7 +495,7 @@ export const UsersPage: React.FC = () => {
           <motion.div variants={itemVariants}>
             <Card>
               <CardContent sx={{ p: 0 }}>
-                <UsersTable users={users} isLoading={isLoading && !isInitialized} />
+                <UsersTable users={users} isLoading={isLoading && !isInitialized} onEditUser={handleEditUser} />
 
                 {/* Pagination */}
                 {isInitialized && (
@@ -408,6 +513,37 @@ export const UsersPage: React.FC = () => {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Floating Action Button */}
+          <Fab
+            color='primary'
+            aria-label='add user'
+            onClick={handleOpenCreateModal}
+            sx={{
+              position: 'fixed',
+              bottom: 24,
+              right: 24,
+            }}
+          >
+            <PersonAddIcon />
+          </Fab>
+
+          {/* Create User Modal */}
+          <UserCreateModal
+            open={createModalOpen}
+            loading={creating}
+            error={createError}
+            onClose={handleCloseCreateModal}
+            onSubmit={handleCreateUser}
+          />
+
+          {/* Edit User Modal */}
+          <UserEditModal
+            open={editModalOpen}
+            userId={editUserId}
+            onClose={handleCloseEditModal}
+            onUserUpdated={handleUserUpdated}
+          />
         </motion.div>
       </Container>
     </DashboardLayout>

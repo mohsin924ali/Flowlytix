@@ -12,6 +12,16 @@ export interface AuthResult {
     lastName: string;
     role: string;
     permissions: string[];
+    agencyId?: string;
+    agency?: {
+      id: string;
+      name: string;
+      status: string;
+      contactPerson?: string;
+      phone?: string;
+      email?: string;
+      address?: string;
+    };
   };
   error?: string;
 }
@@ -36,37 +46,52 @@ export class AuthService {
         throw new Error('Electron API not available');
       }
 
-      console.log('🔗 Calling electronAPI.auth.authenticateUser...');
+      console.log('🔗 Available electronAPI methods:', Object.keys(window.electronAPI));
 
-      // Call the main process via IPC
-      const result = await window.electronAPI.auth.authenticateUser({
-        email: credentials.email,
-        password: credentials.password,
-      });
+      // Check if auth API is available in electronAPI
+      if (window.electronAPI.auth) {
+        console.log('🔗 Using electronAPI.auth');
+        console.log('🔗 Available auth methods:', Object.keys(window.electronAPI.auth));
 
-      console.log('📡 IPC Response received:', result);
+        const result = await window.electronAPI.auth.authenticateUser({
+          email: credentials.email,
+          password: credentials.password,
+        });
 
-      if (result.success && result.data?.user) {
-        console.log('✅ Authentication successful, user:', result.data.user);
+        console.log('📡 IPC Response received:', result);
 
-        // Use the user data from the IPC response
-        return {
-          success: true,
-          user: {
-            id: result.data.user.id,
-            email: result.data.user.email,
-            firstName: result.data.user.firstName,
-            lastName: result.data.user.lastName,
-            role: result.data.user.role,
-            permissions: result.data.user.permissions || [],
-          },
-        };
+        if (result.success && result.user) {
+          console.log('✅ Authentication successful, user:', result.user);
+          return {
+            success: true,
+            user: {
+              id: result.user.id,
+              email: result.user.email,
+              firstName: result.user.firstName,
+              lastName: result.user.lastName,
+              role: result.user.role,
+              permissions: result.user.permissions || [],
+              agencyId: result.user.agencyId,
+              agency: result.user.agency,
+            },
+          };
+        } else {
+          console.log('❌ Authentication failed:', result.message || result.error);
+          return {
+            success: false,
+            error: result.message || result.error || 'Authentication failed',
+          };
+        }
       } else {
-        console.log('❌ Authentication failed:', result.error);
-        return {
-          success: false,
-          error: result.error || 'Authentication failed',
-        };
+        // Fallback to mock authentication
+        console.log('🔗 Electron auth API not available, using MockAuthService');
+
+        // Import and use MockAuthService directly
+        const { MockAuthService } = await import('../mocks/services/MockAuthService');
+        const result = await MockAuthService.authenticate(credentials);
+
+        console.log('📡 MockAuthService Response:', result);
+        return result;
       }
     } catch (error) {
       console.error('💥 Authentication service error:', error);
@@ -118,6 +143,7 @@ declare global {
     electronAPI: {
       auth: {
         authenticateUser: (credentials: LoginCredentials) => Promise<any>;
+        createUser: (params: any) => Promise<any>;
         getUserPermissions: (params: { userId: string }) => Promise<any>;
       };
       agency: {

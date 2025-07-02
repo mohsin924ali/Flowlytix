@@ -1,165 +1,100 @@
-import { join } from 'node:path';
-import { isDev } from './utils/environment';
+/**
+ * Electron Main Process
+ *
+ * This file serves as the entry point for the Electron application.
+ * It manages the application lifecycle, creates browser windows, and handles system events.
+ */
 
-// Safely import Electron modules
-let app: Electron.App;
-let BrowserWindow: typeof Electron.BrowserWindow;
-let Menu: typeof Electron.Menu;
-let shell: Electron.Shell;
-let dialog: Electron.Dialog;
+import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-try {
-  const electron = require('electron');
-  app = electron.app;
-  BrowserWindow = electron.BrowserWindow;
-  Menu = electron.Menu;
-  shell = electron.shell;
-  dialog = electron.dialog;
-} catch (error) {
-  console.error('Electron not available:', error);
-  process.exit(1);
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+// Disable security warnings in development
+if (isDevelopment) {
+  process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 }
 
-class ElectronApp {
-  private mainWindow: InstanceType<typeof BrowserWindow> | null = null;
+class FlowlytixApp {
+  private mainWindow: BrowserWindow | null = null;
 
   constructor() {
     this.initializeApp();
   }
 
   private initializeApp(): void {
-    // Ensure app is available before using it
-    if (!app) {
-      console.error('Electron app is not available');
-      return;
-    }
-
-    // Handle certificate errors
-    app.on('certificate-error', (event, _webContents, _url, _error, _certificate, callback) => {
-      if (isDev()) {
-        // In development, ignore certificate errors for localhost
-        event.preventDefault();
-        callback(true);
-      } else {
-        // In production, use default behavior
-        callback(false);
-      }
-    });
-
-    // Handle app events
-    this.setupAppEventHandlers();
-
-    // Register IPC handlers
-    this.registerIpcHandlers();
-  }
-
-  private registerIpcHandlers(): void {
-    try {
-      const { registerIpcHandlers } = require('./ipc/ipcHandlers');
-      registerIpcHandlers();
-    } catch (error) {
-      console.error('Failed to register IPC handlers:', error);
-    }
-  }
-
-  private setupAppEventHandlers(): void {
+    // App event listeners
     app.whenReady().then(() => {
-      // Set app user model ID for Windows
-      if (process.platform === 'win32') {
-        app.setAppUserModelId('com.flowlytix.distribution-system');
-      }
-
-      // Security: Disable features (done after app is ready)
-      console.log('Electron app is ready, initializing...');
-
       this.createMainWindow();
-      this.setupApplicationMenu();
+      this.setupAppMenu();
+      this.setupIpcHandlers();
+
+      app.on('activate', () => {
+        // On macOS it's common to re-create a window in the app when the
+        // dock icon is clicked and there are no other windows open.
+        if (BrowserWindow.getAllWindows().length === 0) {
+          this.createMainWindow();
+        }
+      });
     });
 
     app.on('window-all-closed', () => {
+      // On macOS it is common for applications and their menu bar
+      // to stay active until the user quits explicitly with Cmd + Q
       if (process.platform !== 'darwin') {
         app.quit();
       }
     });
 
-    app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) {
-        this.createMainWindow();
-      }
-    });
-
+    // Security: Prevent new window creation
     app.on('web-contents-created', (_, contents) => {
-      // Security: Prevent navigation to external URLs
-      contents.on('will-navigate', (event, navigationUrl) => {
-        const parsedUrl = new URL(navigationUrl);
-
-        if (parsedUrl.origin !== 'http://localhost:3000' && !isDev()) {
-          event.preventDefault();
-        }
-      });
-
-      // Security: Prevent opening external links
       contents.setWindowOpenHandler(({ url }) => {
-        void shell.openExternal(url);
-        return { action: 'deny' };
+        const parsedUrl = new URL(url);
+
+        if (parsedUrl.origin !== 'http://localhost:5173' && parsedUrl.origin !== 'app://') {
+          shell.openExternal(url);
+          return { action: 'deny' };
+        }
+
+        return { action: 'allow' };
       });
     });
   }
 
   private createMainWindow(): void {
-    // Create the browser window with security settings
-    // In both dev and production, main.js is at dist/main/src/main/main.js
-    // and preload.js is at dist/main/src/preload/preload.js
-    const preloadPath = join(__dirname, '../preload/preload.js');
-
-    console.log('Preload script path:', preloadPath);
-    console.log('Preload script exists:', require('fs').existsSync(preloadPath));
-
-    const windowOptions: Electron.BrowserWindowConstructorOptions = {
+    // Create the browser window
+    this.mainWindow = new BrowserWindow({
       width: 1400,
       height: 900,
-      minWidth: 1024,
-      minHeight: 768,
+      minWidth: 1200,
+      minHeight: 700,
       show: false,
-      titleBarStyle: 'default',
+      autoHideMenuBar: true,
+      titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+      icon: join(__dirname, '../../public/logo-main.svg'),
       webPreferences: {
-        nodeIntegration: false,
+        preload: join(__dirname, '../preload/preload.cjs'),
+        sandbox: false,
         contextIsolation: true,
-        allowRunningInsecureContent: false,
+        nodeIntegration: false,
         webSecurity: true,
-        sandbox: false, // Required for preload script
-        preload: preloadPath,
-        spellcheck: true,
-        devTools: isDev(),
+        allowRunningInsecureContent: false,
       },
-    };
+    });
 
-    const iconPath = this.getAppIcon();
-    if (iconPath) {
-      windowOptions.icon = iconPath;
-    }
+    // Show window when ready to prevent visual flash
+    this.mainWindow.on('ready-to-show', () => {
+      if (this.mainWindow) {
+        this.mainWindow.show();
 
-    this.mainWindow = new BrowserWindow(windowOptions);
-
-    // Load the renderer
-    if (isDev()) {
-      void this.mainWindow.loadURL('http://localhost:3000');
-      this.mainWindow.webContents.openDevTools();
-    } else {
-      // Fixed path - going from dist/main/src/main/ to dist/renderer/
-      const htmlPath = join(__dirname, '../../../renderer/index.html');
-      console.log('Loading HTML file from:', htmlPath);
-      console.log('HTML file exists:', require('fs').existsSync(htmlPath));
-      void this.mainWindow.loadFile(htmlPath);
-    }
-
-    // Show window when ready
-    this.mainWindow.once('ready-to-show', () => {
-      console.log('Main window is ready to show');
-      this.mainWindow?.show();
-
-      if (isDev()) {
-        this.mainWindow?.webContents.openDevTools();
+        if (isDevelopment) {
+          this.mainWindow.webContents.openDevTools();
+        }
       }
     });
 
@@ -168,44 +103,109 @@ class ElectronApp {
       this.mainWindow = null;
     });
 
-    // Add error handling for debugging
-    this.mainWindow.webContents.on(
-      'did-fail-load',
-      (event: any, errorCode: any, errorDescription: any, validatedURL: any) => {
-        console.error('Failed to load:', validatedURL, 'Error:', errorDescription);
-      }
-    );
-
-    this.mainWindow.webContents.on('did-finish-load', () => {
-      console.log('Renderer process loaded successfully');
-    });
-
-    // Security: Handle external links
-    this.mainWindow.webContents.setWindowOpenHandler(({ url }: { url: string }) => {
-      void shell.openExternal(url);
+    // Make all links open with the browser, not with the application
+    this.mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+      shell.openExternal(url);
       return { action: 'deny' };
     });
+
+    // Load the renderer
+    if (isDevelopment && process.env['ELECTRON_RENDERER_URL']) {
+      this.mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
+    } else {
+      this.mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+    }
   }
 
-  private setupApplicationMenu(): void {
-    // Create a simple menu
+  private setupAppMenu(): void {
     const template: Electron.MenuItemConstructorOptions[] = [
       {
         label: 'File',
         submenu: [
           {
-            label: 'Quit',
+            label: 'New',
+            accelerator: 'CmdOrCtrl+N',
+            click: () => {
+              // Handle new file/document
+            },
+          },
+          {
+            label: 'Open',
+            accelerator: 'CmdOrCtrl+O',
+            click: async () => {
+              if (!this.mainWindow) return;
+
+              const result = await dialog.showOpenDialog(this.mainWindow, {
+                properties: ['openFile'],
+                filters: [{ name: 'All Files', extensions: ['*'] }],
+              });
+
+              if (!result.canceled) {
+                // Handle file opening
+              }
+            },
+          },
+          { type: 'separator' },
+          {
+            label: 'Exit',
             accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
-            click: () => app.quit(),
+            click: () => {
+              app.quit();
+            },
           },
         ],
+      },
+      {
+        label: 'Edit',
+        submenu: [
+          { role: 'undo' },
+          { role: 'redo' },
+          { type: 'separator' },
+          { role: 'cut' },
+          { role: 'copy' },
+          { role: 'paste' },
+          { role: 'selectAll' },
+        ],
+      },
+      {
+        label: 'View',
+        submenu: [
+          { role: 'reload' },
+          { role: 'forceReload' },
+          { role: 'toggleDevTools' },
+          { type: 'separator' },
+          { role: 'resetZoom' },
+          { role: 'zoomIn' },
+          { role: 'zoomOut' },
+          { type: 'separator' },
+          { role: 'togglefullscreen' },
+        ],
+      },
+      {
+        label: 'Window',
+        submenu: [{ role: 'minimize' }, { role: 'close' }],
       },
       {
         label: 'Help',
         submenu: [
           {
-            label: 'About',
-            click: () => this.showAboutDialog(),
+            label: 'About Flowlytix',
+            click: () => {
+              if (!this.mainWindow) return;
+
+              dialog.showMessageBox(this.mainWindow, {
+                type: 'info',
+                title: 'About Flowlytix',
+                message: 'Flowlytix Distribution System',
+                detail: 'Version 1.0.0\nA modern distribution management system.',
+              });
+            },
+          },
+          {
+            label: 'Learn More',
+            click: () => {
+              shell.openExternal('https://flowlytix.com');
+            },
           },
         ],
       },
@@ -215,26 +215,68 @@ class ElectronApp {
     Menu.setApplicationMenu(menu);
   }
 
-  private getAppIcon(): string | undefined {
-    if (process.platform === 'win32') {
-      return join(__dirname, '../../assets/icon.ico');
-    } else if (process.platform === 'darwin') {
-      return join(__dirname, '../../assets/icon.icns');
-    } else {
-      return join(__dirname, '../../assets/icon.png');
-    }
-  }
+  private setupIpcHandlers(): void {
+    // Example IPC handlers for communication between main and renderer processes
+    ipcMain.handle('app:getVersion', () => {
+      return app.getVersion();
+    });
 
-  private showAboutDialog(): void {
-    void dialog.showMessageBox(this.mainWindow!, {
-      type: 'info',
-      title: 'About Flowlytix Distribution System',
-      message: 'Flowlytix Distribution System',
-      detail: `Version: ${app.getVersion()}\nElectron: ${process.versions.electron}\nNode: ${process.versions.node}`,
-      buttons: ['OK'],
+    ipcMain.handle('app:getName', () => {
+      return app.getName();
+    });
+
+    ipcMain.handle(
+      'app:getPath',
+      (
+        _,
+        name:
+          | 'home'
+          | 'appData'
+          | 'userData'
+          | 'sessionData'
+          | 'temp'
+          | 'exe'
+          | 'module'
+          | 'desktop'
+          | 'documents'
+          | 'downloads'
+          | 'music'
+          | 'pictures'
+          | 'videos'
+          | 'recent'
+          | 'logs'
+          | 'crashDumps'
+      ) => {
+        return app.getPath(name);
+      }
+    );
+
+    ipcMain.handle('dialog:showOpenDialog', async (_, options) => {
+      if (!this.mainWindow) return;
+      const result = await dialog.showOpenDialog(this.mainWindow, options);
+      return result;
+    });
+
+    ipcMain.handle('dialog:showSaveDialog', async (_, options) => {
+      if (!this.mainWindow) return;
+      const result = await dialog.showSaveDialog(this.mainWindow, options);
+      return result;
+    });
+
+    ipcMain.handle('shell:openExternal', async (_, url: string) => {
+      await shell.openExternal(url);
     });
   }
 }
 
-// Initialize the app
-new ElectronApp();
+// Initialize the application
+new FlowlytixApp();
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  app.quit();
+});
+
+process.on('SIGINT', () => {
+  app.quit();
+});

@@ -39,28 +39,110 @@
 - **Apply Feature Flags** for progressive feature rollout
 - **Implement Module Federation** for micro-frontend architecture
 
+## 🧠 **MEMORY LEAK PREVENTION**
+
+### **Resource Management**
+
+- Close all open connections (database, file streams, sockets) after use
+- Dispose of unused or unnecessary objects explicitly where applicable
+- Use try-finally or equivalent constructs to ensure resource cleanup
+- **Implement connection pooling** with proper lifecycle management
+- **Use context managers (Python `with` statements)** for automatic resource cleanup
+- **Apply RAII (Resource Acquisition Is Initialization)** patterns
+
+### **Event Listeners & Subscriptions**
+
+- Remove event listeners when they are no longer needed
+- Avoid adding multiple listeners to the same event unintentionally
+- **Use weak references** for event handlers that should not prevent garbage collection
+- **Implement proper cleanup in React useEffect hooks**
+- **Unsubscribe from observables and streams** when components unmount
+
+### **Circular References**
+
+- Avoid circular references between objects
+- Use weak references for objects that should not prevent garbage collection
+- **Implement proper dependency injection** to avoid circular imports
+- **Use lazy loading** for modules with potential circular dependencies
+
+### **Data Structures & Memory Management**
+
+- Replace large or inefficient data structures with memory-efficient alternatives
+- Use fixed-size buffers for streaming operations when applicable
+- **Implement pagination** for large datasets
+- **Use generators and iterators** instead of loading entire datasets into memory
+- **Apply caching with TTL (Time To Live)** to prevent unbounded growth
+
+### **Global Variables & Singletons**
+
+- Limit the use of global variables to essential cases
+- Encapsulate variables within functions or classes to limit their scope
+- **Audit singletons** and ensure they do not retain unnecessary references
+- **Consider using object pooling** for expensive-to-create objects
+
+### **Garbage Collection & Long-Lived Objects**
+
+- Monitor object references in collections or lists to avoid unintentional retention
+- Avoid holding long-lived references to temporary or large objects
+- **Implement proper cleanup for long-running processes**
+- **Use weak references for caches or mappings** to avoid preventing garbage collection
+
+### **UI Component Cleanup (Frontend)**
+
+- Clean up DOM or UI elements when they are removed or unmounted
+- Use framework-specific tools (React's useEffect cleanup, Angular's OnDestroy lifecycle)
+- **Implement custom hooks for timeout/interval management**
+- **Clear timers, animations, and subscriptions** on component unmount
+
+### **Multi-Threading & Async Operations**
+
+- Ensure threads are properly joined or terminated when no longer needed
+- Use thread pools for managing threads efficiently
+- **Implement proper cancellation** for async operations
+- **Use asyncio properly in Python** with proper exception handling
+
+### **Third-Party Libraries**
+
+- Regularly update third-party libraries to the latest stable versions
+- Audit libraries for known memory issues or inefficient patterns
+- **Monitor dependencies** for security vulnerabilities and memory leaks
+
+### **Memory Profiling and Monitoring**
+
+- Regularly profile memory usage during development and testing
+- Use memory analysis tools specific to the language or platform
+- Monitor application behavior in production for memory spikes or leaks
+- **Implement alerting** for memory usage thresholds
+- **Use tools like**: VisualVM (Java), tracemalloc (Python), browser dev tools (JavaScript)
+
 ## 💻 **TECHNICAL SPECIFICATIONS**
 
-### **Language & Framework Standards**
+### **Frontend Standards**
 
 - **TypeScript**: Strict mode enabled, no 'any' types
-- **React/React Native**: Functional components with hooks
-- **Node.js**: Latest LTS version compatibility
-- **Database**: Proper ORM/query builder usage
-- **APIs**: RESTful design with proper HTTP status codes
+- **React**: Functional components with hooks, proper cleanup
 - **State Management**: Use Zustand/Redux Toolkit with proper patterns
 - **Form Handling**: React Hook Form with Zod validation
 - **CSS-in-JS**: Styled-components or Emotion with theme consistency
 - **Component Library**: Material-UI with custom design system
 
+### **Backend Standards (Python/FastAPI)**
+
+- **Python**: 3.11+ with type hints everywhere
+- **FastAPI**: Latest stable version with async/await patterns
+- **Database**: SQLAlchemy 2.0+ with Alembic migrations
+- **Authentication**: OAuth2 with JWT tokens and refresh mechanism
+- **Validation**: Pydantic v2 models with strict validation
+- **API Documentation**: Automatic OpenAPI/Swagger generation
+- **Dependency Injection**: FastAPI's dependency injection system
+- **Configuration**: Pydantic Settings with environment variables
+
 ### **Code Quality Requirements**
 
-- **Type Safety**: 100% TypeScript coverage, strict null checks
-- **Linting**: ESLint with airbnb-typescript config
-- **Formatting**: Prettier with consistent rules
-- **Documentation**: JSDoc for all public APIs
-- **Comments**: Explain complex business logic only
-- **Naming**: Descriptive, searchable names
+- **Type Safety**: 100% TypeScript/Python type coverage
+- **Linting**: ESLint (Frontend) + Ruff/Black (Python)
+- **Formatting**: Prettier (Frontend) + Black (Python)
+- **Documentation**: JSDoc/Docstrings for all public APIs
 - **Code Analysis**: SonarQube integration for quality gates
 - **Complexity Metrics**: Maximum cyclomatic complexity of 10
 - **Dead Code Detection**: Remove unused imports/variables
@@ -72,12 +154,448 @@
 - **CPU**: Optimized algorithms, avoid unnecessary computations
 - **Network**: Minimize API calls, implement caching
 - **Bundle Size**: Tree shaking, code splitting
-- **Rendering**: Virtual scrolling for large lists
-- **Database**: Optimized queries, proper indexing
+- **Database**: Optimized queries, proper indexing, connection pooling
 - **Core Web Vitals**: LCP < 2.5s, FID < 100ms, CLS < 0.1
-- **Progressive Loading**: Implement skeleton screens and lazy loading
-- **Image Optimization**: WebP format with fallbacks, responsive images
-- **Service Workers**: Offline-first approach with background sync
+- **API Response Time**: < 200ms for cached, < 500ms for database queries
+- **Concurrent Users**: Support 1000+ concurrent users
+
+## 🐍 **PYTHON/FASTAPI BACKEND ARCHITECTURE**
+
+### **Project Structure**
+
+```
+project/
+├── app/
+│   ├── __init__.py
+│   ├── main.py                 # FastAPI application entry point
+│   ├── core/
+│   │   ├── config.py          # Application configuration
+│   │   ├── security.py        # Authentication & authorization
+│   │   ├── database.py        # Database connection & session
+│   │   └── exceptions.py      # Custom exception handlers
+│   ├── api/
+│   │   ├── v1/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py        # Authentication endpoints
+│   │   │   ├── users.py       # User management endpoints
+│   │   │   └── ...
+│   │   └── dependencies.py    # Common dependencies
+│   ├── domain/
+│   │   ├── entities/          # Domain entities (pure Python)
+│   │   ├── repositories/      # Repository interfaces
+│   │   ├── services/          # Business logic services
+│   │   └── value_objects/     # Value objects
+│   ├── infrastructure/
+│   │   ├── database/
+│   │   │   ├── models/        # SQLAlchemy models
+│   │   │   ├── repositories/  # Repository implementations
+│   │   │   └── migrations/    # Alembic migrations
+│   │   ├── cache/            # Redis/caching implementations
+│   │   ├── external/         # External service integrations
+│   │   └── messaging/        # Event/message handling
+│   ├── schemas/              # Pydantic models for API
+│   ├── utils/               # Utility functions
+│   └── tests/              # Test files
+├── alembic/                # Database migrations
+├── docker/                # Docker configurations
+├── scripts/               # Deployment and utility scripts
+├── requirements/          # Dependency files
+│   ├── base.txt
+│   ├── dev.txt
+│   └── prod.txt
+├── .env.example          # Environment variables template
+├── docker-compose.yml    # Local development setup
+├── Dockerfile           # Production container
+└── pyproject.toml       # Python project configuration
+```
+
+### **Clean Architecture Implementation**
+
+- **Domain Layer**: Pure business logic, no external dependencies
+- **Application Layer**: Use cases and application services
+- **Infrastructure Layer**: Database, external APIs, frameworks
+- **Interface Layer**: API controllers, CLI interfaces
+
+### **Database Design & ORM**
+
+```python
+# SQLAlchemy 2.0 with proper patterns
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import String, DateTime, Integer, ForeignKey
+from datetime import datetime
+from typing import Optional
+
+class Base(DeclarativeBase):
+    pass
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255))
+    is_active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, onupdate=datetime.utcnow)
+```
+
+### **Repository Pattern Implementation**
+
+```python
+from abc import ABC, abstractmethod
+from typing import List, Optional, Generic, TypeVar
+from sqlalchemy.ext.asyncio import AsyncSession
+
+T = TypeVar('T')
+
+class BaseRepository(ABC, Generic[T]):
+    @abstractmethod
+    async def create(self, obj: T) -> T:
+        pass
+
+    @abstractmethod
+    async def get_by_id(self, id: int) -> Optional[T]:
+        pass
+
+    @abstractmethod
+    async def get_all(self, skip: int = 0, limit: int = 100) -> List[T]:
+        pass
+
+    @abstractmethod
+    async def update(self, id: int, obj: T) -> Optional[T]:
+        pass
+
+    @abstractmethod
+    async def delete(self, id: int) -> bool:
+        pass
+
+class UserRepository(BaseRepository[User]):
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def create(self, user: User) -> User:
+        self.session.add(user)
+        await self.session.commit()
+        await self.session.refresh(user)
+        return user
+
+    async def get_by_email(self, email: str) -> Optional[User]:
+        result = await self.session.execute(
+            select(User).where(User.email == email)
+        )
+        return result.scalar_one_or_none()
+```
+
+### **Service Layer with Dependency Injection**
+
+```python
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+class UserService:
+    def __init__(self, user_repo: UserRepository = Depends(get_user_repository)):
+        self.user_repo = user_repo
+
+    async def create_user(self, user_data: UserCreateSchema) -> UserSchema:
+        # Business logic here
+        hashed_password = hash_password(user_data.password)
+        user = User(
+            email=user_data.email,
+            hashed_password=hashed_password
+        )
+        created_user = await self.user_repo.create(user)
+        return UserSchema.from_orm(created_user)
+
+    async def authenticate_user(self, email: str, password: str) -> Optional[User]:
+        user = await self.user_repo.get_by_email(email)
+        if user and verify_password(password, user.hashed_password):
+            return user
+        return None
+```
+
+### **API Design Standards**
+
+```python
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
+router = APIRouter(prefix="/api/v1/users", tags=["users"])
+
+@router.post("/", response_model=UserSchema, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    user_data: UserCreateSchema,
+    user_service: UserService = Depends(get_user_service)
+) -> UserSchema:
+    """
+    Create a new user.
+
+    - **email**: User email address (must be unique)
+    - **password**: User password (min 8 characters)
+    - **first_name**: User's first name
+    - **last_name**: User's last name
+    """
+    try:
+        return await user_service.create_user(user_data)
+    except UserAlreadyExistsError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this email already exists"
+        )
+
+@router.get("/{user_id}", response_model=UserSchema)
+async def get_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    user_service: UserService = Depends(get_user_service)
+) -> UserSchema:
+    """Get user by ID with proper authorization."""
+    user = await user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return user
+```
+
+### **Authentication & Security**
+
+```python
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt, JWTError
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = await user_service.get_user_by_email(email)
+    if user is None:
+        raise credentials_exception
+    return user
+```
+
+### **Configuration Management**
+
+```python
+from pydantic_settings import BaseSettings
+from typing import Optional
+
+class Settings(BaseSettings):
+    # Application
+    app_name: str = "Flowlytix API"
+    debug: bool = False
+    version: str = "1.0.0"
+
+    # Database
+    database_url: str
+    database_pool_size: int = 10
+    database_max_overflow: int = 20
+
+    # Security
+    secret_key: str
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 7
+
+    # Redis
+    redis_url: Optional[str] = None
+
+    # External APIs
+    email_service_api_key: Optional[str] = None
+
+    # Monitoring
+    sentry_dsn: Optional[str] = None
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = False
+
+settings = Settings()
+```
+
+### **Error Handling & Logging**
+
+```python
+import logging
+import structlog
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
+
+# Structured logging setup
+structlog.configure(
+    processors=[
+        structlog.processors.add_log_level,
+        structlog.processors.add_logger_name,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.dev.ConsoleRenderer()
+    ],
+    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+    logger_factory=structlog.PrintLoggerFactory(),
+    cache_logger_on_first_use=True,
+)
+
+logger = structlog.get_logger()
+
+class CustomHTTPException(HTTPException):
+    def __init__(self, status_code: int, detail: str, error_code: str = None):
+        super().__init__(status_code=status_code, detail=detail)
+        self.error_code = error_code
+
+@app.exception_handler(CustomHTTPException)
+async def custom_http_exception_handler(request: Request, exc: CustomHTTPException):
+    logger.error(
+        "HTTP exception occurred",
+        status_code=exc.status_code,
+        detail=exc.detail,
+        error_code=exc.error_code,
+        path=request.url.path
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": exc.detail,
+            "error_code": exc.error_code,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    )
+```
+
+### **Database Migrations with Alembic**
+
+```python
+# alembic/env.py
+from alembic import context
+from sqlalchemy import engine_from_config, pool
+from app.core.database import Base
+from app.core.config import settings
+
+target_metadata = Base.metadata
+
+def run_migrations_online():
+    configuration = context.config
+    configuration.set_main_option("sqlalchemy.url", settings.database_url)
+
+    connectable = engine_from_config(
+        configuration.get_section(configuration.config_ini_section),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+            compare_server_default=True
+        )
+
+        with context.begin_transaction():
+            context.run_migrations()
+```
+
+### **Testing Standards**
+
+```python
+import pytest
+import asyncio
+from httpx import AsyncClient
+from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from app.main import app
+from app.core.database import get_session
+
+# Fixtures
+@pytest.fixture
+async def async_client():
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        yield client
+
+@pytest.fixture
+async def test_session():
+    engine = create_async_engine("sqlite+aiosqlite:///./test.db")
+    async with AsyncSession(engine) as session:
+        yield session
+
+# Test example
+@pytest.mark.asyncio
+async def test_create_user(async_client: AsyncClient, test_session: AsyncSession):
+    user_data = {
+        "email": "test@example.com",
+        "password": "testpassword123",
+        "first_name": "Test",
+        "last_name": "User"
+    }
+
+    response = await async_client.post("/api/v1/users/", json=user_data)
+    assert response.status_code == 201
+
+    data = response.json()
+    assert data["email"] == user_data["email"]
+    assert "password" not in data  # Ensure password is not returned
+```
+
+### **Performance Optimization**
+
+- **Database Connection Pooling**: Optimize connection pool size based on load
+- **Query Optimization**: Use indexes, avoid N+1 queries, implement pagination
+- **Caching**: Redis for session storage and frequently accessed data
+- **Async Operations**: Use async/await for I/O bound operations
+- **Background Tasks**: Celery or FastAPI BackgroundTasks for heavy operations
+- **Response Compression**: Gzip compression for API responses
+- **Rate Limiting**: Implement rate limiting for API endpoints
+
+### **Monitoring & Observability**
+
+```python
+from prometheus_client import Counter, Histogram, generate_latest
+import time
+
+# Metrics
+REQUEST_COUNT = Counter('requests_total', 'Total requests', ['method', 'endpoint'])
+REQUEST_DURATION = Histogram('request_duration_seconds', 'Request duration')
+
+@app.middleware("http")
+async def monitor_requests(request: Request, call_next):
+    start_time = time.time()
+
+    response = await call_next(request)
+
+    duration = time.time() - start_time
+    REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path).inc()
+    REQUEST_DURATION.observe(duration)
+
+    return response
+
+@app.get("/metrics")
+async def metrics():
+    return Response(generate_latest(), media_type="text/plain")
+```
 
 ## 🎨 **FRONTEND BEST PRACTICES**
 
@@ -109,39 +627,59 @@
 - **Effect Cleanup**: Always cleanup subscriptions and timers
 - **Debouncing**: Implement for search and input handlers
 
+### **Performance Optimization**
+
+- **Code Splitting**: Dynamic imports for route-based splitting
+- **Lazy Loading**: React.lazy for components and images
+- **Memoization**: React.memo, useMemo, useCallback appropriately
+- **Virtual Scrolling**: For large lists and tables
+- **Bundle Analysis**: Regular bundle size monitoring
+- **Service Workers**: Caching strategies for offline support
+
 ## 🛡️ **SECURITY REQUIREMENTS**
 
 ### **Input Validation**
 
-- Validate all user inputs
+- Validate all user inputs on both frontend and backend
 - Sanitize data before processing
-- Implement proper schema validation
-- Prevent injection attacks
+- Implement proper schema validation (Zod for frontend, Pydantic for backend)
+- Prevent injection attacks (SQL, XSS, Command injection)
 - Handle edge cases gracefully
 - **Content Security Policy (CSP)** implementation
 - **Subresource Integrity (SRI)** for external resources
 
 ### **Data Protection**
 
-- Encrypt sensitive data at rest
-- Use HTTPS for all communications
-- Implement proper authentication
-- Secure credential storage
+- Encrypt sensitive data at rest and in transit
+- Use HTTPS/TLS for all communications
+- Implement proper authentication and authorization
+- Secure credential storage with proper hashing
 - Follow OWASP guidelines
 - **Implement RBAC (Role-Based Access Control)**
-- **Session management** with secure tokens
-- **Rate limiting** for API endpoints
-- **CORS configuration** properly set
+- **Session management** with secure tokens and refresh mechanism
+- **Rate limiting** for API endpoints to prevent abuse
+- **CORS configuration** properly set for cross-origin requests
+
+### **API Security**
+
+- **OAuth2 with JWT**: Secure token-based authentication
+- **API Versioning**: Maintain backward compatibility
+- **Input Sanitization**: Prevent injection attacks
+- **Request Size Limits**: Prevent DoS attacks
+- **API Rate Limiting**: Per-user and global limits
+- **Request/Response Validation**: Strict schema enforcement
+- **Security Headers**: HSTS, X-Frame-Options, etc.
 
 ### **Error Handling**
 
 - Never expose internal errors to users
-- Log errors with appropriate detail
-- Implement proper error boundaries
+- Log errors with appropriate detail for debugging
+- Implement proper error boundaries in React
 - Graceful degradation strategies
 - User-friendly error messages
 - **Error tracking** with Sentry or similar
 - **Centralized error handling** with proper categorization
+- **Audit logging** for security-relevant events
 
 ## 🧪 **TESTING REQUIREMENTS**
 
@@ -156,28 +694,82 @@
 - **Accessibility Tests**: Automated a11y testing
 - **Cross-browser Tests**: Multiple browser compatibility
 
-### **Testing Tools & Practices**
+### **Backend Testing Tools & Practices**
+
+- **pytest** for unit and integration testing
+- **pytest-asyncio** for async test support
+- **Factory Boy** for test data generation
+- **pytest-mock** for mocking dependencies
+- **TestClient** for API endpoint testing
+- **pytest-cov** for coverage reporting
+- **Hypothesis** for property-based testing
+
+### **Frontend Testing Tools & Practices**
 
 - **Jest** for unit testing with proper mocking
 - **React Testing Library** for component testing
 - **Cypress/Playwright** for E2E testing
 - **Storybook** for component documentation and testing
 - **Mock Service Worker (MSW)** for API mocking
+- **Testing Library User Events** for realistic user interactions
+
+### **Testing Strategies**
+
 - **Test-Driven Development (TDD)** for critical features
 - **Behavior-Driven Development (BDD)** for business logic
+- **Contract Testing** for API compatibility
+- **Mutation Testing** for test quality verification
+- **Performance Testing** with load and stress tests
+- **Security Testing** with automated vulnerability scans
 
 ## 📚 **DOCUMENTATION REQUIREMENTS**
 
 ### **Code Documentation**
 
-- **JSDoc**: All public functions and classes
+- **JSDoc/Docstrings**: All public functions and classes
 - **README**: Setup, usage, and examples
-- **API Documentation**: OpenAPI/Swagger specs
+- **API Documentation**: OpenAPI/Swagger specs (auto-generated)
 - **Architecture Decisions**: ADR documents
 - **Inline Comments**: Complex business logic only
 - **Component Documentation**: Storybook with examples
 - **Changelog**: Semantic versioning with release notes
 - **Contributing Guidelines**: Clear development workflow
+
+### **API Documentation Standards**
+
+````python
+@router.post("/users/", response_model=UserSchema, status_code=201)
+async def create_user(
+    user_data: UserCreateSchema,
+    user_service: UserService = Depends(get_user_service)
+) -> UserSchema:
+    """
+    Create a new user account.
+
+    This endpoint creates a new user with the provided information.
+    The email must be unique across all users.
+
+    Args:
+        user_data: User creation data including email, password, and names
+
+    Returns:
+        UserSchema: The created user information (excluding password)
+
+    Raises:
+        400: User with email already exists
+        422: Invalid input data format
+
+    Example:
+        ```python
+        user_data = {
+            "email": "john.doe@example.com",
+            "password": "securepassword123",
+            "first_name": "John",
+            "last_name": "Doe"
+        }
+        ```
+    """
+````
 
 ### **Examples to Include**
 
@@ -188,9 +780,21 @@
 - Performance optimization tips
 - **Code snippets** in documentation
 - **Interactive examples** in Storybook
-- **Video tutorials** for complex features
+- **Postman collections** for API testing
 
 ### **Naming Conventions**
+
+#### **Python/Backend**
+
+- **Files**: snake_case.py
+- **Classes**: PascalCase
+- **Functions**: snake_case
+- **Constants**: SCREAMING_SNAKE_CASE
+- **Variables**: snake_case
+- **Private members**: \_leading_underscore
+- **Modules**: short, snake_case names
+
+#### **Frontend**
 
 - **Files**: kebab-case for components, camelCase for utilities
 - **Components**: PascalCase
@@ -203,13 +807,31 @@
 
 ### **Import/Export Standards**
 
+#### **Python**
+
+```python
+# Standard library imports
+import os
+from typing import List, Optional
+
+# Third-party imports
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
+
+# Local imports
+from app.core.config import settings
+from app.models.user import User
+from app.schemas.user import UserCreate, UserSchema
+```
+
+#### **Frontend**
+
 - Use named exports over default exports
 - Group imports: external, internal, relative
 - Use absolute imports with path mapping
 - Avoid circular dependencies
 - **Barrel exports** for clean module interfaces
 - **Dynamic imports** for code splitting
-- **Import maps** for better organization
 
 ## 🔧 **DEVELOPMENT WORKFLOW**
 
@@ -217,55 +839,192 @@
 
 - **Git Flow** or **GitHub Flow** for branching strategy
 - **Conventional Commits** for commit messages
-- **Pre-commit hooks** with Husky for quality checks
+- **Pre-commit hooks** with Husky (frontend) and pre-commit (Python)
 - **Pull Request templates** with proper review process
 - **Branch protection rules** with required reviews
 - **Semantic versioning** for releases
 
 ### **CI/CD Pipeline**
 
-- **Automated testing** on all pull requests
-- **Code quality checks** with quality gates
-- **Security scanning** for vulnerabilities
-- **Performance budgets** with failing builds
-- **Automated deployment** to staging/production
-- **Rollback strategies** for quick recovery
+```yaml
+# .github/workflows/backend.yml
+name: Backend CI/CD
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements/dev.txt
+
+      - name: Run tests
+        run: |
+          pytest --cov=app --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+
+      - name: Security scan
+        run: |
+          bandit -r app/
+          safety check
+```
+
+### **Code Quality Tools**
+
+#### **Python**
+
+```toml
+# pyproject.toml
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+select = ["E", "F", "W", "C90", "I", "N", "UP", "S", "B", "A", "C4", "ICN", "PIE", "T20", "Q"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--strict-markers --disable-warnings"
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["*/tests/*", "*/migrations/*"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+```
 
 ### **Monitoring & Analytics**
 
-- **Error tracking** with proper alerting
-- **Performance monitoring** with Core Web Vitals
+- **Error tracking** with Sentry for both frontend and backend
+- **Performance monitoring** with APM tools (DataDog, New Relic)
 - **User analytics** with privacy compliance
 - **A/B testing** framework for features
 - **Feature usage tracking** for informed decisions
+- **Infrastructure monitoring** with Prometheus/Grafana
+- **Log aggregation** with ELK stack or similar
 
-## 🚀 **PLATFORM-SPECIFIC REQUIREMENTS**
+## 🚀 **DEPLOYMENT & INFRASTRUCTURE**
 
-### **For Electron Applications**
+### **Containerization**
 
-- Secure IPC communication
-- Context isolation enabled
-- Proper window management
-- Auto-updater implementation
-- Native menu integration
-- System tray functionality
-- File system access patterns
-- **Security best practices** for desktop apps
-- **Performance optimization** for cross-platform compatibility
-- **Native notifications** with proper permissions
+```dockerfile
+# Dockerfile for Python backend
+FROM python:3.11-slim
 
-### **For React Native Applications**
+WORKDIR /app
 
-- Platform-specific optimizations
-- Proper navigation implementation
-- Native module integration
-- Performance optimization for lists
-- Proper keyboard handling
-- Accessibility compliance
-- Deep linking support
-- **Offline functionality** with proper sync
-- **Push notifications** with device registration
-- **App store guidelines** compliance
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements/prod.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY app/ ./app/
+COPY alembic/ ./alembic/
+COPY alembic.ini ./
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash app
+RUN chown -R app:app /app
+USER app
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### **Environment Configuration**
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    ports:
+      - '8000:8000'
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/flowlytix
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./app:/app/app:ro
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: flowlytix
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
+```
+
+### **Production Deployment**
+
+- **Kubernetes** for container orchestration
+- **Helm charts** for application deployment
+- **Horizontal Pod Autoscaling** based on metrics
+- **Blue-green deployments** for zero-downtime updates
+- **Database migrations** as part of deployment pipeline
+- **Health checks** and readiness probes
+- **Secret management** with external secret stores
+- **Load balancing** with ingress controllers
 
 ## 🎯 **ACCESSIBILITY & INTERNATIONALIZATION**
 
@@ -275,10 +1034,11 @@
 - **Semantic HTML** with proper ARIA labels
 - **Keyboard navigation** support
 - **Screen reader compatibility**
-- **Color contrast** meeting requirements
+- **Color contrast** meeting requirements (4.5:1 for normal text)
 - **Focus management** for SPAs
 - **Alternative text** for images
 - **Captions** for video content
+- **Voice-over testing** on mobile devices
 
 ### **Internationalization (i18n)**
 
@@ -289,6 +1049,7 @@
 - **Dynamic language switching**
 - **Pluralization rules** handling
 - **Translation keys** naming conventions
+- **Backend API localization** with Accept-Language headers
 
 ## 🚨 **CRITICAL SUCCESS CRITERIA**
 
@@ -298,56 +1059,91 @@ The code must:
 - ✅ Pass all tests with 90%+ coverage
 - ✅ Meet performance benchmarks
 - ✅ Follow security best practices
-- ✅ Be production-ready
+- ✅ Be production-ready with proper monitoring
 - ✅ Include comprehensive documentation
 - ✅ Be maintainable and extensible
 - ✅ Handle edge cases gracefully
 - ✅ **Meet accessibility standards (WCAG 2.1 AA)**
-- ✅ **Pass security audits**
+- ✅ **Pass security audits and penetration testing**
 - ✅ **Achieve Core Web Vitals targets**
 - ✅ **Have zero critical code smells**
-- ✅ **Support offline functionality**
+- ✅ **Support offline functionality where appropriate**
 - ✅ **Be responsive across all devices**
+- ✅ **Handle concurrent users efficiently**
+- ✅ **Have proper error tracking and monitoring**
+- ✅ **Include automated testing in CI/CD**
+- ✅ **Follow data protection regulations (GDPR, CCPA)**
 
 ## 🔄 **REVIEW PROCESS**
 
 After implementation:
 
 1. **Code Review**: Check against all standards
-2. **Security Review**: Vulnerability assessment
-3. **Performance Review**: Benchmark testing
-4. **Documentation Review**: Completeness check
-5. **Integration Testing**: End-to-end validation
-6. **Accessibility Review**: WCAG compliance check
-7. **Design Review**: UI/UX consistency
-8. **Architecture Review**: Scalability assessment
+2. **Security Review**: Vulnerability assessment and penetration testing
+3. **Performance Review**: Load testing and benchmark validation
+4. **Documentation Review**: Completeness and accuracy check
+5. **Integration Testing**: End-to-end validation with real data
+6. **Accessibility Review**: WCAG compliance verification
+7. **Design Review**: UI/UX consistency and usability testing
+8. **Architecture Review**: Scalability and maintainability assessment
+9. **Database Review**: Query optimization and data integrity checks
+10. **Deployment Review**: Infrastructure and DevOps validation
 
 ## 🛠️ **RECOMMENDED TOOLS & LIBRARIES**
+
+### **Backend Development (Python/FastAPI)**
+
+- **FastAPI** with Uvicorn for high-performance async API
+- **SQLAlchemy 2.0** with async support for ORM
+- **Alembic** for database migrations
+- **Pydantic v2** for data validation and serialization
+- **pytest + pytest-asyncio** for testing
+- **Black + Ruff** for code formatting and linting
+- **mypy** for static type checking
+- **Redis** for caching and session storage
+- **Celery** for background task processing
+- **Sentry** for error tracking and performance monitoring
+
+### **Frontend Development**
+
+- **React 18** with TypeScript and strict mode
+- **Vite** for fast development and building
+- **React Query/TanStack Query** for server state management
+- **Zustand** for client state management
+- **React Hook Form + Zod** for forms and validation
+- **Material-UI v5** with custom theme
+- **Framer Motion** for animations
+- **React Testing Library + Jest** for testing
+- **Storybook** for component development and documentation
 
 ### **Development Tools**
 
 - **VS Code** with recommended extensions
-- **TypeScript** with strict configuration
-- **ESLint + Prettier** for code quality
-- **Husky + lint-staged** for pre-commit hooks
-- **Commitizen** for conventional commits
+- **Docker** for local development environment
+- **PostgreSQL 15+** for primary database
+- **Redis 7** for caching and sessions
+- **Git** with conventional commits
+- **GitHub Actions** for CI/CD
+- **pre-commit** hooks for code quality
 
-### **Frontend Libraries**
+### **Production Infrastructure**
 
-- **React Query/SWR** for server state management
-- **Zustand/Redux Toolkit** for client state
-- **React Hook Form + Zod** for forms and validation
-- **Framer Motion** for animations
-- **React Testing Library + Jest** for testing
-- **Storybook** for component development
+- **Kubernetes** for container orchestration
+- **Nginx** as reverse proxy and load balancer
+- **PostgreSQL** with connection pooling (PgBouncer)
+- **Redis Cluster** for high availability
+- **Prometheus + Grafana** for monitoring
+- **ELK Stack** for log aggregation
+- **Cloudflare** for CDN and DDoS protection
 
-### **Build & Deployment**
+### **Monitoring & Observability**
 
-- **Vite/Webpack** for module bundling
-- **GitHub Actions/GitLab CI** for CI/CD
-- **Vercel/Netlify** for frontend deployment
-- **Docker** for containerization
-- **Terraform** for infrastructure as code
+- **Sentry** for error tracking
+- **DataDog/New Relic** for APM
+- **Prometheus** for metrics collection
+- **Grafana** for visualization
+- **Jaeger** for distributed tracing
+- **AlertManager** for incident response
 
 ---
 
@@ -363,3 +1159,9 @@ After implementation:
 - **Implement feature flags for safer deployments**
 - **Always consider the user experience first**
 - **Maintain backward compatibility when possible**
+- **Document architectural decisions in ADRs**
+- **Implement proper logging and monitoring from the start**
+- **Follow security best practices throughout development**
+- **Design for failure and implement proper error recovery**
+- **Use infrastructure as code for reproducible deployments**
+- **Implement proper backup and disaster recovery strategies**

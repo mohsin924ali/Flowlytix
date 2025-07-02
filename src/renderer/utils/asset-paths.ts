@@ -28,11 +28,7 @@ export const getAssetPath = (assetPath: string): string => {
     resolvedPath = `./${cleanPath}`;
   }
 
-  console.log(`🎨 Asset path resolution:`);
-  console.log(`  Input: ${assetPath}`);
-  console.log(`  Protocol: ${protocol}`);
-  console.log(`  Href: ${href}`);
-  console.log(`  Resolved: ${resolvedPath}`);
+  // Development logging removed for performance
 
   return resolvedPath;
 };
