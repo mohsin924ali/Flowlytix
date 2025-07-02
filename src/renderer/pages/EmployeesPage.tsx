@@ -12,7 +12,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-  Box,
+  Container,
   Paper,
   Typography,
   TextField,
@@ -44,7 +44,10 @@ import {
   InputAdornment,
   useTheme,
   alpha,
+  Box,
+  Fab,
 } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Add as AddIcon,
   Search as SearchIcon,
@@ -385,19 +388,11 @@ export function EmployeesPage(): JSX.Element {
     <DashboardLayout title='Employees'>
       <Box sx={{ p: 3 }}>
         {/* Header */}
-        <Box
-          sx={{
-            mb: 3,
-            p: 3,
-            background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
-            borderRadius: 2,
-            color: 'white',
-          }}
-        >
-          <Typography variant='h4' component='h1' gutterBottom sx={{ color: 'white', fontWeight: 600 }}>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant='h4' fontWeight='600' color='text.primary' gutterBottom>
             Employee Management
           </Typography>
-          <Typography variant='body1' sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+          <Typography variant='body1' color='text.secondary'>
             Manage employees across departments with comprehensive tools
           </Typography>
         </Box>

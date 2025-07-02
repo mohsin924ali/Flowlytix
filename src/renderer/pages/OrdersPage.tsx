@@ -73,6 +73,7 @@ import {
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardLayout } from '../components/templates';
+import { OrderCreateModal, OrderViewModal } from '../components/molecules';
 import { useAuthStore } from '../store/auth.store';
 import { useAgencyStore } from '../store/agency.store';
 import OrderService, {
@@ -261,30 +262,37 @@ const OrderCard: React.FC<{
               <Typography variant='body2' color='text.secondary'>
                 Total
               </Typography>
-              <Typography variant='h6' sx={{ fontWeight: 600, color: 'primary.main' }}>
+              <Typography variant='h6' sx={{ fontWeight: 700, color: 'primary.main' }}>
                 ${order.totalAmount.toFixed(2)}
               </Typography>
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              variant='outlined'
-              size='small'
-              startIcon={<Visibility />}
-              onClick={() => onView(order)}
-              sx={{ flex: 1 }}
-            >
-              View
-            </Button>
-            <Button variant='outlined' size='small' startIcon={<Edit />} onClick={() => onEdit(order)} sx={{ flex: 1 }}>
-              Edit
-            </Button>
-            <Tooltip title='Print'>
-              <IconButton size='small' sx={{ color: 'primary.main' }}>
-                <Print fontSize='small' />
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+            <Tooltip title='View Order'>
+              <IconButton size='small' onClick={() => onView(order)} color='primary'>
+                <Visibility fontSize='small' />
               </IconButton>
             </Tooltip>
+            <Tooltip title='Edit Order'>
+              <IconButton size='small' onClick={() => onEdit(order)} color='secondary'>
+                <Edit fontSize='small' />
+              </IconButton>
+            </Tooltip>
+            <FormControl size='small' sx={{ minWidth: 100 }}>
+              <Select
+                value={order.status}
+                onChange={(e) => onUpdateStatus(order, e.target.value as OrderStatus)}
+                size='small'
+                variant='outlined'
+              >
+                {Object.values(OrderStatus).map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {status.replace('_', ' ')}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Box>
         </CardContent>
       </Card>
@@ -293,7 +301,7 @@ const OrderCard: React.FC<{
 };
 
 /**
- * Order table component
+ * Orders table component
  */
 const OrderTable: React.FC<{
   orders: Order[];
@@ -303,19 +311,46 @@ const OrderTable: React.FC<{
 }> = ({ orders, onEdit, onView, onUpdateStatus }) => {
   const theme = useTheme();
 
+  const getStatusColor = (status: OrderStatus | OrderPaymentStatus) => {
+    switch (status) {
+      case OrderStatus.DELIVERED:
+      case OrderPaymentStatus.PAID:
+        return theme.palette.success.main;
+      case OrderStatus.PENDING:
+      case OrderPaymentStatus.PENDING:
+        return theme.palette.warning.main;
+      case OrderStatus.CANCELLED:
+      case OrderPaymentStatus.CANCELLED:
+        return theme.palette.error.main;
+      case OrderStatus.SHIPPED:
+        return theme.palette.info.main;
+      case OrderPaymentStatus.OVERDUE:
+        return theme.palette.error.main;
+      default:
+        return theme.palette.grey[500];
+    }
+  };
+
   return (
-    <TableContainer component={Paper}>
+    <TableContainer component={Paper} elevation={1}>
       <Table>
         <TableHead>
-          <TableRow>
-            <TableCell>Order #</TableCell>
-            <TableCell>Customer</TableCell>
-            <TableCell>Date</TableCell>
-            <TableCell>Items</TableCell>
-            <TableCell>Total</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Payment</TableCell>
-            <TableCell>Actions</TableCell>
+          <TableRow sx={{ backgroundColor: 'rgba(0, 0, 0, 0.04)' }}>
+            <TableCell sx={{ fontWeight: 600 }}>Order #</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Customer</TableCell>
+            <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+            <TableCell align='center' sx={{ fontWeight: 600 }}>
+              Status
+            </TableCell>
+            <TableCell align='center' sx={{ fontWeight: 600 }}>
+              Payment
+            </TableCell>
+            <TableCell align='right' sx={{ fontWeight: 600 }}>
+              Total
+            </TableCell>
+            <TableCell align='center' sx={{ fontWeight: 600 }}>
+              Actions
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -334,46 +369,56 @@ const OrderTable: React.FC<{
               </TableCell>
               <TableCell>
                 <Typography variant='body2'>{order.orderDate.toLocaleDateString()}</Typography>
+                {order.deliveryDate && (
+                  <Typography variant='caption' color='text.secondary'>
+                    Delivery: {order.deliveryDate.toLocaleDateString()}
+                  </Typography>
+                )}
               </TableCell>
-              <TableCell>
-                <Typography variant='body2'>{order.items.length}</Typography>
+              <TableCell align='center'>
+                <Chip
+                  icon={<StatusIcon status={order.status} />}
+                  label={order.status.replace('_', ' ')}
+                  size='small'
+                  sx={{
+                    backgroundColor: `${getStatusColor(order.status)}20`,
+                    color: getStatusColor(order.status),
+                    fontWeight: 500,
+                    textTransform: 'capitalize',
+                  }}
+                />
               </TableCell>
-              <TableCell>
+              <TableCell align='center'>
+                <Chip
+                  icon={<StatusIcon status={order.paymentStatus} />}
+                  label={order.paymentStatus.replace('_', ' ')}
+                  size='small'
+                  sx={{
+                    backgroundColor: `${getStatusColor(order.paymentStatus)}20`,
+                    color: getStatusColor(order.paymentStatus),
+                    fontWeight: 500,
+                    textTransform: 'capitalize',
+                  }}
+                />
+              </TableCell>
+              <TableCell align='right'>
                 <Typography variant='body2' sx={{ fontWeight: 600 }}>
                   ${order.totalAmount.toFixed(2)}
                 </Typography>
+                <Typography variant='caption' color='text.secondary'>
+                  {order.items.length} items
+                </Typography>
               </TableCell>
-              <TableCell>
-                <Chip
-                  icon={<StatusIcon status={order.status} />}
-                  label={order.status}
-                  size='small'
-                  variant='outlined'
-                />
-              </TableCell>
-              <TableCell>
-                <Chip
-                  icon={<StatusIcon status={order.paymentStatus} />}
-                  label={order.paymentStatus}
-                  size='small'
-                  variant='outlined'
-                />
-              </TableCell>
-              <TableCell>
-                <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <TableCell align='center'>
+                <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
                   <Tooltip title='View Order'>
-                    <IconButton size='small' onClick={() => onView(order)}>
+                    <IconButton size='small' onClick={() => onView(order)} color='primary'>
                       <Visibility fontSize='small' />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title='Edit Order'>
-                    <IconButton size='small' onClick={() => onEdit(order)}>
+                    <IconButton size='small' onClick={() => onEdit(order)} color='secondary'>
                       <Edit fontSize='small' />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title='Print Order'>
-                    <IconButton size='small'>
-                      <Print fontSize='small' />
                     </IconButton>
                   </Tooltip>
                 </Box>
@@ -398,16 +443,17 @@ export const OrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
   const [filters, setFilters] = useState<OrderFilters>({});
-  const [showFilters, setShowFilters] = useState(false);
-
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [tabValue, setTabValue] = useState(0);
+  const [createOrderModalOpen, setCreateOrderModalOpen] = useState(false);
+  const [viewOrderModalOpen, setViewOrderModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   /**
-   * Load orders data
+   * Load orders from service
    */
   const loadOrders = useCallback(async () => {
     if (!currentAgency) return;
@@ -415,20 +461,18 @@ export const OrdersPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await OrderService.getOrders(currentAgency.id, page, 20, filters);
+      const response = await OrderService.getOrders(currentAgency.id, page, 10, filters);
       setOrders(response.orders);
-      setTotalPages(response.totalPages);
       setTotal(response.total);
+      setTotalPages(response.totalPages);
     } catch (err: any) {
       setError(err.message || 'Failed to load orders');
     } finally {
       setLoading(false);
     }
-  }, [currentAgency, page, filters]);
+  }, [currentAgency, filters, page]);
 
-  /**
-   * Initial load
-   */
+  // Load orders on mount and when dependencies change
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
@@ -453,24 +497,142 @@ export const OrdersPage: React.FC = () => {
    * Handle create order
    */
   const handleCreateOrder = () => {
-    // TODO: Navigate to create order page
-    console.log('Create new order');
+    setCreateOrderModalOpen(true);
   };
 
   /**
-   * Handle edit order
+   * Handle create order submit
+   */
+  const handleCreateOrderSubmit = async (orderData: any) => {
+    if (!user || !currentAgency) return;
+
+    try {
+      setLoading(true);
+      await OrderService.createOrder(currentAgency.id, orderData, user.id);
+      setCreateOrderModalOpen(false);
+      await loadOrders();
+    } catch (err: any) {
+      setError(err.message || 'Failed to create order');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Handle edit order - Simple status update approach
    */
   const handleEditOrder = (order: Order) => {
-    // TODO: Navigate to edit order page
-    console.log('Edit order:', order);
+    const statusOptions = Object.values(OrderStatus);
+    const currentIndex = statusOptions.indexOf(order.status);
+    const nextIndex = (currentIndex + 1) % statusOptions.length;
+    const newStatus = statusOptions[nextIndex];
+
+    const confirmed = confirm(`Change order ${order.orderNumber} status from "${order.status}" to "${newStatus}"?`);
+    if (confirmed) {
+      handleUpdateOrderStatus(order, newStatus);
+    }
   };
 
   /**
    * Handle view order
    */
   const handleViewOrder = (order: Order) => {
-    // TODO: Navigate to order details page
-    console.log('View order:', order);
+    setSelectedOrder(order);
+    setViewOrderModalOpen(true);
+  };
+
+  /**
+   * Handle print order - Simplified and robust
+   */
+  const handlePrintOrder = (order: Order) => {
+    const printContent = `
+      <html>
+        <head>
+          <title>Order ${order.orderNumber}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .order-info { display: flex; justify-content: space-between; margin-bottom: 20px; }
+            .section { width: 48%; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            .total { text-align: right; font-weight: bold; font-size: 1.2em; }
+            @media print { button { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>FLOWLYTIX ORDER INVOICE</h1>
+            <h2>Order #: ${order.orderNumber}</h2>
+          </div>
+          <div class="order-info">
+            <div class="section">
+              <h3>Customer</h3>
+              <p>Name: ${order.customerName}</p>
+              <p>Code: ${order.customerCode}</p>
+              <p>Area: ${order.areaName}</p>
+            </div>
+            <div class="section">
+              <h3>Order Details</h3>
+              <p>Date: ${order.orderDate.toLocaleDateString()}</p>
+              <p>Status: ${order.status}</p>
+              <p>Payment: ${order.paymentStatus}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>Product</th><th>Code</th><th>Quantity</th><th>Price</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+              ${order.items
+                .map(
+                  (item) => `
+                <tr>
+                  <td>${item.productName}</td>
+                  <td>${item.productCode}</td>
+                  <td>${item.totalUnits}</td>
+                  <td>$${item.unitPrice.toFixed(2)}</td>
+                  <td>$${item.itemTotal.toFixed(2)}</td>
+                </tr>
+              `
+                )
+                .join('')}
+            </tbody>
+          </table>
+          <div class="total">
+            <p>Subtotal: $${order.subtotalAmount.toFixed(2)}</p>
+            <p>Tax: $${order.taxAmount.toFixed(2)}</p>
+            <p>Total: $${order.totalAmount.toFixed(2)}</p>
+          </div>
+          <button onclick="window.print()">Print</button>
+          <button onclick="window.close()">Close</button>
+        </body>
+      </html>
+    `;
+
+    const newWindow = window.open('', '_blank');
+    if (newWindow) {
+      newWindow.document.write(printContent);
+      newWindow.document.close();
+    } else {
+      alert('Please enable popups to print orders');
+    }
+  };
+
+  /**
+   * Handle close create modal
+   */
+  const handleCloseCreateModal = () => {
+    setCreateOrderModalOpen(false);
+  };
+
+  /**
+   * Handle close view modal
+   */
+  const handleCloseViewModal = () => {
+    setViewOrderModalOpen(false);
+    setSelectedOrder(null);
   };
 
   /**
@@ -543,151 +705,6 @@ export const OrdersPage: React.FC = () => {
                 Create Order
               </Button>
             </Box>
-
-            {/* Tabs for order filtering */}
-            <Box sx={{ mb: 3 }}>
-              <Tabs value={tabValue} onChange={handleTabChange}>
-                <Tab label={`All Orders (${total})`} />
-                <Tab
-                  label={
-                    <Badge badgeContent={pendingOrders.length} color='warning'>
-                      Pending
-                    </Badge>
-                  }
-                />
-                <Tab label='In Progress' />
-                <Tab
-                  label={
-                    <Badge badgeContent={shippedOrders.length} color='info'>
-                      Shipped
-                    </Badge>
-                  }
-                />
-                <Tab label='Delivered' />
-                <Tab
-                  label={
-                    <Badge badgeContent={overdueOrders.length} color='error'>
-                      Overdue
-                    </Badge>
-                  }
-                />
-              </Tabs>
-            </Box>
-
-            {/* Search and Filters */}
-            <Box sx={{ mb: 3 }}>
-              <Grid container spacing={2} alignItems='center'>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    placeholder='Search orders...'
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position='start'>
-                          <Search />
-                        </InputAdornment>
-                      ),
-                    }}
-                    onChange={(e) => handleSearch(e.target.value)}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                    <Button variant='outlined' startIcon={<FilterList />} onClick={() => setShowFilters(!showFilters)}>
-                      Filters
-                    </Button>
-                    <Button variant='outlined' startIcon={<Download />}>
-                      Export
-                    </Button>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Box>
-
-            {/* Filters Panel */}
-            <AnimatePresence>
-              {showFilters && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Accordion expanded sx={{ mb: 3 }}>
-                    <AccordionSummary>
-                      <Typography variant='h6'>Filter Options</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6} md={3}>
-                          <FormControl fullWidth>
-                            <InputLabel>Order Status</InputLabel>
-                            <Select
-                              multiple
-                              value={filters.status || []}
-                              onChange={(e) =>
-                                handleFilterChange({
-                                  status: e.target.value as OrderStatus[],
-                                })
-                              }
-                              label='Order Status'
-                            >
-                              {Object.values(OrderStatus).map((status) => (
-                                <MenuItem key={status} value={status}>
-                                  {status.replace('_', ' ')}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={6} md={3}>
-                          <FormControl fullWidth>
-                            <InputLabel>Payment Status</InputLabel>
-                            <Select
-                              multiple
-                              value={filters.paymentStatus || []}
-                              onChange={(e) =>
-                                handleFilterChange({
-                                  paymentStatus: e.target.value as OrderPaymentStatus[],
-                                })
-                              }
-                              label='Payment Status'
-                            >
-                              {Object.values(OrderPaymentStatus).map((status) => (
-                                <MenuItem key={status} value={status}>
-                                  {status.replace('_', ' ')}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={6} md={3}>
-                          <FormControl fullWidth>
-                            <InputLabel>Payment Method</InputLabel>
-                            <Select
-                              multiple
-                              value={filters.paymentMethod || []}
-                              onChange={(e) =>
-                                handleFilterChange({
-                                  paymentMethod: e.target.value as PaymentMethod[],
-                                })
-                              }
-                              label='Payment Method'
-                            >
-                              {Object.values(PaymentMethod).map((method) => (
-                                <MenuItem key={method} value={method}>
-                                  {method.replace('_', ' ')}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </Grid>
-                      </Grid>
-                    </AccordionDetails>
-                  </Accordion>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* Summary Stats */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -774,15 +791,11 @@ export const OrdersPage: React.FC = () => {
                 No orders found
               </Typography>
               <Typography variant='body2' color='text.secondary' sx={{ mb: 3 }}>
-                {filters.search || filters.status || filters.paymentStatus
-                  ? 'Try adjusting your search criteria'
-                  : 'Get started by creating your first order'}
+                Get started by creating your first order
               </Typography>
-              {!filters.search && !filters.status && !filters.paymentStatus && (
-                <Button variant='contained' startIcon={<Add />} onClick={handleCreateOrder}>
-                  Create First Order
-                </Button>
-              )}
+              <Button variant='contained' startIcon={<Add />} onClick={handleCreateOrder}>
+                Create First Order
+              </Button>
             </Box>
           )}
 
@@ -792,6 +805,23 @@ export const OrdersPage: React.FC = () => {
               <Pagination count={totalPages} page={page} onChange={(_, newPage) => setPage(newPage)} color='primary' />
             </Box>
           )}
+
+          {/* Create Order Modal */}
+          <OrderCreateModal
+            open={createOrderModalOpen}
+            onClose={handleCloseCreateModal}
+            onSubmit={handleCreateOrderSubmit}
+            agencyId={currentAgency?.id || ''}
+          />
+
+          {/* View Order Modal */}
+          <OrderViewModal
+            open={viewOrderModalOpen}
+            order={selectedOrder}
+            onClose={handleCloseViewModal}
+            onEdit={handleEditOrder}
+            onPrint={handlePrintOrder}
+          />
         </Container>
       </motion.div>
     </DashboardLayout>

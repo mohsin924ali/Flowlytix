@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 import {
   Box,
+  Container,
   Grid,
   Card,
   CardContent,
@@ -126,193 +127,205 @@ export const ProductAnalyticsPage: React.FC = () => {
 
   return (
     <DashboardLayout title='Product Analytics'>
-      <motion.div variants={containerVariants} initial='hidden' animate='visible'>
-        {/* Header */}
-        <motion.div variants={itemVariants}>
-          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant='h5' fontWeight='bold'>
-              Product Performance & Inventory Analysis
-            </Typography>
-            <ButtonGroup size='small'>
-              <Button variant={timeRange === '7d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('7d')}>
-                7 Days
-              </Button>
-              <Button variant={timeRange === '30d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('30d')}>
-                30 Days
-              </Button>
-              <Button variant={timeRange === '90d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('90d')}>
-                90 Days
-              </Button>
-            </ButtonGroup>
-          </Box>
-        </motion.div>
+      <Container maxWidth='xl' sx={{ py: 3 }}>
+        <motion.div variants={containerVariants} initial='hidden' animate='visible'>
+          {/* Header */}
+          <motion.div variants={itemVariants}>
+            <Box sx={{ mb: 4 }}>
+              <Typography variant='h4' fontWeight='600' color='text.primary' gutterBottom>
+                Product Analytics
+              </Typography>
+              <Typography variant='body1' color='text.secondary'>
+                Product performance and inventory insights with optimization recommendations
+              </Typography>
+            </Box>
+          </motion.div>
 
-        {/* Key Product Metrics */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <MetricCard
-              title='Total Products'
-              value={analytics?.totalProducts || 0}
-              change={2.4}
-              icon={<Inventory fontSize='large' />}
-              color='primary'
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <MetricCard
-              title='Active Products'
-              value={analytics?.activeProducts || 0}
-              change={1.8}
-              icon={<Assessment fontSize='large' />}
-              color='success'
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <MetricCard
-              title='Low Stock Products'
-              value={analytics?.lowStockProducts || 0}
-              change={-12.3}
-              icon={<Warning fontSize='large' />}
-              color='warning'
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <MetricCard
-              title='Out of Stock'
-              value={analytics?.outOfStockProducts || 0}
-              change={-8.7}
-              icon={<TrendingDown fontSize='large' />}
-              color='error'
-            />
-          </Grid>
-        </Grid>
+          {/* Header Controls */}
+          <motion.div variants={itemVariants}>
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box />
+              <ButtonGroup size='small'>
+                <Button variant={timeRange === '7d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('7d')}>
+                  7 Days
+                </Button>
+                <Button variant={timeRange === '30d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('30d')}>
+                  30 Days
+                </Button>
+                <Button variant={timeRange === '90d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('90d')}>
+                  90 Days
+                </Button>
+              </ButtonGroup>
+            </Box>
+          </motion.div>
 
-        {/* Inventory Value */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={4}>
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardContent>
-                  <Typography variant='h6' gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <MonetizationOn color='success' />
-                    Inventory Value
-                  </Typography>
-                  <Box sx={{ textAlign: 'center', mt: 3 }}>
-                    <Typography variant='h3' fontWeight='bold' color='success.main'>
-                      {formatCurrency(analytics?.totalInventoryValue || 0)}
-                    </Typography>
-                    <Typography variant='body2' color='text.secondary'>
-                      Total Inventory Value
-                    </Typography>
-                    <Chip
-                      icon={<TrendingUp />}
-                      label='+6.3% vs last month'
-                      color='success'
-                      size='small'
-                      sx={{ mt: 2 }}
-                    />
-                  </Box>
-                </CardContent>
-              </Card>
-            </motion.div>
+          {/* Key Product Metrics */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <MetricCard
+                title='Total Products'
+                value={analytics?.totalProducts || 0}
+                change={2.4}
+                icon={<Inventory fontSize='large' />}
+                color='primary'
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <MetricCard
+                title='Active Products'
+                value={analytics?.activeProducts || 0}
+                change={1.8}
+                icon={<Assessment fontSize='large' />}
+                color='success'
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <MetricCard
+                title='Low Stock Products'
+                value={analytics?.lowStockProducts || 0}
+                change={-12.3}
+                icon={<Warning fontSize='large' />}
+                color='warning'
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <MetricCard
+                title='Out of Stock'
+                value={analytics?.outOfStockProducts || 0}
+                change={-8.7}
+                icon={<TrendingDown fontSize='large' />}
+                color='error'
+              />
+            </Grid>
           </Grid>
-          <Grid item xs={12} md={8}>
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardContent>
-                  <Typography variant='h6' gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Category color='primary' />
-                    Category Performance
-                  </Typography>
-                  <Box sx={{ mt: 3 }}>
-                    {analytics?.categoryPerformance?.slice(0, 5).map((category, index) => (
-                      <Box key={index} sx={{ mb: 3 }}>
+
+          {/* Inventory Value */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} md={4}>
+              <motion.div variants={itemVariants}>
+                <Card>
+                  <CardContent>
+                    <Typography variant='h6' gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <MonetizationOn color='success' />
+                      Inventory Value
+                    </Typography>
+                    <Box sx={{ textAlign: 'center', mt: 3 }}>
+                      <Typography variant='h3' fontWeight='bold' color='success.main'>
+                        {formatCurrency(analytics?.totalInventoryValue || 0)}
+                      </Typography>
+                      <Typography variant='body2' color='text.secondary'>
+                        Total Inventory Value
+                      </Typography>
+                      <Chip
+                        icon={<TrendingUp />}
+                        label='+6.3% vs last month'
+                        color='success'
+                        size='small'
+                        sx={{ mt: 2 }}
+                      />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
+            <Grid item xs={12} md={8}>
+              <motion.div variants={itemVariants}>
+                <Card>
+                  <CardContent>
+                    <Typography variant='h6' gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Category color='primary' />
+                      Category Performance
+                    </Typography>
+                    <Box sx={{ mt: 3 }}>
+                      {analytics?.categoryPerformance?.slice(0, 5).map((category, index) => (
+                        <Box key={index} sx={{ mb: 3 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Typography variant='body2' fontWeight='medium'>
+                              {category.category}
+                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Typography variant='body2'>{formatCurrency(category.sales)}</Typography>
+                              <Chip
+                                size='small'
+                                label={`${category.margin.toFixed(1)}% margin`}
+                                variant='outlined'
+                                color='secondary'
+                              />
+                            </Box>
+                          </Box>
+                          <LinearProgress
+                            variant='determinate'
+                            value={(category.sales / (analytics?.categoryPerformance?.[0]?.sales || 1)) * 100}
+                            sx={{ height: 8, borderRadius: 4 }}
+                          />
+                        </Box>
+                      ))}
+                    </Box>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
+          </Grid>
+
+          {/* Top Products Summary */}
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardContent>
+                <Typography variant='h6' gutterBottom>
+                  Top Performing Products
+                </Typography>
+                <Grid container spacing={3} sx={{ mt: 2 }}>
+                  <Grid item xs={12} md={6}>
+                    <Typography variant='subtitle2' gutterBottom>
+                      Top Products by Sales
+                    </Typography>
+                    {analytics?.topProductsBySales?.slice(0, 5).map((product, index) => (
+                      <Box key={index} sx={{ mb: 2 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                           <Typography variant='body2' fontWeight='medium'>
-                            {category.category}
+                            {product.name}
                           </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Typography variant='body2'>{formatCurrency(category.sales)}</Typography>
-                            <Chip
-                              size='small'
-                              label={`${category.margin.toFixed(1)}% margin`}
-                              variant='outlined'
-                              color='secondary'
-                            />
-                          </Box>
+                          <Typography variant='body2' fontWeight='bold'>
+                            {formatCurrency(product.value)}
+                          </Typography>
                         </Box>
                         <LinearProgress
                           variant='determinate'
-                          value={(category.sales / (analytics?.categoryPerformance?.[0]?.sales || 1)) * 100}
-                          sx={{ height: 8, borderRadius: 4 }}
+                          value={product.percentage}
+                          sx={{ height: 6, borderRadius: 3 }}
                         />
                       </Box>
                     ))}
-                  </Box>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </Grid>
-        </Grid>
-
-        {/* Top Products Summary */}
-        <motion.div variants={itemVariants}>
-          <Card>
-            <CardContent>
-              <Typography variant='h6' gutterBottom>
-                Top Performing Products
-              </Typography>
-              <Grid container spacing={3} sx={{ mt: 2 }}>
-                <Grid item xs={12} md={6}>
-                  <Typography variant='subtitle2' gutterBottom>
-                    Top Products by Sales
-                  </Typography>
-                  {analytics?.topProductsBySales?.slice(0, 5).map((product, index) => (
-                    <Box key={index} sx={{ mb: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                        <Typography variant='body2' fontWeight='medium'>
-                          {product.name}
-                        </Typography>
-                        <Typography variant='body2' fontWeight='bold'>
-                          {formatCurrency(product.value)}
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant='determinate'
-                        value={product.percentage}
-                        sx={{ height: 6, borderRadius: 3 }}
-                      />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Typography variant='subtitle2' gutterBottom>
+                      Inventory Insights
+                    </Typography>
+                    <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mb: 2 }}>
+                      <Typography variant='body2' color='text.secondary'>
+                        <strong>{analytics?.lowStockProducts || 0}</strong> products need restocking
+                      </Typography>
                     </Box>
-                  ))}
+                    <Box sx={{ p: 2, bgcolor: 'error.50', borderRadius: 1, mb: 2 }}>
+                      <Typography variant='body2' color='error.dark'>
+                        <strong>{analytics?.outOfStockProducts || 0}</strong> products out of stock
+                      </Typography>
+                    </Box>
+                    <Box sx={{ p: 2, bgcolor: 'success.50', borderRadius: 1 }}>
+                      <Typography variant='body2' color='success.dark'>
+                        <strong>
+                          {(((analytics?.activeProducts || 0) / (analytics?.totalProducts || 1)) * 100).toFixed(1)}%
+                        </strong>{' '}
+                        products actively selling
+                      </Typography>
+                    </Box>
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant='subtitle2' gutterBottom>
-                    Inventory Insights
-                  </Typography>
-                  <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mb: 2 }}>
-                    <Typography variant='body2' color='text.secondary'>
-                      <strong>{analytics?.lowStockProducts || 0}</strong> products need restocking
-                    </Typography>
-                  </Box>
-                  <Box sx={{ p: 2, bgcolor: 'error.50', borderRadius: 1, mb: 2 }}>
-                    <Typography variant='body2' color='error.dark'>
-                      <strong>{analytics?.outOfStockProducts || 0}</strong> products out of stock
-                    </Typography>
-                  </Box>
-                  <Box sx={{ p: 2, bgcolor: 'success.50', borderRadius: 1 }}>
-                    <Typography variant='body2' color='success.dark'>
-                      <strong>
-                        {(((analytics?.activeProducts || 0) / (analytics?.totalProducts || 1)) * 100).toFixed(1)}%
-                      </strong>{' '}
-                      products actively selling
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </motion.div>
         </motion.div>
-      </motion.div>
+      </Container>
     </DashboardLayout>
   );
 };

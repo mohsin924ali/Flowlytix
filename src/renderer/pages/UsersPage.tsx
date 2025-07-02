@@ -405,43 +405,18 @@ export const UsersPage: React.FC = () => {
   }, [refetch]);
 
   return (
-    <DashboardLayout title='Users'>
-      <Container maxWidth='xl' sx={{ py: 2 }}>
+    <DashboardLayout>
+      <Container maxWidth='xl' sx={{ py: 3 }}>
         <motion.div variants={containerVariants} initial='hidden' animate='visible'>
           {/* Header */}
           <motion.div variants={itemVariants}>
-            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <Box>
-                <Typography
-                  variant='h4'
-                  sx={{
-                    fontWeight: 'bold',
-                    background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    mb: 1,
-                  }}
-                >
-                  User Management
-                </Typography>
-                <Typography variant='body1' color='text.secondary'>
-                  Manage and monitor user accounts across your organization
-                </Typography>
-              </Box>
-              <Button
-                variant='contained'
-                startIcon={<PersonAddIcon />}
-                onClick={handleOpenCreateModal}
-                sx={{
-                  background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #4c38e8 0%, #5f47f0 100%)',
-                  },
-                }}
-              >
-                Create User
-              </Button>
+            <Box sx={{ mb: 4 }}>
+              <Typography variant='h4' fontWeight='600' color='text.primary' gutterBottom>
+                Users Management
+              </Typography>
+              <Typography variant='body1' color='text.secondary'>
+                Manage and monitor user accounts across your organization
+              </Typography>
             </Box>
           </motion.div>
 
@@ -538,6 +513,20 @@ export const UsersPage: React.FC = () => {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Floating Action Button */}
+          <Fab
+            color='primary'
+            aria-label='add user'
+            onClick={handleOpenCreateModal}
+            sx={{
+              position: 'fixed',
+              bottom: 24,
+              right: 24,
+            }}
+          >
+            <PersonAddIcon />
+          </Fab>
 
           {/* Create User Modal */}
           <UserCreateModal

@@ -38,9 +38,9 @@ import {
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardLayout } from '../components/templates';
+import { DigitalClock } from '../components/atoms';
 import { useAuthStore } from '../store/auth.store';
 import { useAgencyStore } from '../store/agency.store';
-import logoSrc from '../assets/images/logo-main.svg';
 
 /**
  * Dashboard stats interface
@@ -56,41 +56,21 @@ interface DashboardStat {
 }
 
 /**
- * Floating Logo Animation Component (same as login)
+ * Welcome Clock Component
+ * Beautiful digital clock for the welcome banner
  */
-const FloatingLogo: React.FC = () => {
+const WelcomeClock: React.FC = () => {
   return (
-    <motion.div
-      style={{
+    <Box
+      sx={{
         position: 'absolute',
         top: '20px',
         right: '20px',
-        width: '60px',
-        height: '60px',
-        opacity: 0.1,
-        zIndex: 0,
-      }}
-      animate={{
-        y: [-10, 10, -10],
-        rotate: [0, 5, -5, 0],
-        scale: [1, 1.05, 1],
-      }}
-      transition={{
-        duration: 6,
-        repeat: Infinity,
-        ease: 'easeInOut',
+        zIndex: 1,
       }}
     >
-      <img
-        src={logoSrc}
-        alt='Flowlytix Logo'
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'contain',
-        }}
-      />
-    </motion.div>
+      <DigitalClock size='small' color='primary' />
+    </Box>
   );
 };
 
@@ -135,7 +115,7 @@ const WelcomeSection: React.FC = () => {
         overflow: 'hidden',
       }}
     >
-      <FloatingLogo />
+      <WelcomeClock />
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5, position: 'relative', zIndex: 1 }}>
         <Avatar
           sx={{

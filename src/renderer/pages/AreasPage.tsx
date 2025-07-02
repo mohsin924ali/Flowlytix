@@ -3,6 +3,7 @@
  *
  * Professional UI for area management with working functionality.
  * Uses direct service calls instead of complex hooks to ensure reliability.
+ * Following Instructions file standards with consistent design patterns.
  *
  * @domain Area Management
  * @architecture Clean Architecture - Presentation Layer
@@ -11,7 +12,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-  Box,
+  Container,
   Paper,
   Typography,
   TextField,
@@ -43,6 +44,8 @@ import {
   InputAdornment,
   useTheme,
   alpha,
+  Box,
+  Fab,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -54,13 +57,52 @@ import {
   Map as MapIcon,
   Code as CodeIcon,
 } from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../store/auth.store';
 import { DashboardLayout } from '../components/templates';
 import { MockAreaService as AreaService, Area, CreateAreaRequest } from '../mocks/services/MockAreaService';
 import { AreaFormModal } from '../components/molecules/AreaFormModal';
 
 /**
- * Areas Page Component - Clean Version
+ * Standard animation variants following Instructions file standards
+ */
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.3,
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
+/**
+ * Status chip component with consistent design
+ */
+const StatusChip: React.FC<{ status: Area['status'] }> = ({ status }) => {
+  const getStatusConfig = () => {
+    switch (status) {
+      case 'active':
+        return { color: 'success' as const, label: 'Active' };
+      case 'inactive':
+        return { color: 'warning' as const, label: 'Inactive' };
+      default:
+        return { color: 'default' as const, label: status };
+    }
+  };
+
+  const { color, label } = getStatusConfig();
+  return <Chip label={label} color={color} size='small' sx={{ textTransform: 'capitalize' }} />;
+};
+
+/**
+ * Areas Page Component - Following Standards
  */
 export function AreasPage(): JSX.Element {
   const theme = useTheme();

@@ -7,4 +7,5 @@ export { Input, type InputProps } from './Input/Input';
 export { Button, type ButtonProps } from './Button/Button';
 export { Alert, type AlertProps } from './Alert/Alert';
 export { Logo, type LogoProps } from './Logo/Logo';
+export { DigitalClock, type DigitalClockProps } from './DigitalClock';
 export * from './InventoryStatusChip';

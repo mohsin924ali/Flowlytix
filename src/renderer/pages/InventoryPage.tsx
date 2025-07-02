@@ -1,48 +1,56 @@
 /**
- * Inventory Management Page
- * Comprehensive inventory management with multi-warehouse support
+ * Inventory Management Page Component
+ * Comprehensive inventory and product management interface
  * Following Instructions file standards with strict TypeScript compliance
  *
  * @domain Inventory Management
- * @architecture Page Layer - Clean Architecture
+ * @architecture Page Component (Atomic Design - Page Level)
  * @version 1.0.0
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box,
-  Paper,
-  Typography,
-  Tabs,
-  Tab,
+  Container,
   Grid,
+  Typography,
   Card,
   CardContent,
   Button,
+  IconButton,
   Chip,
+  Box,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Paper,
   TextField,
-  Select,
-  MenuItem,
+  InputAdornment,
   FormControl,
   InputLabel,
-  IconButton,
-  Tooltip,
-  Alert,
-  Fab,
+  Select,
+  MenuItem,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  LinearProgress,
-  Stack,
+  CircularProgress,
+  Alert,
+  Pagination,
+  useTheme,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   Divider,
   Badge,
+  Tooltip,
+  Fab,
+  Stack,
+  Tabs,
+  Tab,
+  LinearProgress,
 } from '@mui/material';
 import {
   Inventory as InventoryIcon,
@@ -65,6 +73,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Info as InfoIcon,
+  Search,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -94,6 +103,25 @@ import { ProductDetailsModal } from '../components/molecules/ProductDetailsModal
 import StockMovementModal from '../components/molecules/StockMovementModal/StockMovementModal';
 
 /**
+ * Animation variants following Instructions file standards
+ */
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.3,
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
+/**
  * Tab panel interface
  */
 interface TabPanelProps {
@@ -118,7 +146,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
 );
 
 /**
- * Inventory status chip component
+ * Inventory status chip component following design system
  */
 const InventoryStatusChip: React.FC<{
   available: number;
@@ -176,10 +204,47 @@ const MovementTypeChip: React.FC<{ type: StockMovementType }> = ({ type }) => {
 };
 
 /**
+ * Product status component following design system
+ */
+const ProductStatusChip: React.FC<{ status: ProductStatus }> = ({ status }) => {
+  const theme = useTheme();
+
+  const getStatusConfig = (status: ProductStatus) => {
+    switch (status) {
+      case ProductStatus.ACTIVE:
+        return { icon: CheckCircleIcon, color: 'success' };
+      case ProductStatus.INACTIVE:
+        return { icon: WarningIcon, color: 'warning' };
+      case ProductStatus.DISCONTINUED:
+        return { icon: ErrorIcon, color: 'error' };
+      case ProductStatus.PENDING_APPROVAL:
+        return { icon: InfoIcon, color: 'info' };
+      case ProductStatus.OUT_OF_STOCK:
+        return { icon: WarningIcon, color: 'error' };
+      default:
+        return { icon: InfoIcon, color: 'default' };
+    }
+  };
+
+  const { icon: Icon, color } = getStatusConfig(status);
+  return (
+    <Chip
+      icon={<Icon sx={{ fontSize: 16 }} />}
+      label={status.replace('_', ' ')}
+      size='small'
+      color={color as any}
+      variant='outlined'
+      sx={{ textTransform: 'capitalize' }}
+    />
+  );
+};
+
+/**
  * Main Inventory Management Page Component
  */
 const InventoryPage: React.FC = () => {
   const { currentAgency } = useAgencyStore();
+  const theme = useTheme();
 
   // State Management
   const [currentTab, setCurrentTab] = useState(0);
@@ -199,6 +264,7 @@ const InventoryPage: React.FC = () => {
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
   const [filters, setFilters] = useState<InventoryFilters>({});
   const [productFilters, setProductFilters] = useState<ProductFilters>({});
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Dialog State
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -247,7 +313,7 @@ const InventoryPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedWarehouse, filters, productFilters]);
+  }, [selectedWarehouse, filters, productFilters, currentAgency?.id]);
 
   /**
    * Handle tab change
@@ -257,11 +323,18 @@ const InventoryPage: React.FC = () => {
   }, []);
 
   /**
-   * Handle warehouse selection
+   * Handle warehouse selection change
    */
   const handleWarehouseChange = useCallback((warehouseId: string) => {
     setSelectedWarehouse(warehouseId);
   }, []);
+
+  /**
+   * Handle refresh
+   */
+  const handleRefresh = useCallback(() => {
+    loadData();
+  }, [loadData]);
 
   /**
    * Handle dialog operations
@@ -274,13 +347,6 @@ const InventoryPage: React.FC = () => {
   const handleDialogClose = useCallback(() => {
     setDialogOpen(false);
   }, []);
-
-  /**
-   * Handle refresh
-   */
-  const handleRefresh = useCallback(() => {
-    loadData();
-  }, [loadData]);
 
   // Load data on component mount and dependency changes
   useEffect(() => {
@@ -313,41 +379,83 @@ const InventoryPage: React.FC = () => {
   }, []);
 
   /**
+   * Handle search functionality
+   */
+  const handleSearch = useCallback((searchTerm: string) => {
+    setSearchTerm(searchTerm);
+    setProductFilters((prev) => ({ ...prev, search: searchTerm }));
+  }, []);
+
+  /**
    * Render products management section
    */
   const renderProductsManagement = () => (
-    <Box>
+    <motion.div variants={containerVariants} initial='hidden' animate='visible'>
       {/* Products Header */}
-      <Box display='flex' alignItems='center' justifyContent='space-between' mb={3}>
-        <Typography variant='h6' component='h2'>
-          Product Management
-        </Typography>
-        <Button variant='contained' startIcon={<AddIcon />} onClick={handleCreateProduct}>
-          Add Product
-        </Button>
+      <Box sx={{ mb: 3 }}>
+        <Box display='flex' alignItems='center' justifyContent='space-between' mb={2}>
+          <Typography variant='h5' component='h2' sx={{ fontWeight: 600 }}>
+            Product Catalog
+          </Typography>
+          <Button variant='contained' startIcon={<AddIcon />} onClick={handleCreateProduct}>
+            Add Product
+          </Button>
+        </Box>
+
+        {/* Search and Filters */}
+        <Box sx={{ mb: 3 }}>
+          <Grid container spacing={2} alignItems='center'>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                placeholder='Search products...'
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position='start'>
+                      <Search />
+                    </InputAdornment>
+                  ),
+                }}
+                size='small'
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Box display='flex' gap={1}>
+                <Button variant='outlined' startIcon={<FilterIcon />} size='small'>
+                  Filters
+                </Button>
+                <Button variant='outlined' startIcon={<ExportIcon />} size='small'>
+                  Export
+                </Button>
+              </Box>
+            </Grid>
+          </Grid>
+        </Box>
       </Box>
 
       {/* Products Table */}
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ mb: 3 }}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Product</TableCell>
-              <TableCell>SKU</TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell>Stock</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Cost Price</TableCell>
-              <TableCell>Selling Price</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Product</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>SKU</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Category</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Stock</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Cost Price</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Selling Price</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {products.map((product) => (
-              <TableRow key={product.id} hover>
+              <TableRow key={product.id} hover sx={{ '&:hover': { backgroundColor: 'action.hover' } }}>
                 <TableCell>
                   <Box>
-                    <Typography variant='body2' fontWeight='bold'>
+                    <Typography variant='body2' sx={{ fontWeight: 600, mb: 0.5 }}>
                       {product.name}
                     </Typography>
                     <Typography variant='caption' color='text.secondary'>
@@ -356,7 +464,7 @@ const InventoryPage: React.FC = () => {
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Typography variant='body2' fontFamily='monospace'>
+                  <Typography variant='body2' sx={{ fontFamily: 'monospace' }}>
                     {product.sku}
                   </Typography>
                 </TableCell>
@@ -365,49 +473,48 @@ const InventoryPage: React.FC = () => {
                 </TableCell>
                 <TableCell>
                   <Box>
-                    <Typography variant='body2' fontWeight='bold'>
+                    <Typography variant='body2' sx={{ fontWeight: 600, mb: 0.5 }}>
                       {product.currentStock} / {product.maxStockLevel}
                     </Typography>
-                    <Typography variant='caption' color='text.secondary'>
+                    <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mb: 0.5 }}>
                       Reorder at: {product.reorderLevel}
                     </Typography>
+                    <InventoryStatusChip
+                      available={product.currentStock}
+                      reserved={product.reservedStock}
+                      damaged={0}
+                      reorderLevel={product.reorderLevel}
+                    />
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Chip
-                    label={product.status.replace('_', ' ')}
-                    size='small'
-                    color={
-                      product.status === ProductStatus.ACTIVE
-                        ? 'success'
-                        : product.status === ProductStatus.INACTIVE
-                          ? 'warning'
-                          : 'error'
-                    }
-                    variant='outlined'
-                  />
+                  <ProductStatusChip status={product.status} />
                 </TableCell>
                 <TableCell>
-                  <Typography variant='body2'>${product.costPrice.toFixed(2)}</Typography>
+                  <Typography variant='body2' sx={{ color: 'error.main' }}>
+                    ${product.costPrice.toFixed(2)}
+                  </Typography>
                 </TableCell>
                 <TableCell>
-                  <Typography variant='body2'>${product.sellingPrice.toFixed(2)}</Typography>
+                  <Typography variant='body2' sx={{ color: 'success.main' }}>
+                    ${product.sellingPrice.toFixed(2)}
+                  </Typography>
                 </TableCell>
                 <TableCell>
-                  <Box display='flex' gap={1}>
+                  <Box display='flex' gap={1} alignItems='center'>
                     <Tooltip title='View Details'>
-                      <IconButton size='small' onClick={() => handleViewProduct(product)}>
-                        <ViewIcon />
+                      <IconButton size='small' onClick={() => handleViewProduct(product)} color='primary'>
+                        <ViewIcon fontSize='small' />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title='Edit Product'>
-                      <IconButton size='small' onClick={() => handleEditProduct(product)}>
-                        <EditIcon />
+                      <IconButton size='small' onClick={() => handleEditProduct(product)} color='info'>
+                        <EditIcon fontSize='small' />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title='Manage Stock'>
-                      <IconButton size='small' onClick={() => handleManageStock(product)}>
-                        <AdjustIcon />
+                      <IconButton size='small' onClick={() => handleManageStock(product)} color='secondary'>
+                        <AdjustIcon fontSize='small' />
                       </IconButton>
                     </Tooltip>
                   </Box>
@@ -426,183 +533,224 @@ const InventoryPage: React.FC = () => {
             No products found
           </Typography>
           <Typography variant='body2' color='text.secondary' mb={3}>
-            Get started by adding your first product
+            Get started by adding your first product to the catalog
           </Typography>
           <Button variant='contained' startIcon={<AddIcon />} onClick={handleCreateProduct}>
             Add First Product
           </Button>
         </Box>
       )}
-    </Box>
+    </motion.div>
   );
 
   /**
    * Render warehouse overview cards
    */
   const renderWarehouseOverview = () => (
-    <Grid container spacing={3}>
-      {warehouses.map((warehouse) => (
-        <Grid item xs={12} md={6} lg={4} key={warehouse.id}>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Box display='flex' alignItems='center' mb={2}>
-                  <WarehouseIcon sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography variant='h6' component='div'>
-                    {warehouse.name}
+    <motion.div variants={containerVariants} initial='hidden' animate='visible'>
+      <Typography variant='h5' component='h2' sx={{ fontWeight: 600, mb: 3 }}>
+        Warehouse Overview
+      </Typography>
+
+      <Grid container spacing={3}>
+        {warehouses.map((warehouse) => (
+          <Grid item xs={12} md={6} lg={4} key={warehouse.id}>
+            <motion.div variants={itemVariants}>
+              <Card
+                sx={{
+                  height: '100%',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: theme.shadows[8],
+                  },
+                }}
+              >
+                <CardContent>
+                  <Box display='flex' alignItems='center' mb={2}>
+                    <WarehouseIcon sx={{ mr: 1, color: 'primary.main' }} />
+                    <Typography variant='h6' component='div' sx={{ fontWeight: 600 }}>
+                      {warehouse.name}
+                    </Typography>
+                    <Chip label={warehouse.code} size='small' sx={{ ml: 'auto' }} />
+                  </Box>
+
+                  <Typography variant='body2' color='text.secondary' gutterBottom>
+                    {warehouse.location.replace('_', ' ')}
                   </Typography>
-                  <Chip label={warehouse.code} size='small' sx={{ ml: 'auto' }} />
-                </Box>
 
-                <Typography variant='body2' color='text.secondary' gutterBottom>
-                  {warehouse.location.replace('_', ' ')}
-                </Typography>
-
-                <Typography variant='body2' gutterBottom>
-                  Manager: {warehouse.manager}
-                </Typography>
-
-                <Box mt={2}>
                   <Typography variant='body2' gutterBottom>
-                    Utilization: {Math.round((warehouse.currentUtilization / warehouse.capacity) * 100)}%
+                    Manager: {warehouse.manager}
                   </Typography>
-                  <LinearProgress
-                    variant='determinate'
-                    value={(warehouse.currentUtilization / warehouse.capacity) * 100}
-                    sx={{ height: 8, borderRadius: 4 }}
-                  />
-                </Box>
 
-                <Box mt={2} display='flex' justifyContent='space-between'>
-                  <Typography variant='caption'>
-                    {warehouse.currentUtilization.toLocaleString()} / {warehouse.capacity.toLocaleString()}
-                  </Typography>
-                  <Chip
-                    label={warehouse.isActive ? 'Active' : 'Inactive'}
-                    color={warehouse.isActive ? 'success' : 'default'}
-                    size='small'
-                  />
-                </Box>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </Grid>
-      ))}
-    </Grid>
+                  <Box mt={2}>
+                    <Typography variant='body2' gutterBottom>
+                      Utilization: {Math.round((warehouse.currentUtilization / warehouse.capacity) * 100)}%
+                    </Typography>
+                    <LinearProgress
+                      variant='determinate'
+                      value={(warehouse.currentUtilization / warehouse.capacity) * 100}
+                      sx={{ height: 8, borderRadius: 4 }}
+                    />
+                  </Box>
+
+                  <Box mt={2} display='flex' justifyContent='space-between'>
+                    <Typography variant='caption'>
+                      {warehouse.currentUtilization.toLocaleString()} / {warehouse.capacity.toLocaleString()}
+                    </Typography>
+                    <Chip
+                      label={warehouse.isActive ? 'Active' : 'Inactive'}
+                      color={warehouse.isActive ? 'success' : 'default'}
+                      size='small'
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </Grid>
+        ))}
+      </Grid>
+    </motion.div>
   );
 
   /**
    * Render stock levels table
    */
   const renderStockLevels = () => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Product ID</TableCell>
-            <TableCell>Warehouse</TableCell>
-            <TableCell align='right'>Available</TableCell>
-            <TableCell align='right'>Reserved</TableCell>
-            <TableCell align='right'>Damaged</TableCell>
-            <TableCell align='right'>Total</TableCell>
-            <TableCell align='right'>Reorder Level</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Actions</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {stockLevels.map((level) => (
-            <TableRow key={level.id} hover>
-              <TableCell>{level.productId}</TableCell>
-              <TableCell>{warehouses.find((w) => w.id === level.warehouseId)?.name || level.warehouseId}</TableCell>
-              <TableCell align='right'>{level.availableStock.toLocaleString()}</TableCell>
-              <TableCell align='right'>{level.reservedStock.toLocaleString()}</TableCell>
-              <TableCell align='right'>{level.damagedStock.toLocaleString()}</TableCell>
-              <TableCell align='right'>{level.totalStock.toLocaleString()}</TableCell>
-              <TableCell align='right'>{level.reorderLevel.toLocaleString()}</TableCell>
-              <TableCell>
-                <InventoryStatusChip
-                  available={level.availableStock}
-                  reserved={level.reservedStock}
-                  damaged={level.damagedStock}
-                  reorderLevel={level.reorderLevel}
-                />
+    <motion.div variants={containerVariants} initial='hidden' animate='visible'>
+      <Typography variant='h5' component='h2' sx={{ fontWeight: 600, mb: 3 }}>
+        Current Stock Levels
+      </Typography>
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600 }}>Product ID</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Warehouse</TableCell>
+              <TableCell align='right' sx={{ fontWeight: 600 }}>
+                Available
               </TableCell>
-              <TableCell>
-                <Stack direction='row' spacing={1}>
-                  <Tooltip title='View Details'>
-                    <IconButton size='small'>
-                      <ViewIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title='Adjust Stock'>
-                    <IconButton size='small' onClick={() => handleDialogOpen('adjustment')}>
-                      <AdjustIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title='Reserve Stock'>
-                    <IconButton size='small' onClick={() => handleDialogOpen('reservation')}>
-                      <ReserveIcon />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
+              <TableCell align='right' sx={{ fontWeight: 600 }}>
+                Reserved
               </TableCell>
+              <TableCell align='right' sx={{ fontWeight: 600 }}>
+                Damaged
+              </TableCell>
+              <TableCell align='right' sx={{ fontWeight: 600 }}>
+                Total
+              </TableCell>
+              <TableCell align='right' sx={{ fontWeight: 600 }}>
+                Reorder Level
+              </TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          </TableHead>
+          <TableBody>
+            {stockLevels.map((level) => (
+              <TableRow key={level.id} hover>
+                <TableCell>{level.productId}</TableCell>
+                <TableCell>{warehouses.find((w) => w.id === level.warehouseId)?.name || level.warehouseId}</TableCell>
+                <TableCell align='right'>{level.availableStock.toLocaleString()}</TableCell>
+                <TableCell align='right'>{level.reservedStock.toLocaleString()}</TableCell>
+                <TableCell align='right'>{level.damagedStock.toLocaleString()}</TableCell>
+                <TableCell align='right'>{level.totalStock.toLocaleString()}</TableCell>
+                <TableCell align='right'>{level.reorderLevel.toLocaleString()}</TableCell>
+                <TableCell>
+                  <InventoryStatusChip
+                    available={level.availableStock}
+                    reserved={level.reservedStock}
+                    damaged={level.damagedStock}
+                    reorderLevel={level.reorderLevel}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Stack direction='row' spacing={1}>
+                    <Tooltip title='View Details'>
+                      <IconButton size='small'>
+                        <ViewIcon fontSize='small' />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title='Adjust Stock'>
+                      <IconButton size='small' onClick={() => handleDialogOpen('adjustment')}>
+                        <AdjustIcon fontSize='small' />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title='Reserve Stock'>
+                      <IconButton size='small' onClick={() => handleDialogOpen('reservation')}>
+                        <ReserveIcon fontSize='small' />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </motion.div>
   );
 
   /**
    * Render stock movements table
    */
   const renderStockMovements = () => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Date</TableCell>
-            <TableCell>Product</TableCell>
-            <TableCell>Warehouse</TableCell>
-            <TableCell>Type</TableCell>
-            <TableCell>Reason</TableCell>
-            <TableCell align='right'>Quantity</TableCell>
-            <TableCell align='right'>Cost</TableCell>
-            <TableCell>Reference</TableCell>
-            <TableCell>Performed By</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {stockMovements.map((movement) => (
-            <TableRow key={movement.id} hover>
-              <TableCell>{movement.performedAt.toLocaleDateString()}</TableCell>
-              <TableCell>{movement.productId}</TableCell>
-              <TableCell>
-                {warehouses.find((w) => w.id === movement.warehouseId)?.name || movement.warehouseId}
+    <motion.div variants={containerVariants} initial='hidden' animate='visible'>
+      <Typography variant='h5' component='h2' sx={{ fontWeight: 600, mb: 3 }}>
+        Stock Movement History
+      </Typography>
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Product</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Warehouse</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Reason</TableCell>
+              <TableCell align='right' sx={{ fontWeight: 600 }}>
+                Quantity
               </TableCell>
-              <TableCell>
-                <MovementTypeChip type={movement.movementType} />
+              <TableCell align='right' sx={{ fontWeight: 600 }}>
+                Cost
               </TableCell>
-              <TableCell>
-                <Chip label={movement.reason.replace('_', ' ')} size='small' variant='outlined' />
-              </TableCell>
-              <TableCell align='right'>
-                <Typography color={movement.quantity > 0 ? 'success.main' : 'error.main'} fontWeight='bold'>
-                  {movement.quantity > 0 ? '+' : ''}
-                  {movement.quantity.toLocaleString()}
-                </Typography>
-              </TableCell>
-              <TableCell align='right'>
-                {movement.totalCost ? `$${movement.totalCost.toLocaleString()}` : '-'}
-              </TableCell>
-              <TableCell>{movement.referenceNumber || '-'}</TableCell>
-              <TableCell>{movement.performedBy}</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Reference</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Performed By</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          </TableHead>
+          <TableBody>
+            {stockMovements.map((movement) => (
+              <TableRow key={movement.id} hover>
+                <TableCell>{movement.performedAt.toLocaleDateString()}</TableCell>
+                <TableCell>{movement.productId}</TableCell>
+                <TableCell>
+                  {warehouses.find((w) => w.id === movement.warehouseId)?.name || movement.warehouseId}
+                </TableCell>
+                <TableCell>
+                  <MovementTypeChip type={movement.movementType} />
+                </TableCell>
+                <TableCell>
+                  <Chip label={movement.reason.replace('_', ' ')} size='small' variant='outlined' />
+                </TableCell>
+                <TableCell align='right'>
+                  <Typography color={movement.quantity > 0 ? 'success.main' : 'error.main'} fontWeight='bold'>
+                    {movement.quantity > 0 ? '+' : ''}
+                    {movement.quantity.toLocaleString()}
+                  </Typography>
+                </TableCell>
+                <TableCell align='right'>
+                  {movement.totalCost ? `$${movement.totalCost.toLocaleString()}` : '-'}
+                </TableCell>
+                <TableCell>{movement.referenceNumber || '-'}</TableCell>
+                <TableCell>{movement.performedBy}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </motion.div>
   );
 
   /**
@@ -612,196 +760,206 @@ const InventoryPage: React.FC = () => {
     if (!analytics) return null;
 
     return (
-      <Grid container spacing={3}>
-        {/* Key Metrics */}
-        <Grid item xs={12}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Box display='flex' alignItems='center'>
-                    <InventoryIcon sx={{ mr: 1, color: 'primary.main' }} />
-                    <Box>
-                      <Typography variant='h4' component='div'>
-                        ${analytics.totalValue.toLocaleString()}
-                      </Typography>
-                      <Typography variant='body2' color='text.secondary'>
-                        Total Inventory Value
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
+      <motion.div variants={containerVariants} initial='hidden' animate='visible'>
+        <Typography variant='h5' component='h2' sx={{ fontWeight: 600, mb: 3 }}>
+          Inventory Analytics
+        </Typography>
 
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Box display='flex' alignItems='center'>
-                    <Badge badgeContent={analytics.lowStockItems} color='warning'>
+        <Grid container spacing={3}>
+          {/* Key Metrics */}
+          <Grid item xs={12}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Box display='flex' alignItems='center'>
+                      <InventoryIcon sx={{ mr: 1, color: 'primary.main' }} />
+                      <Box>
+                        <Typography variant='h4' component='div' sx={{ fontWeight: 600 }}>
+                          {analytics.totalItems}
+                        </Typography>
+                        <Typography variant='body2' color='text.secondary'>
+                          Total Items
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Box display='flex' alignItems='center'>
+                      <TrendingUpIcon sx={{ mr: 1, color: 'success.main' }} />
+                      <Box>
+                        <Typography variant='h4' component='div' sx={{ fontWeight: 600 }}>
+                          ${analytics.totalValue.toLocaleString()}
+                        </Typography>
+                        <Typography variant='body2' color='text.secondary'>
+                          Total Stock Value
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Box display='flex' alignItems='center'>
                       <WarningIcon sx={{ mr: 1, color: 'warning.main' }} />
-                    </Badge>
-                    <Box>
-                      <Typography variant='h4' component='div'>
-                        {analytics.totalItems.toLocaleString()}
-                      </Typography>
-                      <Typography variant='body2' color='text.secondary'>
-                        Total Items
-                      </Typography>
+                      <Box>
+                        <Typography variant='h4' component='div' sx={{ fontWeight: 600 }}>
+                          {analytics.lowStockItems}
+                        </Typography>
+                        <Typography variant='body2' color='text.secondary'>
+                          Low Stock Items
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Box display='flex' alignItems='center'>
-                    <TrendingUpIcon sx={{ mr: 1, color: 'success.main' }} />
-                    <Box>
-                      <Typography variant='h4' component='div'>
-                        {analytics.turnoverRate.toFixed(1)}x
-                      </Typography>
-                      <Typography variant='body2' color='text.secondary'>
-                        Turnover Rate
-                      </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Box display='flex' alignItems='center'>
+                      <AnalyticsIcon sx={{ mr: 1, color: 'info.main' }} />
+                      <Box>
+                        <Typography variant='h4' component='div' sx={{ fontWeight: 600 }}>
+                          {analytics.averageDaysOnHand}
+                        </Typography>
+                        <Typography variant='body2' color='text.secondary'>
+                          Avg Days on Hand
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Box display='flex' alignItems='center'>
-                    <AnalyticsIcon sx={{ mr: 1, color: 'info.main' }} />
-                    <Box>
-                      <Typography variant='h4' component='div'>
-                        {analytics.averageDaysOnHand}
-                      </Typography>
-                      <Typography variant='body2' color='text.secondary'>
-                        Avg Days on Hand
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
           </Grid>
-        </Grid>
 
-        {/* Top Moving Products */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant='h6' gutterBottom>
-                Top Moving Products
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              {analytics.topMovingProducts.map((product, index) => (
-                <Box key={product.productId} display='flex' alignItems='center' mb={1}>
-                  <Chip label={`#${index + 1}`} size='small' sx={{ mr: 2 }} />
-                  <Box flexGrow={1}>
-                    <Typography variant='body2' fontWeight='bold'>
-                      {product.productName}
-                    </Typography>
-                    <Typography variant='caption' color='text.secondary'>
-                      {product.totalQuantity.toLocaleString()} units moved
-                    </Typography>
+          {/* Top Moving Products */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant='h6' gutterBottom sx={{ fontWeight: 600 }}>
+                  Top Moving Products
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                {analytics.topMovingProducts.map((product, index) => (
+                  <Box key={product.productId} display='flex' alignItems='center' mb={1}>
+                    <Chip label={`#${index + 1}`} size='small' sx={{ mr: 2 }} />
+                    <Box flexGrow={1}>
+                      <Typography variant='body2' fontWeight='bold'>
+                        {product.productName}
+                      </Typography>
+                      <Typography variant='caption' color='text.secondary'>
+                        {product.totalQuantity.toLocaleString()} units moved
+                      </Typography>
+                    </Box>
+                    <Chip label={`${product.movementCount} movements`} size='small' color='primary' />
                   </Box>
-                  <Chip label={`${product.movementCount} movements`} size='small' color='primary' />
-                </Box>
-              ))}
-            </CardContent>
-          </Card>
-        </Grid>
+                ))}
+              </CardContent>
+            </Card>
+          </Grid>
 
-        {/* Slow Moving Products */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant='h6' gutterBottom>
-                Slow Moving Products
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-              {analytics.slowMovingProducts.map((product) => (
-                <Box key={product.productId} display='flex' alignItems='center' mb={1}>
-                  <WarningIcon sx={{ mr: 1, color: 'warning.main' }} />
-                  <Box flexGrow={1}>
-                    <Typography variant='body2' fontWeight='bold'>
-                      {product.productName}
-                    </Typography>
-                    <Typography variant='caption' color='text.secondary'>
-                      {product.currentStock} units in stock
-                    </Typography>
+          {/* Slow Moving Products */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant='h6' gutterBottom sx={{ fontWeight: 600 }}>
+                  Slow Moving Products
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                {analytics.slowMovingProducts.map((product) => (
+                  <Box key={product.productId} display='flex' alignItems='center' mb={1}>
+                    <WarningIcon sx={{ mr: 1, color: 'warning.main' }} />
+                    <Box flexGrow={1}>
+                      <Typography variant='body2' fontWeight='bold'>
+                        {product.productName}
+                      </Typography>
+                      <Typography variant='caption' color='text.secondary'>
+                        {product.currentStock} units in stock
+                      </Typography>
+                    </Box>
+                    <Chip label={`${product.daysSinceLastMovement} days`} size='small' color='warning' />
                   </Box>
-                  <Chip label={`${product.daysSinceLastMovement} days`} size='small' color='warning' />
-                </Box>
-              ))}
-            </CardContent>
-          </Card>
+                ))}
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-      </Grid>
+      </motion.div>
     );
   };
 
   return (
     <DashboardLayout title='Inventory Management'>
-      <Box sx={{ width: '100%' }}>
-        {/* Header */}
-        <Box display='flex' alignItems='center' justifyContent='space-between' mb={3}>
-          <Box display='flex' alignItems='center'>
-            <InventoryIcon sx={{ mr: 2, fontSize: 32, color: 'primary.main' }} />
-            <Typography variant='h4' component='h1' fontWeight='bold'>
-              Inventory Management
-            </Typography>
+      <Container maxWidth={false} sx={{ py: 3 }}>
+        {/* Header Section */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant='h4' fontWeight='600' color='text.primary' gutterBottom>
+            Inventory Management
+          </Typography>
+          <Typography variant='body1' color='text.secondary' sx={{ mb: 3 }}>
+            Comprehensive inventory and product management system
+          </Typography>
+
+          <Box display='flex' alignItems='center' justifyContent='space-between' mb={2}>
+            <Box />
+            <Stack direction='row' spacing={2}>
+              <FormControl size='small' sx={{ minWidth: 200 }}>
+                <InputLabel>Warehouse</InputLabel>
+                <Select
+                  value={selectedWarehouse}
+                  onChange={(e) => handleWarehouseChange(e.target.value)}
+                  label='Warehouse'
+                >
+                  <MenuItem value=''>All Warehouses</MenuItem>
+                  {warehouses.map((warehouse) => (
+                    <MenuItem key={warehouse.id} value={warehouse.id}>
+                      {warehouse.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <Button
+                variant='outlined'
+                startIcon={<RefreshIcon />}
+                onClick={handleRefresh}
+                disabled={loading}
+                size='small'
+              >
+                Refresh
+              </Button>
+
+              <Button variant='outlined' startIcon={<ExportIcon />} disabled={loading} size='small'>
+                Export
+              </Button>
+            </Stack>
           </Box>
 
-          <Stack direction='row' spacing={2}>
-            <FormControl size='small' sx={{ minWidth: 200 }}>
-              <InputLabel>Warehouse</InputLabel>
-              <Select
-                value={selectedWarehouse}
-                onChange={(e) => handleWarehouseChange(e.target.value)}
-                label='Warehouse'
-              >
-                <MenuItem value=''>All Warehouses</MenuItem>
-                {warehouses.map((warehouse) => (
-                  <MenuItem key={warehouse.id} value={warehouse.id}>
-                    {warehouse.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+          {/* Error Alert */}
+          <AnimatePresence>
+            {error && (
+              <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <Alert severity='error' sx={{ mb: 3 }} onClose={() => setError(null)}>
+                  {error}
+                </Alert>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            <Button variant='outlined' startIcon={<RefreshIcon />} onClick={handleRefresh} disabled={loading}>
-              Refresh
-            </Button>
-
-            <Button variant='outlined' startIcon={<ExportIcon />} disabled={loading}>
-              Export
-            </Button>
-          </Stack>
+          {/* Loading Progress */}
+          {loading && <LinearProgress sx={{ mb: 3 }} />}
         </Box>
 
-        {/* Error Alert */}
-        <AnimatePresence>
-          {error && (
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <Alert severity='error' sx={{ mb: 3 }} onClose={() => setError(null)}>
-                {error}
-              </Alert>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Loading Progress */}
-        {loading && <LinearProgress sx={{ mb: 3 }} />}
-
         {/* Main Content */}
-        <Paper sx={{ width: '100%' }}>
+        <Paper sx={{ width: '100%', borderRadius: 2 }}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs value={currentTab} onChange={handleTabChange} aria-label='inventory tabs'>
               <Tab label='Products' icon={<InventoryIcon />} />
@@ -850,12 +1008,22 @@ const InventoryPage: React.FC = () => {
         </Paper>
 
         {/* Floating Action Buttons */}
-        <Box sx={{ position: 'fixed', bottom: 16, right: 16 }}>
+        <Box sx={{ position: 'fixed', bottom: 24, right: 24 }}>
           <Stack spacing={2}>
-            <Fab color='primary' aria-label='add stock movement' onClick={() => handleDialogOpen('movement')}>
+            <Fab
+              color='primary'
+              aria-label='add stock movement'
+              onClick={() => handleDialogOpen('movement')}
+              size='medium'
+            >
               <AddIcon />
             </Fab>
-            <Fab color='secondary' aria-label='create transfer' onClick={() => handleDialogOpen('transfer')}>
+            <Fab
+              color='secondary'
+              aria-label='create transfer'
+              onClick={() => handleDialogOpen('transfer')}
+              size='medium'
+            >
               <TransferIcon />
             </Fab>
           </Stack>
@@ -896,7 +1064,7 @@ const InventoryPage: React.FC = () => {
           onClose={() => setStockMovementOpen(false)}
           onSuccess={loadData}
         />
-      </Box>
+      </Container>
     </DashboardLayout>
   );
 };
