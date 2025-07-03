@@ -3,198 +3,222 @@
  * Sample products for testing and development
  */
 
-export interface MockProduct {
-  id: string;
-  sku: string;
-  name: string;
-  description: string;
-  category: string;
-  subcategory?: string;
-  brand: string;
-  price: number;
-  costPrice: number;
-  currency: string;
-  inStock: number;
-  minStockLevel: number;
-  maxStockLevel: number;
-  unit: string;
-  weight?: number;
-  dimensions?: {
-    length: number;
-    width: number;
-    height: number;
-    unit: string;
-  };
-  status: 'ACTIVE' | 'INACTIVE' | 'DISCONTINUED';
-  tags: string[];
-  images: string[];
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { Product, ProductCategory, ProductStatus, UnitOfMeasure } from '../../services/ProductService';
 
-export const mockProducts: MockProduct[] = [
+export const mockProducts: Product[] = [
   {
     id: 'prod-1',
     sku: 'ELEC001',
     name: 'Premium Wireless Headphones',
     description: 'High-quality wireless headphones with noise cancellation and 30-hour battery life',
-    category: 'Electronics',
-    subcategory: 'Audio',
-    brand: 'TechSound',
-    price: 299.99,
+    category: ProductCategory.ELECTRONICS,
+    unitOfMeasure: UnitOfMeasure.PIECE,
+    status: ProductStatus.ACTIVE,
     costPrice: 150.0,
-    currency: 'USD',
-    inStock: 45,
+    costPriceCurrency: 'USD',
+    sellingPrice: 299.99,
+    sellingPriceCurrency: 'USD',
+    barcode: '1234567890123',
+    supplierId: 'sup-001',
+    supplierProductCode: 'TSH-001',
     minStockLevel: 10,
     maxStockLevel: 100,
-    unit: 'piece',
+    reorderLevel: 15,
+    currentStock: 45,
+    reservedStock: 5,
+    availableStock: 40,
     weight: 0.35,
     dimensions: {
       length: 20,
       width: 18,
       height: 8,
-      unit: 'cm',
     },
-    status: 'ACTIVE',
     tags: ['wireless', 'bluetooth', 'noise-cancellation', 'premium'],
-    images: ['/images/products/headphones-1.jpg'],
+    agencyId: 'agency-001',
+    createdBy: 'user-001',
     createdAt: new Date('2023-01-15'),
+    updatedBy: 'user-001',
     updatedAt: new Date('2024-01-10'),
+    priceHistory: [],
+    stockMovements: [],
   },
   {
     id: 'prod-2',
     sku: 'FURN001',
     name: 'Ergonomic Office Chair',
     description: 'Comfortable ergonomic office chair with lumbar support and adjustable height',
-    category: 'Furniture',
-    subcategory: 'Office',
-    brand: 'ComfortDesk',
-    price: 449.99,
+    category: ProductCategory.HOME_GARDEN,
+    unitOfMeasure: UnitOfMeasure.PIECE,
+    status: ProductStatus.ACTIVE,
     costPrice: 225.0,
-    currency: 'USD',
-    inStock: 25,
+    costPriceCurrency: 'USD',
+    sellingPrice: 449.99,
+    sellingPriceCurrency: 'USD',
+    barcode: '1234567890124',
+    supplierId: 'sup-002',
+    supplierProductCode: 'CD-001',
     minStockLevel: 5,
     maxStockLevel: 50,
-    unit: 'piece',
+    reorderLevel: 8,
+    currentStock: 25,
+    reservedStock: 3,
+    availableStock: 22,
     weight: 18.5,
     dimensions: {
       length: 65,
       width: 65,
       height: 110,
-      unit: 'cm',
     },
-    status: 'ACTIVE',
     tags: ['ergonomic', 'office', 'adjustable', 'comfort'],
-    images: ['/images/products/chair-1.jpg'],
+    agencyId: 'agency-001',
+    createdBy: 'user-001',
     createdAt: new Date('2023-03-20'),
+    updatedBy: 'user-001',
     updatedAt: new Date('2024-01-05'),
+    priceHistory: [],
+    stockMovements: [],
   },
   {
     id: 'prod-3',
     sku: 'BOOK001',
     name: 'Business Strategy Handbook',
     description: 'Comprehensive guide to modern business strategy and management practices',
-    category: 'Books',
-    subcategory: 'Business',
-    brand: 'Educational Press',
-    price: 34.99,
+    category: ProductCategory.BOOKS_MEDIA,
+    unitOfMeasure: UnitOfMeasure.PIECE,
+    status: ProductStatus.ACTIVE,
     costPrice: 12.0,
-    currency: 'USD',
-    inStock: 120,
+    costPriceCurrency: 'USD',
+    sellingPrice: 34.99,
+    sellingPriceCurrency: 'USD',
+    barcode: '1234567890125',
+    supplierId: 'sup-003',
+    supplierProductCode: 'EP-001',
     minStockLevel: 20,
     maxStockLevel: 200,
-    unit: 'piece',
+    reorderLevel: 30,
+    currentStock: 120,
+    reservedStock: 10,
+    availableStock: 110,
     weight: 0.8,
     dimensions: {
       length: 24,
       width: 16,
       height: 3,
-      unit: 'cm',
     },
-    status: 'ACTIVE',
     tags: ['business', 'strategy', 'handbook', 'management'],
-    images: ['/images/products/book-1.jpg'],
+    agencyId: 'agency-001',
+    createdBy: 'user-001',
     createdAt: new Date('2023-05-10'),
+    updatedBy: 'user-001',
     updatedAt: new Date('2023-12-15'),
+    priceHistory: [],
+    stockMovements: [],
   },
   {
     id: 'prod-4',
     sku: 'CLOTH001',
     name: 'Professional Business Shirt',
     description: 'High-quality cotton business shirt suitable for professional environments',
-    category: 'Clothing',
-    subcategory: 'Shirts',
-    brand: 'ProfessionalWear',
-    price: 89.99,
+    category: ProductCategory.CLOTHING,
+    unitOfMeasure: UnitOfMeasure.PIECE,
+    status: ProductStatus.ACTIVE,
     costPrice: 35.0,
-    currency: 'USD',
-    inStock: 75,
+    costPriceCurrency: 'USD',
+    sellingPrice: 89.99,
+    sellingPriceCurrency: 'USD',
+    barcode: '1234567890126',
+    supplierId: 'sup-004',
+    supplierProductCode: 'PW-001',
     minStockLevel: 15,
     maxStockLevel: 150,
-    unit: 'piece',
+    reorderLevel: 25,
+    currentStock: 75,
+    reservedStock: 8,
+    availableStock: 67,
     weight: 0.3,
-    status: 'ACTIVE',
     tags: ['professional', 'cotton', 'business', 'formal'],
-    images: ['/images/products/shirt-1.jpg'],
+    agencyId: 'agency-001',
+    createdBy: 'user-001',
     createdAt: new Date('2023-06-25'),
+    updatedBy: 'user-001',
     updatedAt: new Date('2024-01-08'),
+    priceHistory: [],
+    stockMovements: [],
   },
   {
     id: 'prod-5',
     sku: 'TECH001',
     name: 'Smart Fitness Tracker',
     description: 'Advanced fitness tracker with heart rate monitoring and GPS',
-    category: 'Technology',
-    subcategory: 'Wearables',
-    brand: 'FitTech',
-    price: 199.99,
+    category: ProductCategory.ELECTRONICS,
+    unitOfMeasure: UnitOfMeasure.PIECE,
+    status: ProductStatus.OUT_OF_STOCK,
     costPrice: 80.0,
-    currency: 'USD',
-    inStock: 0,
+    costPriceCurrency: 'USD',
+    sellingPrice: 199.99,
+    sellingPriceCurrency: 'USD',
+    barcode: '1234567890127',
+    supplierId: 'sup-001',
+    supplierProductCode: 'FT-001',
     minStockLevel: 10,
     maxStockLevel: 80,
-    unit: 'piece',
+    reorderLevel: 15,
+    currentStock: 0,
+    reservedStock: 0,
+    availableStock: 0,
     weight: 0.05,
     dimensions: {
       length: 4,
       width: 2,
       height: 1,
-      unit: 'cm',
     },
-    status: 'ACTIVE',
     tags: ['fitness', 'tracker', 'smart', 'gps', 'health'],
-    images: ['/images/products/tracker-1.jpg'],
+    agencyId: 'agency-001',
+    createdBy: 'user-001',
     createdAt: new Date('2023-08-12'),
+    updatedBy: 'user-001',
     updatedAt: new Date('2024-01-20'),
+    priceHistory: [],
+    stockMovements: [],
   },
 ];
 
-export const generateMockProducts = (count: number = 100): MockProduct[] => {
-  const categories = ['Electronics', 'Furniture', 'Books', 'Clothing', 'Technology', 'Home & Garden', 'Sports'];
-  const brands = ['TechCorp', 'Quality Goods', 'Premium Brand', 'Affordable Plus', 'Luxury Items'];
-  const statuses: MockProduct['status'][] = ['ACTIVE', 'INACTIVE', 'DISCONTINUED'];
-  const units = ['piece', 'kg', 'liter', 'meter', 'pack'];
+export const generateMockProducts = (count: number = 100): Product[] => {
+  const categories = Object.values(ProductCategory);
+  const units = Object.values(UnitOfMeasure);
+  const statuses = Object.values(ProductStatus);
+  const suppliers = ['sup-001', 'sup-002', 'sup-003', 'sup-004'];
 
   return Array.from({ length: count }, (_, index) => ({
     id: `prod-${index + 6}`,
     sku: `SKU${(index + 6).toString().padStart(3, '0')}`,
     name: `Product ${index + 6}`,
     description: `Description for product ${index + 6}`,
-    category: categories[Math.floor(Math.random() * categories.length)] || 'General',
-    brand: brands[Math.floor(Math.random() * brands.length)] || 'Generic',
-    price: Math.floor(Math.random() * 1000) + 10,
+    category: categories[Math.floor(Math.random() * categories.length)] || ProductCategory.OTHER,
+    unitOfMeasure: units[Math.floor(Math.random() * units.length)] || UnitOfMeasure.PIECE,
+    status: statuses[Math.floor(Math.random() * statuses.length)] || ProductStatus.ACTIVE,
     costPrice: Math.floor(Math.random() * 500) + 5,
-    currency: 'USD',
-    inStock: Math.floor(Math.random() * 200),
+    costPriceCurrency: 'USD',
+    sellingPrice: Math.floor(Math.random() * 1000) + 10,
+    sellingPriceCurrency: 'USD',
+    barcode: `123456789${(index + 6).toString().padStart(4, '0')}`,
+    supplierId: suppliers[Math.floor(Math.random() * suppliers.length)],
+    supplierProductCode: `SUP-${index + 6}`,
     minStockLevel: Math.floor(Math.random() * 20) + 5,
     maxStockLevel: Math.floor(Math.random() * 500) + 50,
-    unit: units[Math.floor(Math.random() * units.length)] || 'piece',
+    reorderLevel: Math.floor(Math.random() * 30) + 10,
+    currentStock: Math.floor(Math.random() * 200),
+    reservedStock: Math.floor(Math.random() * 20),
+    availableStock: Math.floor(Math.random() * 180),
     weight: Math.random() * 10,
-    status: statuses[Math.floor(Math.random() * statuses.length)] || 'ACTIVE',
     tags: [`tag-${index}`, 'sample'],
-    images: [`/images/products/product-${index + 6}.jpg`],
+    agencyId: 'agency-001',
+    createdBy: 'user-001',
     createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
+    updatedBy: 'user-001',
     updatedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+    priceHistory: [],
+    stockMovements: [],
   }));
 };
 

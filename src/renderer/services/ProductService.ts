@@ -211,238 +211,213 @@ export interface ProductListResponse {
 }
 
 /**
- * Mock product data for development
- */
-const MOCK_PRODUCTS: Product[] = [
-  {
-    id: 'prod-001',
-    sku: 'SKU001',
-    name: 'Premium Coffee Beans 1kg',
-    description: 'High-quality arabica coffee beans, medium roast',
-    category: ProductCategory.FOOD_BEVERAGE,
-    unitOfMeasure: UnitOfMeasure.KILOGRAM,
-    status: ProductStatus.ACTIVE,
-    costPrice: 12.5,
-    costPriceCurrency: 'USD',
-    sellingPrice: 18.99,
-    sellingPriceCurrency: 'USD',
-    barcode: '1234567890123',
-    supplierId: 'supplier-001',
-    supplierProductCode: 'COFFEE-001',
-    minStockLevel: 50,
-    maxStockLevel: 500,
-    reorderLevel: 100,
-    currentStock: 75,
-    reservedStock: 15,
-    availableStock: 60,
-    weight: 1.0,
-    dimensions: {
-      length: 20,
-      width: 15,
-      height: 8,
-    },
-    tags: ['coffee', 'premium', 'organic'],
-    agencyId: 'agency-001',
-    createdBy: 'user-001',
-    createdAt: new Date('2023-01-15'),
-    updatedBy: 'user-001',
-    updatedAt: new Date('2024-01-15'),
-    priceHistory: [
-      {
-        previousPrice: 17.99,
-        newPrice: 18.99,
-        currency: 'USD',
-        reason: PriceChangeReason.COST_UPDATE,
-        changedBy: 'user-001',
-        changedAt: new Date('2024-01-15'),
-        notes: 'Supplier cost increase',
-      },
-    ],
-    stockMovements: [
-      {
-        movementType: 'IN',
-        quantity: 100,
-        previousStock: 25,
-        newStock: 125,
-        reason: 'Stock replenishment',
-        reference: 'PO-001',
-        performedBy: 'user-001',
-        performedAt: new Date('2024-01-10'),
-      },
-      {
-        movementType: 'OUT',
-        quantity: 50,
-        previousStock: 125,
-        newStock: 75,
-        reason: 'Sale',
-        reference: 'ORD-001',
-        performedBy: 'user-002',
-        performedAt: new Date('2024-01-12'),
-      },
-    ],
-  },
-  {
-    id: 'prod-002',
-    sku: 'SKU002',
-    name: 'Wireless Bluetooth Headphones',
-    description: 'Premium wireless headphones with noise cancellation',
-    category: ProductCategory.ELECTRONICS,
-    unitOfMeasure: UnitOfMeasure.PIECE,
-    status: ProductStatus.ACTIVE,
-    costPrice: 75.0,
-    costPriceCurrency: 'USD',
-    sellingPrice: 129.99,
-    sellingPriceCurrency: 'USD',
-    barcode: '2345678901234',
-    supplierId: 'supplier-002',
-    supplierProductCode: 'HEADPHONES-BT-001',
-    minStockLevel: 10,
-    maxStockLevel: 100,
-    reorderLevel: 20,
-    currentStock: 8,
-    reservedStock: 3,
-    availableStock: 5,
-    weight: 0.3,
-    dimensions: {
-      length: 18,
-      width: 16,
-      height: 8,
-    },
-    tags: ['electronics', 'bluetooth', 'headphones', 'wireless'],
-    agencyId: 'agency-001',
-    createdBy: 'user-001',
-    createdAt: new Date('2023-03-20'),
-    priceHistory: [],
-    stockMovements: [
-      {
-        movementType: 'IN',
-        quantity: 50,
-        previousStock: 0,
-        newStock: 50,
-        reason: 'Initial stock',
-        reference: 'PO-002',
-        performedBy: 'user-001',
-        performedAt: new Date('2023-03-20'),
-      },
-    ],
-  },
-  {
-    id: 'prod-003',
-    sku: 'SKU003',
-    name: 'Organic Shampoo 500ml',
-    description: 'Natural organic shampoo for all hair types',
-    category: ProductCategory.PERSONAL_CARE,
-    unitOfMeasure: UnitOfMeasure.MILLILITER,
-    status: ProductStatus.ACTIVE,
-    costPrice: 6.5,
-    costPriceCurrency: 'USD',
-    sellingPrice: 12.99,
-    sellingPriceCurrency: 'USD',
-    barcode: '3456789012345',
-    minStockLevel: 30,
-    maxStockLevel: 200,
-    reorderLevel: 50,
-    currentStock: 120,
-    reservedStock: 20,
-    availableStock: 100,
-    weight: 0.52,
-    dimensions: {
-      length: 6,
-      width: 6,
-      height: 20,
-    },
-    tags: ['shampoo', 'organic', 'natural', 'hair care'],
-    agencyId: 'agency-001',
-    createdBy: 'user-001',
-    createdAt: new Date('2023-05-10'),
-    priceHistory: [],
-    stockMovements: [],
-  },
-  {
-    id: 'prod-004',
-    sku: 'SKU004',
-    name: 'Office Chair - Ergonomic',
-    description: 'Ergonomic office chair with lumbar support',
-    category: ProductCategory.OFFICE_SUPPLIES,
-    unitOfMeasure: UnitOfMeasure.PIECE,
-    status: ProductStatus.DISCONTINUED,
-    costPrice: 150.0,
-    costPriceCurrency: 'USD',
-    sellingPrice: 249.99,
-    sellingPriceCurrency: 'USD',
-    barcode: '4567890123456',
-    supplierId: 'supplier-003',
-    minStockLevel: 5,
-    maxStockLevel: 50,
-    reorderLevel: 10,
-    currentStock: 0,
-    reservedStock: 0,
-    availableStock: 0,
-    weight: 15.5,
-    dimensions: {
-      length: 65,
-      width: 65,
-      height: 110,
-    },
-    tags: ['office', 'chair', 'ergonomic', 'furniture'],
-    agencyId: 'agency-001',
-    createdBy: 'user-001',
-    createdAt: new Date('2022-08-15'),
-    updatedBy: 'user-002',
-    updatedAt: new Date('2024-01-05'),
-    priceHistory: [],
-    stockMovements: [
-      {
-        movementType: 'OUT',
-        quantity: 15,
-        previousStock: 15,
-        newStock: 0,
-        reason: 'Clearance sale',
-        performedBy: 'user-002',
-        performedAt: new Date('2024-01-05'),
-      },
-    ],
-  },
-  {
-    id: 'prod-005',
-    sku: 'SKU005',
-    name: 'Smartphone Case - Clear',
-    description: 'Transparent protective case for smartphones',
-    category: ProductCategory.ELECTRONICS,
-    unitOfMeasure: UnitOfMeasure.PIECE,
-    status: ProductStatus.ACTIVE,
-    costPrice: 3.25,
-    costPriceCurrency: 'USD',
-    sellingPrice: 9.99,
-    sellingPriceCurrency: 'USD',
-    barcode: '5678901234567',
-    minStockLevel: 100,
-    maxStockLevel: 1000,
-    reorderLevel: 200,
-    currentStock: 850,
-    reservedStock: 50,
-    availableStock: 800,
-    weight: 0.05,
-    dimensions: {
-      length: 15,
-      width: 8,
-      height: 1,
-    },
-    tags: ['phone', 'case', 'clear', 'protection'],
-    agencyId: 'agency-001',
-    createdBy: 'user-001',
-    createdAt: new Date('2023-07-25'),
-    priceHistory: [],
-    stockMovements: [],
-  },
-];
-
-/**
  * Product Service Class
  * Implements all product management operations with mock data
  */
 export class ProductService {
   private static readonly BASE_DELAY = 500;
+  private static _mockProducts: Product[] | null = null;
+
+  /**
+   * Get mock products data (lazy initialization)
+   */
+  private static getMockProducts(): Product[] {
+    if (!ProductService._mockProducts) {
+      ProductService._mockProducts = [
+        {
+          id: 'prod-1',
+          sku: 'ELEC001',
+          name: 'Premium Wireless Headphones',
+          description: 'High-quality wireless headphones with noise cancellation',
+          category: ProductCategory.ELECTRONICS,
+          unitOfMeasure: UnitOfMeasure.PIECE,
+          status: ProductStatus.ACTIVE,
+          costPrice: 150.0,
+          costPriceCurrency: 'USD',
+          sellingPrice: 299.99,
+          sellingPriceCurrency: 'USD',
+          barcode: '1234567890123',
+          supplierId: 'sup-001',
+          supplierProductCode: 'TSH-001',
+          minStockLevel: 10,
+          maxStockLevel: 100,
+          reorderLevel: 15,
+          currentStock: 45,
+          reservedStock: 5,
+          availableStock: 40,
+          weight: 0.35,
+          dimensions: { length: 20, width: 18, height: 8 },
+          tags: ['wireless', 'bluetooth', 'electronics'],
+          agencyId: 'agency-1',
+          createdBy: 'user-001',
+          createdAt: new Date('2023-01-15'),
+          updatedBy: 'user-001',
+          updatedAt: new Date('2024-01-10'),
+          priceHistory: [],
+          stockMovements: [],
+        },
+        {
+          id: 'prod-2',
+          sku: 'BOOK001',
+          name: 'Business Strategy Handbook',
+          description: 'Comprehensive guide to modern business strategy',
+          category: ProductCategory.BOOKS_MEDIA,
+          unitOfMeasure: UnitOfMeasure.PIECE,
+          status: ProductStatus.ACTIVE,
+          costPrice: 12.0,
+          costPriceCurrency: 'USD',
+          sellingPrice: 34.99,
+          sellingPriceCurrency: 'USD',
+          barcode: '1234567890124',
+          supplierId: 'sup-002',
+          supplierProductCode: 'BSH-001',
+          minStockLevel: 20,
+          maxStockLevel: 200,
+          reorderLevel: 30,
+          currentStock: 120,
+          reservedStock: 10,
+          availableStock: 110,
+          weight: 0.8,
+          dimensions: { length: 24, width: 16, height: 3 },
+          tags: ['business', 'book', 'strategy'],
+          agencyId: 'agency-1',
+          createdBy: 'user-001',
+          createdAt: new Date('2023-05-10'),
+          updatedBy: 'user-001',
+          updatedAt: new Date('2023-12-15'),
+          priceHistory: [],
+          stockMovements: [],
+        },
+        {
+          id: 'prod-3',
+          sku: 'CLOTH001',
+          name: 'Professional Business Shirt',
+          description: 'High-quality cotton business shirt',
+          category: ProductCategory.CLOTHING,
+          unitOfMeasure: UnitOfMeasure.PIECE,
+          status: ProductStatus.ACTIVE,
+          costPrice: 35.0,
+          costPriceCurrency: 'USD',
+          sellingPrice: 89.99,
+          sellingPriceCurrency: 'USD',
+          barcode: '1234567890125',
+          supplierId: 'sup-003',
+          supplierProductCode: 'PW-001',
+          minStockLevel: 15,
+          maxStockLevel: 150,
+          reorderLevel: 25,
+          currentStock: 75,
+          reservedStock: 8,
+          availableStock: 67,
+          weight: 0.3,
+          tags: ['clothing', 'shirt', 'professional'],
+          agencyId: 'agency-1',
+          createdBy: 'user-001',
+          createdAt: new Date('2023-06-25'),
+          updatedBy: 'user-001',
+          updatedAt: new Date('2024-01-08'),
+          priceHistory: [],
+          stockMovements: [],
+        },
+        {
+          id: 'prod-4',
+          sku: 'FOOD001',
+          name: 'Premium Coffee Beans',
+          description: 'Organic premium coffee beans from Colombia',
+          category: ProductCategory.FOOD_BEVERAGE,
+          unitOfMeasure: UnitOfMeasure.KILOGRAM,
+          status: ProductStatus.ACTIVE,
+          costPrice: 25.0,
+          costPriceCurrency: 'USD',
+          sellingPrice: 49.99,
+          sellingPriceCurrency: 'USD',
+          barcode: '1234567890126',
+          supplierId: 'sup-004',
+          supplierProductCode: 'COF-001',
+          minStockLevel: 5,
+          maxStockLevel: 50,
+          reorderLevel: 10,
+          currentStock: 25,
+          reservedStock: 2,
+          availableStock: 23,
+          weight: 1.0,
+          tags: ['coffee', 'organic', 'premium'],
+          agencyId: 'agency-1',
+          createdBy: 'user-001',
+          createdAt: new Date('2023-08-15'),
+          updatedBy: 'user-001',
+          updatedAt: new Date('2024-01-05'),
+          priceHistory: [],
+          stockMovements: [],
+        },
+        {
+          id: 'prod-5',
+          sku: 'HOME001',
+          name: 'Smart Home Speaker',
+          description: 'Voice-controlled smart speaker with AI assistant',
+          category: ProductCategory.ELECTRONICS,
+          unitOfMeasure: UnitOfMeasure.PIECE,
+          status: ProductStatus.ACTIVE,
+          costPrice: 80.0,
+          costPriceCurrency: 'USD',
+          sellingPrice: 149.99,
+          sellingPriceCurrency: 'USD',
+          barcode: '1234567890127',
+          supplierId: 'sup-001',
+          supplierProductCode: 'SHS-001',
+          minStockLevel: 8,
+          maxStockLevel: 80,
+          reorderLevel: 12,
+          currentStock: 35,
+          reservedStock: 3,
+          availableStock: 32,
+          weight: 0.85,
+          dimensions: { length: 15, width: 15, height: 10 },
+          tags: ['smart', 'speaker', 'ai', 'voice'],
+          agencyId: 'agency-2',
+          createdBy: 'user-002',
+          createdAt: new Date('2023-07-10'),
+          updatedBy: 'user-002',
+          updatedAt: new Date('2023-12-20'),
+          priceHistory: [],
+          stockMovements: [],
+        },
+        {
+          id: 'prod-6',
+          sku: 'CARE001',
+          name: 'Organic Shampoo',
+          description: 'Natural organic shampoo for all hair types',
+          category: ProductCategory.PERSONAL_CARE,
+          unitOfMeasure: UnitOfMeasure.MILLILITER,
+          status: ProductStatus.ACTIVE,
+          costPrice: 8.0,
+          costPriceCurrency: 'USD',
+          sellingPrice: 18.99,
+          sellingPriceCurrency: 'USD',
+          barcode: '1234567890128',
+          supplierId: 'sup-005',
+          supplierProductCode: 'SHP-001',
+          minStockLevel: 20,
+          maxStockLevel: 200,
+          reorderLevel: 30,
+          currentStock: 95,
+          reservedStock: 5,
+          availableStock: 90,
+          weight: 0.35,
+          dimensions: { length: 6, width: 6, height: 20 },
+          tags: ['organic', 'shampoo', 'hair-care'],
+          agencyId: 'agency-3',
+          createdBy: 'user-003',
+          createdAt: new Date('2023-09-05'),
+          updatedBy: 'user-003',
+          updatedAt: new Date('2023-11-15'),
+          priceHistory: [],
+          stockMovements: [],
+        },
+      ];
+    }
+    return ProductService._mockProducts;
+  }
 
   /**
    * Simulate API delay
@@ -462,7 +437,7 @@ export class ProductService {
   ): Promise<ProductListResponse> {
     await ProductService.delay();
 
-    let filteredProducts = MOCK_PRODUCTS.filter((product) => product.agencyId === agencyId);
+    let filteredProducts = ProductService.getMockProducts().filter((product) => product.agencyId === agencyId);
 
     // Apply filters
     if (filters.search) {
@@ -548,7 +523,7 @@ export class ProductService {
    */
   static async getProductById(productId: string): Promise<Product | null> {
     await ProductService.delay();
-    return MOCK_PRODUCTS.find((product) => product.id === productId) || null;
+    return ProductService.getMockProducts().find((product) => product.id === productId) || null;
   }
 
   /**
@@ -556,7 +531,9 @@ export class ProductService {
    */
   static async getProductBySku(agencyId: string, sku: string): Promise<Product | null> {
     await ProductService.delay();
-    return MOCK_PRODUCTS.find((product) => product.sku === sku && product.agencyId === agencyId) || null;
+    return (
+      ProductService.getMockProducts().find((product) => product.sku === sku && product.agencyId === agencyId) || null
+    );
   }
 
   /**
@@ -567,16 +544,17 @@ export class ProductService {
 
     // Validate data
     const validatedData = CreateProductSchema.parse(productData);
+    const mockProducts = ProductService.getMockProducts();
 
     // Check for duplicate SKU
-    const existingProduct = MOCK_PRODUCTS.find((p) => p.sku === validatedData.sku && p.agencyId === agencyId);
+    const existingProduct = mockProducts.find((p) => p.sku === validatedData.sku && p.agencyId === agencyId);
     if (existingProduct) {
       throw new Error(`Product with SKU ${validatedData.sku} already exists`);
     }
 
     // Check for duplicate barcode if provided
     if (validatedData.barcode) {
-      const existingBarcode = MOCK_PRODUCTS.find((p) => p.barcode === validatedData.barcode && p.agencyId === agencyId);
+      const existingBarcode = mockProducts.find((p) => p.barcode === validatedData.barcode && p.agencyId === agencyId);
       if (existingBarcode) {
         throw new Error(`Product with barcode ${validatedData.barcode} already exists`);
       }
@@ -627,7 +605,7 @@ export class ProductService {
     };
 
     // Add to mock data
-    MOCK_PRODUCTS.push(newProduct);
+    mockProducts.push(newProduct);
 
     return newProduct;
   }
@@ -639,17 +617,18 @@ export class ProductService {
     await ProductService.delay(600);
 
     const validatedData = UpdateProductSchema.parse(productData);
-    const productIndex = MOCK_PRODUCTS.findIndex((p) => p.id === productId);
+    const mockProducts = ProductService.getMockProducts();
+    const productIndex = mockProducts.findIndex((p) => p.id === productId);
 
     if (productIndex === -1) {
       throw new Error(`Product with ID ${productId} not found`);
     }
 
-    const existingProduct = MOCK_PRODUCTS[productIndex];
+    const existingProduct = mockProducts[productIndex];
 
     // Check for duplicate SKU if updating
     if (validatedData.sku && validatedData.sku !== existingProduct.sku) {
-      const duplicateProduct = MOCK_PRODUCTS.find(
+      const duplicateProduct = mockProducts.find(
         (p) => p.sku === validatedData.sku && p.agencyId === existingProduct.agencyId && p.id !== productId
       );
       if (duplicateProduct) {
@@ -659,7 +638,7 @@ export class ProductService {
 
     // Check for duplicate barcode if updating
     if (validatedData.barcode && validatedData.barcode !== existingProduct.barcode) {
-      const duplicateBarcode = MOCK_PRODUCTS.find(
+      const duplicateBarcode = mockProducts.find(
         (p) => p.barcode === validatedData.barcode && p.agencyId === existingProduct.agencyId && p.id !== productId
       );
       if (duplicateBarcode) {
@@ -678,7 +657,7 @@ export class ProductService {
       updatedAt: new Date(),
     };
 
-    MOCK_PRODUCTS[productIndex] = updatedProduct;
+    mockProducts[productIndex] = updatedProduct;
     return updatedProduct;
   }
 
@@ -688,12 +667,13 @@ export class ProductService {
   static async deleteProduct(productId: string): Promise<void> {
     await ProductService.delay();
 
-    const productIndex = MOCK_PRODUCTS.findIndex((p) => p.id === productId);
+    const mockProducts = ProductService.getMockProducts();
+    const productIndex = mockProducts.findIndex((p) => p.id === productId);
     if (productIndex === -1) {
       throw new Error(`Product with ID ${productId} not found`);
     }
 
-    const product = MOCK_PRODUCTS[productIndex];
+    const product = mockProducts[productIndex];
 
     // Check if product has stock
     if (product.currentStock > 0) {
@@ -704,7 +684,7 @@ export class ProductService {
       throw new Error('Cannot delete product with reserved stock.');
     }
 
-    MOCK_PRODUCTS.splice(productIndex, 1);
+    mockProducts.splice(productIndex, 1);
   }
 
   /**
@@ -713,19 +693,20 @@ export class ProductService {
   static async updateProductStatus(productId: string, status: ProductStatus, updatedBy: string): Promise<Product> {
     await ProductService.delay();
 
-    const productIndex = MOCK_PRODUCTS.findIndex((p) => p.id === productId);
+    const mockProducts = ProductService.getMockProducts();
+    const productIndex = mockProducts.findIndex((p) => p.id === productId);
     if (productIndex === -1) {
       throw new Error(`Product with ID ${productId} not found`);
     }
 
     const updatedProduct = {
-      ...MOCK_PRODUCTS[productIndex],
+      ...mockProducts[productIndex],
       status,
       updatedBy,
       updatedAt: new Date(),
     };
 
-    MOCK_PRODUCTS[productIndex] = updatedProduct;
+    mockProducts[productIndex] = updatedProduct;
     return updatedProduct;
   }
 
@@ -742,12 +723,13 @@ export class ProductService {
   ): Promise<Product> {
     await ProductService.delay();
 
-    const productIndex = MOCK_PRODUCTS.findIndex((p) => p.id === productId);
+    const mockProducts = ProductService.getMockProducts();
+    const productIndex = mockProducts.findIndex((p) => p.id === productId);
     if (productIndex === -1) {
       throw new Error(`Product with ID ${productId} not found`);
     }
 
-    const existingProduct = MOCK_PRODUCTS[productIndex];
+    const existingProduct = mockProducts[productIndex];
     const priceHistory = [...existingProduct.priceHistory];
 
     // Add price change to history if selling price changed
@@ -772,7 +754,7 @@ export class ProductService {
       updatedAt: new Date(),
     };
 
-    MOCK_PRODUCTS[productIndex] = updatedProduct;
+    mockProducts[productIndex] = updatedProduct;
     return updatedProduct;
   }
 
@@ -792,12 +774,13 @@ export class ProductService {
       throw new Error('Quantity must be positive');
     }
 
-    const productIndex = MOCK_PRODUCTS.findIndex((p) => p.id === productId);
+    const mockProducts = ProductService.getMockProducts();
+    const productIndex = mockProducts.findIndex((p) => p.id === productId);
     if (productIndex === -1) {
       throw new Error(`Product with ID ${productId} not found`);
     }
 
-    const existingProduct = MOCK_PRODUCTS[productIndex];
+    const existingProduct = mockProducts[productIndex];
     const newStock = existingProduct.currentStock + quantity;
 
     const stockMovement: StockMovementEntry = {
@@ -823,7 +806,7 @@ export class ProductService {
       updatedAt: new Date(),
     };
 
-    MOCK_PRODUCTS[productIndex] = updatedProduct;
+    mockProducts[productIndex] = updatedProduct;
     return updatedProduct;
   }
 
@@ -843,12 +826,13 @@ export class ProductService {
       throw new Error('Quantity must be positive');
     }
 
-    const productIndex = MOCK_PRODUCTS.findIndex((p) => p.id === productId);
+    const mockProducts = ProductService.getMockProducts();
+    const productIndex = mockProducts.findIndex((p) => p.id === productId);
     if (productIndex === -1) {
       throw new Error(`Product with ID ${productId} not found`);
     }
 
-    const existingProduct = MOCK_PRODUCTS[productIndex];
+    const existingProduct = mockProducts[productIndex];
 
     if (quantity > existingProduct.availableStock) {
       throw new Error(`Insufficient stock. Available: ${existingProduct.availableStock}, Requested: ${quantity}`);
@@ -876,7 +860,7 @@ export class ProductService {
       updatedAt: new Date(),
     };
 
-    MOCK_PRODUCTS[productIndex] = updatedProduct;
+    mockProducts[productIndex] = updatedProduct;
     return updatedProduct;
   }
 
@@ -886,12 +870,13 @@ export class ProductService {
   static async reserveStock(productId: string, quantity: number, performedBy: string): Promise<Product> {
     await ProductService.delay();
 
-    const productIndex = MOCK_PRODUCTS.findIndex((p) => p.id === productId);
+    const mockProducts = ProductService.getMockProducts();
+    const productIndex = mockProducts.findIndex((p) => p.id === productId);
     if (productIndex === -1) {
       throw new Error(`Product with ID ${productId} not found`);
     }
 
-    const existingProduct = MOCK_PRODUCTS[productIndex];
+    const existingProduct = mockProducts[productIndex];
 
     if (quantity > existingProduct.availableStock) {
       throw new Error(
@@ -906,7 +891,7 @@ export class ProductService {
       updatedAt: new Date(),
     };
 
-    MOCK_PRODUCTS[productIndex] = updatedProduct;
+    mockProducts[productIndex] = updatedProduct;
     return updatedProduct;
   }
 
@@ -916,12 +901,13 @@ export class ProductService {
   static async releaseReservedStock(productId: string, quantity: number, performedBy: string): Promise<Product> {
     await ProductService.delay();
 
-    const productIndex = MOCK_PRODUCTS.findIndex((p) => p.id === productId);
+    const mockProducts = ProductService.getMockProducts();
+    const productIndex = mockProducts.findIndex((p) => p.id === productId);
     if (productIndex === -1) {
       throw new Error(`Product with ID ${productId} not found`);
     }
 
-    const existingProduct = MOCK_PRODUCTS[productIndex];
+    const existingProduct = mockProducts[productIndex];
 
     if (quantity > existingProduct.reservedStock) {
       throw new Error(
@@ -936,7 +922,7 @@ export class ProductService {
       updatedAt: new Date(),
     };
 
-    MOCK_PRODUCTS[productIndex] = updatedProduct;
+    mockProducts[productIndex] = updatedProduct;
     return updatedProduct;
   }
 
@@ -956,7 +942,7 @@ export class ProductService {
   }> {
     await ProductService.delay();
 
-    const agencyProducts = MOCK_PRODUCTS.filter((p) => p.agencyId === agencyId);
+    const agencyProducts = ProductService.getMockProducts().filter((p) => p.agencyId === agencyId);
 
     const totalProducts = agencyProducts.length;
     const activeProducts = agencyProducts.filter((p) => p.status === ProductStatus.ACTIVE).length;

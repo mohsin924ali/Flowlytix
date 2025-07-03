@@ -67,6 +67,18 @@ export enum InventoryStatus {
 }
 
 /**
+ * Purchase Order Status
+ */
+export enum PurchaseOrderStatus {
+  DRAFT = 'DRAFT',
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  ORDERED = 'ORDERED',
+  RECEIVED = 'RECEIVED',
+  CANCELLED = 'CANCELLED',
+}
+
+/**
  * Warehouse interface
  */
 export interface Warehouse {
@@ -132,18 +144,19 @@ export interface StockMovement {
  */
 export interface StockTransfer {
   readonly id: string;
+  readonly productId: string;
   readonly fromWarehouseId: string;
   readonly toWarehouseId: string;
-  readonly productId: string;
   readonly quantity: number;
   readonly requestedBy: string;
-  readonly approvedBy?: string;
-  readonly status: 'PENDING' | 'APPROVED' | 'IN_TRANSIT' | 'COMPLETED' | 'CANCELLED';
   readonly requestedAt: Date;
+  readonly approvedBy?: string;
   readonly approvedAt?: Date;
+  readonly completedBy?: string;
   readonly completedAt?: Date;
+  readonly status: 'PENDING' | 'APPROVED' | 'COMPLETED' | 'REJECTED';
   readonly notes?: string;
-  readonly trackingNumber?: string;
+  readonly reason?: string;
 }
 
 /**
@@ -158,10 +171,9 @@ export interface InventoryAdjustment {
   readonly reason: StockMovementReason;
   readonly costImpact: number;
   readonly notes: string;
-  readonly performedBy: string;
-  readonly approvedBy?: string;
-  readonly performedAt: Date;
   readonly batchNumber?: string;
+  readonly performedBy: string;
+  readonly performedAt: Date;
 }
 
 /**
@@ -174,9 +186,9 @@ export interface StockReservation {
   readonly quantity: number;
   readonly reservedFor: 'ORDER' | 'TRANSFER' | 'QUALITY_CHECK' | 'MAINTENANCE';
   readonly referenceId: string;
-  readonly expiresAt: Date;
   readonly createdBy: string;
   readonly createdAt: Date;
+  readonly expiresAt: Date;
   readonly notes?: string;
 }
 
@@ -222,6 +234,79 @@ export interface InventoryAnalytics {
     daysSinceLastMovement: number;
     currentStock: number;
   }>;
+}
+
+/**
+ * Purchase Order interface
+ */
+export interface PurchaseOrder {
+  readonly id: string;
+  readonly orderNumber: string;
+  readonly supplierName: string;
+  readonly supplierId: string;
+  readonly warehouseId: string;
+  readonly orderDate: Date;
+  readonly expectedDeliveryDate?: Date;
+  readonly actualDeliveryDate?: Date;
+  readonly status: PurchaseOrderStatus;
+  readonly items: PurchaseOrderItem[];
+  readonly subtotalAmount: number;
+  readonly taxAmount: number;
+  readonly totalAmount: number;
+  readonly notes?: string;
+  readonly createdBy: string;
+  readonly createdAt: Date;
+  readonly updatedBy?: string;
+  readonly updatedAt?: Date;
+}
+
+/**
+ * Purchase Order Item interface
+ */
+export interface PurchaseOrderItem {
+  readonly id: string;
+  readonly productId: string;
+  readonly productName: string;
+  readonly productCode: string;
+  readonly quantity: number;
+  readonly unitCost: number;
+  readonly totalCost: number;
+  readonly receivedQuantity: number;
+  readonly notes?: string;
+}
+
+/**
+ * Purchase Order filters
+ */
+export interface PurchaseOrderFilters {
+  readonly status?: PurchaseOrderStatus;
+  readonly supplierId?: string;
+  readonly warehouseId?: string;
+  readonly startDate?: Date;
+  readonly endDate?: Date;
+  readonly search?: string;
+}
+
+/**
+ * Create Purchase Order data
+ */
+export interface CreatePurchaseOrderData {
+  readonly supplierName: string;
+  readonly supplierId: string;
+  readonly warehouseId: string;
+  readonly expectedDeliveryDate?: Date;
+  readonly items: CreatePurchaseOrderItemData[];
+  readonly notes?: string;
+}
+
+/**
+ * Create Purchase Order Item data
+ */
+export interface CreatePurchaseOrderItemData {
+  readonly productId: string;
+  readonly quantity: number;
+  readonly unitCost: number;
+  readonly notes?: string;
 }
 
 /**
@@ -321,6 +406,29 @@ export interface InventoryFilters {
   readonly outOfStock?: boolean;
   readonly search?: string;
 }
+
+/**
+ * Purchase Order schema
+ */
+export const CreatePurchaseOrderSchema = z.object({
+  supplierName: z.string().min(1, 'Supplier name is required'),
+  supplierId: z.string().min(1, 'Supplier ID is required'),
+  warehouseId: z.string().min(1, 'Warehouse ID is required'),
+  expectedDeliveryDate: z.date().optional(),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().min(1, 'Product ID is required'),
+        quantity: z.number().min(1, 'Quantity must be greater than 0'),
+        unitCost: z.number().min(0, 'Unit cost must be non-negative'),
+        notes: z.string().optional(),
+      })
+    )
+    .min(1, 'At least one item is required'),
+  notes: z.string().optional(),
+});
+
+export type CreatePurchaseOrderRequest = z.infer<typeof CreatePurchaseOrderSchema>;
 
 /**
  * Inventory Service - Comprehensive inventory management operations
@@ -567,31 +675,33 @@ export class InventoryService {
     return [
       {
         id: 'st-001',
+        productId: 'prod-001',
         fromWarehouseId: 'wh-001',
         toWarehouseId: 'wh-002',
-        productId: 'prod-001',
         quantity: 50,
         requestedBy: 'warehouse.manager',
-        approvedBy: 'operations.manager',
-        status: 'COMPLETED',
         requestedAt: new Date('2024-01-15T08:00:00'),
+        approvedBy: 'operations.manager',
         approvedAt: new Date('2024-01-15T09:30:00'),
+        completedBy: 'warehouse.staff',
         completedAt: new Date('2024-01-16T14:00:00'),
+        status: 'COMPLETED',
         notes: 'Stock balancing between warehouses',
-        trackingNumber: 'TRK-001',
+        reason: 'Inventory rebalancing',
       },
       {
         id: 'st-002',
+        productId: 'prod-002',
         fromWarehouseId: 'wh-002',
         toWarehouseId: 'wh-003',
-        productId: 'prod-002',
         quantity: 25,
         requestedBy: 'store.manager',
-        status: 'IN_TRANSIT',
         requestedAt: new Date('2024-01-17T10:00:00'),
+        approvedBy: 'operations.manager',
         approvedAt: new Date('2024-01-17T11:00:00'),
+        status: 'APPROVED',
         notes: 'Store replenishment',
-        trackingNumber: 'TRK-002',
+        reason: 'Stock replenishment',
       },
     ];
   }
@@ -604,10 +714,15 @@ export class InventoryService {
 
     const transfer: StockTransfer = {
       id: `st-${Date.now()}`,
-      ...data,
+      productId: data.productId,
+      fromWarehouseId: data.fromWarehouseId,
+      toWarehouseId: data.toWarehouseId,
+      quantity: data.quantity,
       requestedBy,
-      status: 'PENDING',
       requestedAt: new Date(),
+      status: 'PENDING',
+      notes: data.notes || undefined,
+      reason: data.reason || undefined,
     };
 
     return transfer;
@@ -624,7 +739,13 @@ export class InventoryService {
 
     const adjustment: InventoryAdjustment = {
       id: `ia-${Date.now()}`,
-      ...data,
+      productId: data.productId,
+      warehouseId: data.warehouseId,
+      adjustmentType: data.adjustmentType,
+      quantity: data.quantity,
+      reason: data.reason,
+      notes: data.notes,
+      batchNumber: data.batchNumber || undefined,
       costImpact: data.quantity * 25.5, // Mock cost calculation
       performedBy,
       performedAt: new Date(),
@@ -675,9 +796,15 @@ export class InventoryService {
 
     const reservation: StockReservation = {
       id: `sr-${Date.now()}`,
-      ...data,
+      productId: data.productId,
+      warehouseId: data.warehouseId,
+      quantity: data.quantity,
+      reservedFor: data.reservedFor,
+      referenceId: data.referenceId,
+      expiresAt: data.expiresAt,
       createdBy,
       createdAt: new Date(),
+      notes: data.notes || undefined,
     };
 
     return reservation;
@@ -819,6 +946,282 @@ export class InventoryService {
         notes: 'Annual full inventory audit scheduled',
       },
     ];
+  }
+
+  /**
+   * Get purchase orders
+   */
+  static async getPurchaseOrders(
+    filters: PurchaseOrderFilters = {},
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{
+    purchaseOrders: PurchaseOrder[];
+    total: number;
+    totalPages: number;
+  }> {
+    await this.delay();
+
+    // Use static storage if available, otherwise use default mock data
+    let mockPurchaseOrders: PurchaseOrder[];
+
+    if (this.mockPurchaseOrders) {
+      mockPurchaseOrders = this.mockPurchaseOrders;
+    } else {
+      // Default mock data
+      mockPurchaseOrders = [
+        {
+          id: 'po-001',
+          orderNumber: 'PO-2024-001',
+          supplierName: 'ABC Supplies Ltd',
+          supplierId: 'sup-001',
+          warehouseId: 'wh-001',
+          orderDate: new Date('2024-01-15'),
+          expectedDeliveryDate: new Date('2024-02-01'),
+          status: PurchaseOrderStatus.RECEIVED,
+          subtotalAmount: 12000,
+          taxAmount: 1560,
+          totalAmount: 13560,
+          notes: 'Urgent delivery required',
+          createdBy: 'purchasing.manager',
+          createdAt: new Date('2024-01-15T09:30:00'),
+          items: [
+            {
+              id: 'poi-001',
+              productId: 'prod-001',
+              productName: 'Widget A',
+              productCode: 'WA-001',
+              quantity: 100,
+              unitCost: 50.0,
+              totalCost: 5000,
+              receivedQuantity: 100,
+            },
+            {
+              id: 'poi-002',
+              productId: 'prod-002',
+              productName: 'Widget B',
+              productCode: 'WB-002',
+              quantity: 50,
+              unitCost: 140.0,
+              totalCost: 7000,
+              receivedQuantity: 50,
+            },
+          ],
+        },
+        {
+          id: 'po-002',
+          orderNumber: 'PO-2024-002',
+          supplierName: 'XYZ Manufacturing',
+          supplierId: 'sup-002',
+          warehouseId: 'wh-002',
+          orderDate: new Date('2024-01-20'),
+          expectedDeliveryDate: new Date('2024-02-05'),
+          status: PurchaseOrderStatus.ORDERED,
+          subtotalAmount: 8500,
+          taxAmount: 1105,
+          totalAmount: 9605,
+          notes: 'Regular monthly order',
+          createdBy: 'purchasing.manager',
+          createdAt: new Date('2024-01-20T10:00:00'),
+          items: [
+            {
+              id: 'poi-003',
+              productId: 'prod-003',
+              productName: 'Industrial Part',
+              productCode: 'IP-003',
+              quantity: 200,
+              unitCost: 25.0,
+              totalCost: 5000,
+              receivedQuantity: 0,
+            },
+            {
+              id: 'poi-004',
+              productId: 'prod-004',
+              productName: 'Spare Component',
+              productCode: 'SP-004',
+              quantity: 75,
+              unitCost: 46.67,
+              totalCost: 3500,
+              receivedQuantity: 0,
+            },
+          ],
+        },
+        {
+          id: 'po-003',
+          orderNumber: 'PO-2024-003',
+          supplierName: 'Global Parts Inc',
+          supplierId: 'sup-003',
+          warehouseId: 'wh-001',
+          orderDate: new Date('2024-01-22'),
+          expectedDeliveryDate: new Date('2024-02-10'),
+          status: PurchaseOrderStatus.PENDING,
+          subtotalAmount: 3200,
+          taxAmount: 416,
+          totalAmount: 3616,
+          notes: 'Specialty items order',
+          createdBy: 'purchasing.manager',
+          createdAt: new Date('2024-01-22T14:00:00'),
+          items: [
+            {
+              id: 'poi-005',
+              productId: 'prod-005',
+              productName: 'Specialty Tool',
+              productCode: 'ST-005',
+              quantity: 20,
+              unitCost: 160.0,
+              totalCost: 3200,
+              receivedQuantity: 0,
+            },
+          ],
+        },
+      ];
+
+      // Initialize static storage with default data
+      this.mockPurchaseOrders = mockPurchaseOrders;
+    }
+
+    // Apply filters
+    let filteredOrders = mockPurchaseOrders;
+
+    if (filters.status) {
+      filteredOrders = filteredOrders.filter((po) => po.status === filters.status);
+    }
+
+    if (filters.supplierId) {
+      filteredOrders = filteredOrders.filter((po) => po.supplierId === filters.supplierId);
+    }
+
+    if (filters.warehouseId) {
+      filteredOrders = filteredOrders.filter((po) => po.warehouseId === filters.warehouseId);
+    }
+
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filteredOrders = filteredOrders.filter(
+        (po) =>
+          po.orderNumber.toLowerCase().includes(searchLower) ||
+          po.supplierName.toLowerCase().includes(searchLower) ||
+          po.notes?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (filters.startDate) {
+      filteredOrders = filteredOrders.filter((po) => po.orderDate >= filters.startDate!);
+    }
+
+    if (filters.endDate) {
+      filteredOrders = filteredOrders.filter((po) => po.orderDate <= filters.endDate!);
+    }
+
+    const total = filteredOrders.length;
+    const totalPages = Math.ceil(total / limit);
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    return {
+      purchaseOrders: filteredOrders.slice(start, end),
+      total,
+      totalPages,
+    };
+  }
+
+  /**
+   * Get purchase order by ID
+   */
+  static async getPurchaseOrderById(id: string): Promise<PurchaseOrder | null> {
+    await this.delay();
+
+    const { purchaseOrders } = await this.getPurchaseOrders();
+    return purchaseOrders.find((po) => po.id === id) || null;
+  }
+
+  /**
+   * Create purchase order
+   */
+  static async createPurchaseOrder(data: CreatePurchaseOrderData, createdBy: string): Promise<PurchaseOrder> {
+    await this.delay();
+
+    const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
+    const tax = subtotal * 0.13; // 13% tax
+    const total = subtotal + tax;
+
+    const purchaseOrder: PurchaseOrder = {
+      id: `po-${Date.now()}`,
+      orderNumber: `PO-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
+      supplierName: data.supplierName,
+      supplierId: data.supplierId,
+      warehouseId: data.warehouseId,
+      orderDate: new Date(),
+      ...(data.expectedDeliveryDate && { expectedDeliveryDate: data.expectedDeliveryDate }),
+      status: PurchaseOrderStatus.DRAFT,
+      subtotalAmount: subtotal,
+      taxAmount: tax,
+      totalAmount: total,
+      ...(data.notes && { notes: data.notes }),
+      createdBy,
+      createdAt: new Date(),
+      items: data.items.map((item, index) => ({
+        id: `poi-${Date.now()}-${index}`,
+        productId: item.productId,
+        productName: `Product ${item.productId}`, // In real implementation, fetch from product service
+        productCode: `PC-${item.productId}`, // In real implementation, fetch from product service
+        quantity: item.quantity,
+        unitCost: item.unitCost,
+        totalCost: item.quantity * item.unitCost,
+        receivedQuantity: 0,
+        ...(item.notes && { notes: item.notes }),
+      })),
+    };
+
+    // Store the purchase order in mock data by adding it to the static mock array
+    // In a real application, this would be saved to database
+    const { purchaseOrders: currentOrders } = await this.getPurchaseOrders({}, 1, 1000);
+
+    // Add to the beginning of the array to show newest first
+    // We'll store it in a static variable to persist across calls
+    if (!this.mockPurchaseOrders) {
+      this.mockPurchaseOrders = currentOrders;
+    }
+    this.mockPurchaseOrders.unshift(purchaseOrder);
+
+    return purchaseOrder;
+  }
+
+  // Static storage for mock purchase orders to persist across calls
+  private static mockPurchaseOrders: PurchaseOrder[] | null = null;
+
+  /**
+   * Update purchase order status
+   */
+  static async updatePurchaseOrderStatus(
+    id: string,
+    status: PurchaseOrderStatus,
+    updatedBy: string
+  ): Promise<PurchaseOrder> {
+    await this.delay();
+
+    const purchaseOrder = await this.getPurchaseOrderById(id);
+    if (!purchaseOrder) {
+      throw new Error('Purchase order not found');
+    }
+
+    const updatedOrder: PurchaseOrder = {
+      ...purchaseOrder,
+      status,
+      updatedBy,
+      updatedAt: new Date(),
+      ...(status === PurchaseOrderStatus.RECEIVED && { actualDeliveryDate: new Date() }),
+    };
+
+    return updatedOrder;
+  }
+
+  /**
+   * Delete purchase order
+   */
+  static async deletePurchaseOrder(id: string): Promise<void> {
+    await this.delay();
+    // Mock implementation - in real app, this would delete from database
   }
 }
 

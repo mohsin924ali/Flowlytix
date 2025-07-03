@@ -27,7 +27,9 @@ import { Logo } from '../../atoms';
 import type { NavigationRoute } from '../../../types/navigation.types';
 import { NAVIGATION_ROUTES, SYSTEM_ROUTES } from '../../../constants/navigation.constants';
 import { useAuthStore } from '../../../store/auth.store';
-import logoSrc from '../../../assets/images/logo-main.svg';
+
+// Logo path corrected to use public directory
+const logoSrc = '/assets/images/logo-main.svg';
 
 /**
  * Sidebar Component Props

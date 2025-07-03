@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Container,
   Grid,
@@ -70,10 +70,16 @@ import {
   Schedule,
   AccountBalance,
   Print,
+  Assignment,
+  DoneAll,
+  MonetizationOn,
+  ErrorOutline,
+  ListAlt,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardLayout } from '../components/templates';
 import { OrderCreateModal, OrderViewModal } from '../components/molecules';
+import { PrintOptionsModal } from '../components/molecules/PrintOptionsModal';
 import { useAuthStore } from '../store/auth.store';
 import { useAgencyStore } from '../store/agency.store';
 import OrderService, {
@@ -105,6 +111,34 @@ const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 },
 };
+
+/**
+ * Tab panel interface following Instructions file standards
+ */
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+/**
+ * Tab panel component with optimized rendering
+ * Performance optimizations:
+ * - Only renders content when tab is active (value === index)
+ * - Uses hidden attribute for accessibility
+ * - Memoized filtering prevents unnecessary re-calculations
+ */
+const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => (
+  <div
+    role='tabpanel'
+    hidden={value !== index}
+    id={`order-tabpanel-${index}`}
+    aria-labelledby={`order-tab-${index}`}
+    {...other}
+  >
+    {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+  </div>
+);
 
 /**
  * Status icon mapping
@@ -450,7 +484,9 @@ export const OrdersPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [createOrderModalOpen, setCreateOrderModalOpen] = useState(false);
   const [viewOrderModalOpen, setViewOrderModalOpen] = useState(false);
+  const [printOptionsModalOpen, setPrintOptionsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
 
   /**
    * Load orders from service
@@ -542,83 +578,12 @@ export const OrdersPage: React.FC = () => {
   };
 
   /**
-   * Handle print order - Simplified and robust
+   * Handle print order - Opens print options modal
    */
-  const handlePrintOrder = (order: Order) => {
-    const printContent = `
-      <html>
-        <head>
-          <title>Order ${order.orderNumber}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .order-info { display: flex; justify-content: space-between; margin-bottom: 20px; }
-            .section { width: 48%; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .total { text-align: right; font-weight: bold; font-size: 1.2em; }
-            @media print { button { display: none; } }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>FLOWLYTIX ORDER INVOICE</h1>
-            <h2>Order #: ${order.orderNumber}</h2>
-          </div>
-          <div class="order-info">
-            <div class="section">
-              <h3>Customer</h3>
-              <p>Name: ${order.customerName}</p>
-              <p>Code: ${order.customerCode}</p>
-              <p>Area: ${order.areaName}</p>
-            </div>
-            <div class="section">
-              <h3>Order Details</h3>
-              <p>Date: ${order.orderDate.toLocaleDateString()}</p>
-              <p>Status: ${order.status}</p>
-              <p>Payment: ${order.paymentStatus}</p>
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr><th>Product</th><th>Code</th><th>Quantity</th><th>Price</th><th>Total</th></tr>
-            </thead>
-            <tbody>
-              ${order.items
-                .map(
-                  (item) => `
-                <tr>
-                  <td>${item.productName}</td>
-                  <td>${item.productCode}</td>
-                  <td>${item.totalUnits}</td>
-                  <td>$${item.unitPrice.toFixed(2)}</td>
-                  <td>$${item.itemTotal.toFixed(2)}</td>
-                </tr>
-              `
-                )
-                .join('')}
-            </tbody>
-          </table>
-          <div class="total">
-            <p>Subtotal: $${order.subtotalAmount.toFixed(2)}</p>
-            <p>Tax: $${order.taxAmount.toFixed(2)}</p>
-            <p>Total: $${order.totalAmount.toFixed(2)}</p>
-          </div>
-          <button onclick="window.print()">Print</button>
-          <button onclick="window.close()">Close</button>
-        </body>
-      </html>
-    `;
-
-    const newWindow = window.open('', '_blank');
-    if (newWindow) {
-      newWindow.document.write(printContent);
-      newWindow.document.close();
-    } else {
-      alert('Please enable popups to print orders');
-    }
-  };
+  const handlePrintOrder = useCallback((order: Order) => {
+    setOrderToPrint(order);
+    setPrintOptionsModalOpen(true);
+  }, []);
 
   /**
    * Handle close create modal
@@ -634,6 +599,21 @@ export const OrdersPage: React.FC = () => {
     setViewOrderModalOpen(false);
     setSelectedOrder(null);
   };
+
+  /**
+   * Handle close print options modal
+   */
+  const handleClosePrintModal = useCallback(() => {
+    setPrintOptionsModalOpen(false);
+    setOrderToPrint(null);
+  }, []);
+
+  /**
+   * Handle print success
+   */
+  const handlePrintSuccess = useCallback(() => {
+    // Could show a success message here if needed
+  }, []);
 
   /**
    * Handle update order status
@@ -653,26 +633,23 @@ export const OrdersPage: React.FC = () => {
   };
 
   /**
-   * Handle tab change
+   * Handle tab change with performance optimization
+   * Uses client-side filtering for instant tab switching
    */
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = useCallback((_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
-    const statusFilters = [
-      {}, // All orders
-      { status: [OrderStatus.PENDING] },
-      { status: [OrderStatus.CONFIRMED, OrderStatus.PROCESSING] },
-      { status: [OrderStatus.SHIPPED] },
-      { status: [OrderStatus.DELIVERED] },
-      { paymentStatus: [OrderPaymentStatus.OVERDUE] },
-    ];
-    setFilters((prev) => ({ ...prev, ...statusFilters[newValue] }));
-    setPage(1);
-  };
+  }, []);
 
-  const pendingOrders = orders.filter((o) => o.status === OrderStatus.PENDING);
-  const shippedOrders = orders.filter((o) => o.status === OrderStatus.SHIPPED);
-  const overdueOrders = orders.filter((o) => o.paymentStatus === OrderPaymentStatus.OVERDUE);
-  const totalSales = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+  // Memoized filtered orders for performance optimization
+  const pendingOrders = useMemo(() => orders.filter((o) => o.status === OrderStatus.PENDING), [orders]);
+  const inProgressOrders = useMemo(
+    () => orders.filter((o) => [OrderStatus.CONFIRMED, OrderStatus.PROCESSING].includes(o.status)),
+    [orders]
+  );
+  const shippedOrders = useMemo(() => orders.filter((o) => o.status === OrderStatus.SHIPPED), [orders]);
+  const deliveredOrders = useMemo(() => orders.filter((o) => o.status === OrderStatus.DELIVERED), [orders]);
+  const overdueOrders = useMemo(() => orders.filter((o) => o.paymentStatus === OrderPaymentStatus.OVERDUE), [orders]);
+  const totalSales = useMemo(() => orders.reduce((sum, o) => sum + o.totalAmount, 0), [orders]);
 
   if (loading && orders.length === 0) {
     return (
@@ -770,13 +747,177 @@ export const OrdersPage: React.FC = () => {
             </Alert>
           )}
 
-          {/* Orders Table */}
-          <OrderTable
-            orders={orders}
-            onEdit={handleEditOrder}
-            onView={handleViewOrder}
-            onUpdateStatus={handleUpdateOrderStatus}
-          />
+          {/* Order Management Tabs */}
+          <Paper sx={{ width: '100%', borderRadius: 2, mb: 3 }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Tabs
+                value={tabValue}
+                onChange={handleTabChange}
+                aria-label='order management tabs'
+                variant='scrollable'
+                scrollButtons='auto'
+                sx={{
+                  '& .MuiTabs-indicator': {
+                    height: 3,
+                  },
+                  '& .MuiTab-root': {
+                    minHeight: 60,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    '&.Mui-selected': {
+                      fontWeight: 600,
+                    },
+                  },
+                }}
+              >
+                <Tab
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      All Orders
+                      <Chip label={orders.length} size='small' variant='outlined' />
+                    </Box>
+                  }
+                  icon={<ListAlt />}
+                  iconPosition='start'
+                  sx={{ gap: 1 }}
+                />
+                <Tab
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      Pending
+                      <Chip
+                        label={pendingOrders.length}
+                        size='small'
+                        variant='outlined'
+                        color={pendingOrders.length > 0 ? 'warning' : 'default'}
+                      />
+                    </Box>
+                  }
+                  icon={<Pending />}
+                  iconPosition='start'
+                  sx={{ gap: 1 }}
+                />
+                <Tab
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      In Progress
+                      <Chip
+                        label={inProgressOrders.length}
+                        size='small'
+                        variant='outlined'
+                        color={inProgressOrders.length > 0 ? 'info' : 'default'}
+                      />
+                    </Box>
+                  }
+                  icon={<Assignment />}
+                  iconPosition='start'
+                  sx={{ gap: 1 }}
+                />
+                <Tab
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      Shipped
+                      <Chip
+                        label={shippedOrders.length}
+                        size='small'
+                        variant='outlined'
+                        color={shippedOrders.length > 0 ? 'primary' : 'default'}
+                      />
+                    </Box>
+                  }
+                  icon={<LocalShipping />}
+                  iconPosition='start'
+                  sx={{ gap: 1 }}
+                />
+                <Tab
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      Delivered
+                      <Chip
+                        label={deliveredOrders.length}
+                        size='small'
+                        variant='outlined'
+                        color={deliveredOrders.length > 0 ? 'success' : 'default'}
+                      />
+                    </Box>
+                  }
+                  icon={<DoneAll />}
+                  iconPosition='start'
+                  sx={{ gap: 1 }}
+                />
+                <Tab
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      Payment Issues
+                      <Chip
+                        label={overdueOrders.length}
+                        size='small'
+                        variant='outlined'
+                        color={overdueOrders.length > 0 ? 'error' : 'default'}
+                      />
+                    </Box>
+                  }
+                  icon={<ErrorOutline />}
+                  iconPosition='start'
+                  sx={{ gap: 1 }}
+                />
+              </Tabs>
+            </Box>
+
+            <TabPanel value={tabValue} index={0}>
+              <OrderTable
+                orders={orders}
+                onEdit={handleEditOrder}
+                onView={handleViewOrder}
+                onUpdateStatus={handleUpdateOrderStatus}
+              />
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={1}>
+              <OrderTable
+                orders={pendingOrders}
+                onEdit={handleEditOrder}
+                onView={handleViewOrder}
+                onUpdateStatus={handleUpdateOrderStatus}
+              />
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={2}>
+              <OrderTable
+                orders={inProgressOrders}
+                onEdit={handleEditOrder}
+                onView={handleViewOrder}
+                onUpdateStatus={handleUpdateOrderStatus}
+              />
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={3}>
+              <OrderTable
+                orders={shippedOrders}
+                onEdit={handleEditOrder}
+                onView={handleViewOrder}
+                onUpdateStatus={handleUpdateOrderStatus}
+              />
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={4}>
+              <OrderTable
+                orders={deliveredOrders}
+                onEdit={handleEditOrder}
+                onView={handleViewOrder}
+                onUpdateStatus={handleUpdateOrderStatus}
+              />
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={5}>
+              <OrderTable
+                orders={overdueOrders}
+                onEdit={handleEditOrder}
+                onView={handleViewOrder}
+                onUpdateStatus={handleUpdateOrderStatus}
+              />
+            </TabPanel>
+          </Paper>
 
           {/* Empty State */}
           {orders.length === 0 && !loading && (
@@ -821,6 +962,14 @@ export const OrdersPage: React.FC = () => {
             onClose={handleCloseViewModal}
             onEdit={handleEditOrder}
             onPrint={handlePrintOrder}
+          />
+
+          {/* Print Options Modal */}
+          <PrintOptionsModal
+            open={printOptionsModalOpen}
+            order={orderToPrint}
+            onClose={handleClosePrintModal}
+            onPrintSuccess={handlePrintSuccess}
           />
         </Container>
       </motion.div>

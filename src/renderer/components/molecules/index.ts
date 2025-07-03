@@ -1,6 +1,6 @@
 /**
- * Molecules Barrel Export
- * Following Instructions standards for clean import statements
+ * Molecules Index
+ * Export all molecule components
  */
 
 export { LoginForm, type LoginFormProps } from './LoginForm/LoginForm';
@@ -11,6 +11,10 @@ export { UserEditModal, type UserEditModalProps } from './UserEditModal';
 export { AreaFormModal, type AreaFormModalProps, type Area } from './AreaFormModal';
 export { OrderCreateModal, type OrderCreateModalProps } from './OrderCreateModal';
 export { OrderViewModal, type OrderViewModalProps } from './OrderViewModal';
+export { PrintOptionsModal, type PrintOptionsModalProps } from './PrintOptionsModal';
 export * from './ProductDetailsModal';
 export * from './InventoryAnalytics';
 export * from './StockMovementModal';
+export { PurchaseOrderCreateModal, type PurchaseOrderCreateModalProps } from './PurchaseOrderCreateModal';
+export { PurchaseOrderViewModal, type PurchaseOrderViewModalProps } from './PurchaseOrderViewModal';
+export { PurchaseOrderPrintModal, type PurchaseOrderPrintModalProps } from './PurchaseOrderPrintModal';

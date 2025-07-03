@@ -11,7 +11,9 @@ import { Box, Typography, useTheme, useMediaQuery } from '@mui/material';
 import { Logo } from '../../atoms';
 import { LoginForm } from '../../molecules/LoginForm/LoginForm';
 import { APP_CONFIG } from '../../../constants/app.constants';
-import logoMainSrc from '../../../assets/images/logo-main.svg';
+
+// Logo path corrected to use public directory
+const logoMainSrc = '/assets/images/logo-main.svg';
 
 /**
  * LoginPage props interface

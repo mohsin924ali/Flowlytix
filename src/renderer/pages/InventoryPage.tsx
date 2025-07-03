@@ -74,6 +74,8 @@ import {
   Error as ErrorIcon,
   Info as InfoIcon,
   Search,
+  ShoppingCart,
+  Print as PrintIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -90,6 +92,9 @@ import InventoryService, {
   StockMovementType,
   StockMovementReason,
   InventoryFilters,
+  PurchaseOrder,
+  PurchaseOrderStatus,
+  PurchaseOrderFilters,
 } from '../services/InventoryService';
 import ProductService, {
   Product,
@@ -100,7 +105,9 @@ import ProductService, {
   CreateProductData,
 } from '../services/ProductService';
 import { ProductDetailsModal } from '../components/molecules/ProductDetailsModal';
+import { PurchaseOrderCreateModal, PurchaseOrderViewModal, PurchaseOrderPrintModal } from '../components/molecules';
 import StockMovementModal from '../components/molecules/StockMovementModal/StockMovementModal';
+import { Header } from '../components/organisms';
 
 /**
  * Animation variants following Instructions file standards
@@ -259,21 +266,28 @@ const InventoryPage: React.FC = () => {
   const [stockReservations, setStockReservations] = useState<StockReservation[]>([]);
   const [analytics, setAnalytics] = useState<InventoryAnalytics | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
 
   // Filter State
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
   const [filters, setFilters] = useState<InventoryFilters>({});
   const [productFilters, setProductFilters] = useState<ProductFilters>({});
+  const [purchaseOrderFilters, setPurchaseOrderFilters] = useState<PurchaseOrderFilters>({});
   const [searchTerm, setSearchTerm] = useState('');
 
   // Dialog State
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogType, setDialogType] = useState<'movement' | 'transfer' | 'adjustment' | 'reservation' | 'product'>(
-    'movement'
-  );
+  const [dialogType, setDialogType] = useState<
+    'movement' | 'transfer' | 'adjustment' | 'reservation' | 'product' | 'purchase_order'
+  >('movement');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productDetailsOpen, setProductDetailsOpen] = useState(false);
   const [stockMovementOpen, setStockMovementOpen] = useState(false);
+  const [purchaseOrderCreateOpen, setPurchaseOrderCreateOpen] = useState(false);
+  const [purchaseOrderViewOpen, setPurchaseOrderViewOpen] = useState(false);
+  const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState<PurchaseOrder | null>(null);
+  const [purchaseOrderPrintOpen, setPurchaseOrderPrintOpen] = useState(false);
+  const [purchaseOrderToPrint, setPurchaseOrderToPrint] = useState<PurchaseOrder | null>(null);
 
   /**
    * Load initial data
@@ -291,6 +305,7 @@ const InventoryPage: React.FC = () => {
         reservationsData,
         analyticsData,
         productsResult,
+        purchaseOrdersResult,
       ] = await Promise.all([
         InventoryService.getWarehouses(),
         InventoryService.getStockLevels(selectedWarehouse || undefined),
@@ -299,6 +314,7 @@ const InventoryPage: React.FC = () => {
         InventoryService.getStockReservations(),
         InventoryService.getInventoryAnalytics(selectedWarehouse || undefined),
         ProductService.getProducts(currentAgency?.id || '', 1, 50, productFilters),
+        InventoryService.getPurchaseOrders(purchaseOrderFilters, 1, 50),
       ]);
 
       setWarehouses(warehousesData);
@@ -308,12 +324,13 @@ const InventoryPage: React.FC = () => {
       setStockReservations(reservationsData);
       setAnalytics(analyticsData);
       setProducts(productsResult.products);
+      setPurchaseOrders(purchaseOrdersResult.purchaseOrders);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load inventory data');
     } finally {
       setLoading(false);
     }
-  }, [selectedWarehouse, filters, productFilters, currentAgency?.id]);
+  }, [selectedWarehouse, filters, productFilters, purchaseOrderFilters, currentAgency?.id]);
 
   /**
    * Handle tab change
@@ -384,6 +401,19 @@ const InventoryPage: React.FC = () => {
   const handleSearch = useCallback((searchTerm: string) => {
     setSearchTerm(searchTerm);
     setProductFilters((prev) => ({ ...prev, search: searchTerm }));
+  }, []);
+
+  /**
+   * Handle purchase order operations
+   */
+  const handleViewPurchaseOrder = useCallback((purchaseOrder: PurchaseOrder) => {
+    setSelectedPurchaseOrder(purchaseOrder);
+    setPurchaseOrderViewOpen(true);
+  }, []);
+
+  const handlePrintPurchaseOrder = useCallback((purchaseOrder: PurchaseOrder) => {
+    setPurchaseOrderToPrint(purchaseOrder);
+    setPurchaseOrderPrintOpen(true);
   }, []);
 
   /**
@@ -754,6 +784,86 @@ const InventoryPage: React.FC = () => {
   );
 
   /**
+   * Render purchase orders table
+   */
+  const renderPurchaseOrders = () => (
+    <motion.div variants={containerVariants} initial='hidden' animate='visible'>
+      <Box sx={{ mb: 3 }}>
+        <Box display='flex' alignItems='center' justifyContent='space-between' mb={2}>
+          <Typography variant='h5' component='h2' sx={{ fontWeight: 600 }}>
+            Purchase Orders
+          </Typography>
+          <Button variant='contained' startIcon={<AddIcon />} onClick={() => setPurchaseOrderCreateOpen(true)}>
+            Create Purchase Order
+          </Button>
+        </Box>
+      </Box>
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600 }}>Order Number</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Supplier</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Order Date</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Total Amount</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {purchaseOrders.map((order) => (
+              <TableRow key={order.id} hover>
+                <TableCell>{order.orderNumber}</TableCell>
+                <TableCell>{order.supplierName}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={order.status}
+                    size='small'
+                    color={order.status === 'RECEIVED' ? 'success' : order.status === 'CANCELLED' ? 'error' : 'primary'}
+                  />
+                </TableCell>
+                <TableCell>{order.orderDate.toLocaleDateString()}</TableCell>
+                <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
+                <TableCell>
+                  <Stack direction='row' spacing={1}>
+                    <Tooltip title='View Details'>
+                      <IconButton size='small' onClick={() => handleViewPurchaseOrder(order)}>
+                        <ViewIcon fontSize='small' />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title='Print Purchase Order'>
+                      <IconButton size='small' color='primary' onClick={() => handlePrintPurchaseOrder(order)}>
+                        <PrintIcon fontSize='small' />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Empty State */}
+      {purchaseOrders.length === 0 && !loading && (
+        <Box textAlign='center' py={8}>
+          <ShoppingCart sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+          <Typography variant='h6' gutterBottom>
+            No purchase orders found
+          </Typography>
+          <Typography variant='body2' color='text.secondary' mb={3}>
+            Create your first purchase order to manage inventory restocking
+          </Typography>
+          <Button variant='contained' startIcon={<AddIcon />} onClick={() => setPurchaseOrderCreateOpen(true)}>
+            Create First Purchase Order
+          </Button>
+        </Box>
+      )}
+    </motion.div>
+  );
+
+  /**
    * Render analytics dashboard
    */
   const renderAnalytics = () => {
@@ -968,6 +1078,7 @@ const InventoryPage: React.FC = () => {
               <Tab label='Stock Movements' icon={<TransferIcon />} />
               <Tab label='Transfers' icon={<SwapHoriz />} />
               <Tab label='Reservations' icon={<ReserveIcon />} />
+              <Tab label='Purchase Orders' icon={<ShoppingCart />} />
               <Tab label='Analytics' icon={<AnalyticsIcon />} />
             </Tabs>
           </Box>
@@ -1003,6 +1114,10 @@ const InventoryPage: React.FC = () => {
           </TabPanel>
 
           <TabPanel value={currentTab} index={6}>
+            {renderPurchaseOrders()}
+          </TabPanel>
+
+          <TabPanel value={currentTab} index={7}>
             {renderAnalytics()}
           </TabPanel>
         </Paper>
@@ -1037,6 +1152,7 @@ const InventoryPage: React.FC = () => {
             {dialogType === 'adjustment' && 'Inventory Adjustment'}
             {dialogType === 'reservation' && 'Reserve Stock'}
             {dialogType === 'product' && 'Product Management'}
+            {dialogType === 'purchase_order' && 'Purchase Order Management'}
           </DialogTitle>
           <DialogContent>
             <Typography>{dialogType} form would be implemented here with proper validation and submission.</Typography>
@@ -1063,6 +1179,32 @@ const InventoryPage: React.FC = () => {
           productId={selectedProduct?.id || ''}
           onClose={() => setStockMovementOpen(false)}
           onSuccess={loadData}
+        />
+
+        {/* Purchase Order Create Modal */}
+        <PurchaseOrderCreateModal
+          open={purchaseOrderCreateOpen}
+          onClose={() => setPurchaseOrderCreateOpen(false)}
+          onSuccess={loadData}
+        />
+
+        {/* Purchase Order View Modal */}
+        <PurchaseOrderViewModal
+          open={purchaseOrderViewOpen}
+          purchaseOrder={selectedPurchaseOrder}
+          onClose={() => setPurchaseOrderViewOpen(false)}
+          onPrint={handlePrintPurchaseOrder}
+        />
+
+        {/* Purchase Order Print Modal */}
+        <PurchaseOrderPrintModal
+          open={purchaseOrderPrintOpen}
+          purchaseOrder={purchaseOrderToPrint}
+          onClose={() => setPurchaseOrderPrintOpen(false)}
+          onPrintSuccess={() => {
+            setPurchaseOrderPrintOpen(false);
+            // Optionally show success message
+          }}
         />
       </Container>
     </DashboardLayout>

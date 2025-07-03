@@ -28,7 +28,8 @@ import { SettingsPage } from '../../pages/SettingsPage';
 import { DashboardLayout } from '../templates';
 import { ROUTES } from '../../constants/navigation.constants';
 import { useAuthStore } from '../../store/auth.store';
-import logoMainSrc from '../../assets/images/logo-main.svg';
+// Logo path corrected to use public directory
+const logoMainSrc = '/assets/images/logo-main.svg';
 
 /**
  * Page transition variants
