@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -67,6 +68,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
 );
 
 export const SalesAnalyticsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [timeRange, setTimeRange] = useState('30d');
   const [activeTab, setActiveTab] = useState(0);
 
@@ -79,17 +81,17 @@ export const SalesAnalyticsPage: React.FC = () => {
   const formatCurrency = (value: number) => `$${value.toLocaleString()}`;
 
   return (
-    <DashboardLayout title='Sales Analytics'>
+    <DashboardLayout title={t('analytics.sales_analytics')}>
       <Container maxWidth='xl' sx={{ py: 3 }}>
         <motion.div variants={containerVariants} initial='hidden' animate='visible'>
           {/* Header */}
           <motion.div variants={itemVariants}>
             <Box sx={{ mb: 4 }}>
               <Typography variant='h4' fontWeight='600' color='text.primary' gutterBottom>
-                Sales Analytics
+                {t('analytics.sales_analytics')}
               </Typography>
               <Typography variant='body1' color='text.secondary'>
-                Detailed sales analytics with trends, forecasting, and performance metrics
+                {t('analytics.detailed_sales_analytics')}
               </Typography>
             </Box>
           </motion.div>
@@ -100,13 +102,13 @@ export const SalesAnalyticsPage: React.FC = () => {
               <Box />
               <ButtonGroup size='small'>
                 <Button variant={timeRange === '7d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('7d')}>
-                  7 Days
+                  {t('analytics.last_7_days')}
                 </Button>
                 <Button variant={timeRange === '30d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('30d')}>
-                  30 Days
+                  {t('analytics.last_30_days')}
                 </Button>
                 <Button variant={timeRange === '90d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('90d')}>
-                  90 Days
+                  {t('analytics.last_90_days')}
                 </Button>
               </ButtonGroup>
             </Box>
@@ -137,7 +139,7 @@ export const SalesAnalyticsPage: React.FC = () => {
                       {formatCurrency(analytics?.totalSales || 0)}
                     </Typography>
                     <Typography variant='body2' color='text.secondary'>
-                      Total Sales Revenue
+                      {t('analytics.total_sales_revenue')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -155,7 +157,7 @@ export const SalesAnalyticsPage: React.FC = () => {
                       {analytics?.totalOrders?.toLocaleString() || 0}
                     </Typography>
                     <Typography variant='body2' color='text.secondary'>
-                      Total Orders
+                      {t('analytics.total_orders')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -173,7 +175,7 @@ export const SalesAnalyticsPage: React.FC = () => {
                       {formatCurrency(analytics?.averageOrderValue || 0)}
                     </Typography>
                     <Typography variant='body2' color='text.secondary'>
-                      Average Order Value
+                      {t('analytics.average_order_value')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -191,7 +193,7 @@ export const SalesAnalyticsPage: React.FC = () => {
                       {analytics?.uniqueCustomers?.toLocaleString() || 0}
                     </Typography>
                     <Typography variant='body2' color='text.secondary'>
-                      Unique Customers
+                      {t('analytics.unique_customers')}
                     </Typography>
                   </CardContent>
                 </Card>

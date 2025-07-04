@@ -13,6 +13,160 @@ import { allMockAnalytics } from '../data/analytics.mock';
 import { allMockEmployees } from '../data/employees.mock';
 import { allMockAreas } from '../data/areas.mock';
 
+// Mock agency data that matches the AgencyService interface
+const mockAgencyData = [
+  {
+    id: 'agency-1',
+    name: 'Flowlytix Headquarters',
+    databasePath: '/data/agencies/flowlytix-hq.db',
+    contactPerson: 'John Admin',
+    phone: '+1-555-0100',
+    email: 'hq@flowlytix.com',
+    address: '123 Business Center, Tech City, TC 12345',
+    status: 'active',
+    createdAt: '2023-01-01T00:00:00Z',
+    settings: {
+      allowCreditSales: true,
+      defaultCreditDays: 30,
+      maxCreditLimit: 100000,
+      requireApprovalForOrders: false,
+      enableInventoryTracking: true,
+      taxRate: 0.15,
+      currency: 'USD',
+      businessHours: {
+        start: '09:00',
+        end: '18:00',
+        timezone: 'America/New_York',
+      },
+      notifications: {
+        lowStock: true,
+        overduePayments: true,
+        newOrders: true,
+      },
+    },
+  },
+  {
+    id: 'agency-2',
+    name: 'Metro Distribution Hub',
+    databasePath: '/data/agencies/metro-dist.db',
+    contactPerson: 'Sarah Manager',
+    phone: '+1-555-0200',
+    email: 'info@metrodist.com',
+    address: '456 Distribution Way, Metro City, MC 23456',
+    status: 'active',
+    createdAt: '2023-03-15T00:00:00Z',
+    settings: {
+      allowCreditSales: true,
+      defaultCreditDays: 45,
+      maxCreditLimit: 75000,
+      requireApprovalForOrders: true,
+      enableInventoryTracking: true,
+      taxRate: 0.12,
+      currency: 'USD',
+      businessHours: {
+        start: '08:00',
+        end: '17:00',
+        timezone: 'America/New_York',
+      },
+      notifications: {
+        lowStock: true,
+        overduePayments: false,
+        newOrders: true,
+      },
+    },
+  },
+  {
+    id: 'agency-3',
+    name: 'Regional Sales Network',
+    databasePath: '/data/agencies/regional-sales.db',
+    contactPerson: 'Mike Sales',
+    phone: '+1-555-0300',
+    email: 'sales@regionalsales.com',
+    address: '789 Commerce Street, Sales City, SC 34567',
+    status: 'active',
+    createdAt: '2023-06-20T00:00:00Z',
+    settings: {
+      allowCreditSales: false,
+      defaultCreditDays: 0,
+      maxCreditLimit: 0,
+      requireApprovalForOrders: false,
+      enableInventoryTracking: true,
+      taxRate: 0.1,
+      currency: 'USD',
+      businessHours: {
+        start: '10:00',
+        end: '19:00',
+        timezone: 'America/New_York',
+      },
+      notifications: {
+        lowStock: false,
+        overduePayments: false,
+        newOrders: true,
+      },
+    },
+  },
+  {
+    id: 'agency-4',
+    name: 'West Coast Operations',
+    databasePath: '/data/agencies/west-coast.db',
+    contactPerson: 'Lisa Operations',
+    phone: '+1-555-0400',
+    email: 'ops@westcoast.com',
+    address: '321 Pacific Boulevard, West City, WC 45678',
+    status: 'inactive',
+    createdAt: '2023-08-10T00:00:00Z',
+    settings: {
+      allowCreditSales: true,
+      defaultCreditDays: 60,
+      maxCreditLimit: 50000,
+      requireApprovalForOrders: true,
+      enableInventoryTracking: false,
+      taxRate: 0.08,
+      currency: 'USD',
+      businessHours: {
+        start: '09:00',
+        end: '18:00',
+        timezone: 'America/Los_Angeles',
+      },
+      notifications: {
+        lowStock: true,
+        overduePayments: true,
+        newOrders: false,
+      },
+    },
+  },
+  {
+    id: 'agency-5',
+    name: 'Suspended Agency Example',
+    databasePath: '/data/agencies/suspended.db',
+    contactPerson: 'Test Suspended',
+    phone: '+1-555-0500',
+    email: 'test@suspended.com',
+    address: '999 Suspended Street, Test City, TS 99999',
+    status: 'suspended',
+    createdAt: '2023-09-01T00:00:00Z',
+    settings: {
+      allowCreditSales: false,
+      defaultCreditDays: 0,
+      maxCreditLimit: 0,
+      requireApprovalForOrders: true,
+      enableInventoryTracking: false,
+      taxRate: 0.0,
+      currency: 'USD',
+      businessHours: {
+        start: '00:00',
+        end: '00:00',
+        timezone: 'America/New_York',
+      },
+      notifications: {
+        lowStock: false,
+        overduePayments: false,
+        newOrders: false,
+      },
+    },
+  },
+];
+
 /**
  * Configure mock electron API
  * This replaces window.electronAPI with mock implementations
@@ -28,17 +182,71 @@ export const configureMocks = () => {
       createAgency: async (data: any) => {
         console.log('🏢 Mock createAgency called:', data);
         await new Promise((resolve) => setTimeout(resolve, 500));
-        return { success: true, agency: { id: 'new-agency', ...data } };
+        return {
+          success: true,
+          data: {
+            agencyId: 'new-agency-' + Date.now(),
+            name: data.name,
+            databasePath: data.databasePath,
+            isOperational: true,
+            message: 'Agency created successfully',
+          },
+        };
       },
-      getAgencies: async () => {
-        console.log('🏢 Mock getAgencies called');
+      getAgencies: async (params: any) => {
+        console.log('🏢 Mock getAgencies called with params:', params);
         await new Promise((resolve) => setTimeout(resolve, 300));
-        return allMockAgencies;
+
+        // Apply filtering if provided
+        let filteredAgencies = [...mockAgencyData];
+
+        if (params?.search) {
+          const searchTerm = params.search.toLowerCase();
+          filteredAgencies = filteredAgencies.filter(
+            (agency) =>
+              agency.name.toLowerCase().includes(searchTerm) ||
+              agency.contactPerson?.toLowerCase().includes(searchTerm) ||
+              agency.email?.toLowerCase().includes(searchTerm)
+          );
+        }
+
+        if (params?.status) {
+          filteredAgencies = filteredAgencies.filter((agency) => agency.status === params.status);
+        }
+
+        // Apply pagination
+        const offset = params?.offset || 0;
+        const limit = params?.limit || 50;
+        const paginatedAgencies = filteredAgencies.slice(offset, offset + limit);
+
+        console.log('🏢 Mock getAgencies returning:', paginatedAgencies.length, 'agencies');
+
+        return {
+          success: true,
+          data: {
+            agencies: paginatedAgencies,
+            total: filteredAgencies.length,
+          },
+        };
       },
       updateAgency: async (data: any) => {
         console.log('🏢 Mock updateAgency called:', data);
         await new Promise((resolve) => setTimeout(resolve, 400));
-        return { success: true, agency: data };
+        return {
+          success: true,
+          data: {
+            agency: data,
+            message: 'Agency updated successfully',
+          },
+        };
+      },
+      switchAgency: async (agencyId: string, agencyName: string) => {
+        console.log('🏢 Mock switchAgency called:', agencyId, agencyName);
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        return {
+          success: true,
+          message: `Successfully switched to ${agencyName}`,
+        };
       },
     },
 

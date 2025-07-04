@@ -91,7 +91,7 @@ export const ROUTES = {
 export const NAVIGATION_ROUTES: NavigationRoute[] = [
   {
     id: 'dashboard',
-    label: 'Dashboard',
+    label: 'navigation.dashboard',
     path: ROUTES.DASHBOARD,
     icon: Dashboard,
     requiresAuth: true,
@@ -100,7 +100,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
   },
   {
     id: 'customers',
-    label: 'Customer Management',
+    label: 'navigation.customers',
     path: ROUTES.CUSTOMERS,
     icon: People,
     requiresAuth: true,
@@ -109,7 +109,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
   },
   {
     id: 'inventory',
-    label: 'Inventory Management',
+    label: 'navigation.inventory',
     path: ROUTES.INVENTORY,
     icon: Inventory,
     requiresAuth: true,
@@ -118,7 +118,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
   },
   {
     id: 'orders',
-    label: 'Order Management',
+    label: 'navigation.orders',
     path: ROUTES.ORDERS,
     icon: ShoppingCart,
     requiresAuth: true,
@@ -127,7 +127,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
   },
   {
     id: 'shipping',
-    label: 'Shipping',
+    label: 'navigation.shipping',
     path: ROUTES.SHIPPING,
     icon: LocalShipping,
     requiresAuth: true,
@@ -136,7 +136,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
     children: [
       {
         id: 'shipping-list',
-        label: 'All Shipments',
+        label: 'navigation.all_shipments',
         path: ROUTES.SHIPPING_LIST,
         icon: LocalShipping,
         requiresAuth: true,
@@ -144,7 +144,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
       },
       {
         id: 'shipping-tracking',
-        label: 'Tracking',
+        label: 'navigation.tracking',
         path: ROUTES.SHIPPING_TRACKING,
         icon: LocalShipping,
         requiresAuth: true,
@@ -154,7 +154,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
   },
   {
     id: 'analytics',
-    label: 'Analytics',
+    label: 'navigation.analytics',
     path: ROUTES.ANALYTICS,
     icon: TrendingUp,
     requiresAuth: true,
@@ -163,7 +163,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
     children: [
       {
         id: 'analytics-dashboard',
-        label: 'Overview',
+        label: 'navigation.overview',
         path: ROUTES.ANALYTICS_DASHBOARD,
         icon: Assessment,
         requiresAuth: true,
@@ -171,7 +171,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
       },
       {
         id: 'analytics-sales',
-        label: 'Sales Analytics',
+        label: 'navigation.sales_analytics',
         path: ROUTES.ANALYTICS_SALES,
         icon: AccountBalance,
         requiresAuth: true,
@@ -179,7 +179,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
       },
       {
         id: 'analytics-customers',
-        label: 'Customer Analytics',
+        label: 'navigation.customer_analytics',
         path: ROUTES.ANALYTICS_CUSTOMERS,
         icon: People,
         requiresAuth: true,
@@ -187,7 +187,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
       },
       {
         id: 'analytics-products',
-        label: 'Product Analytics',
+        label: 'navigation.product_analytics',
         path: ROUTES.ANALYTICS_PRODUCTS,
         icon: Inventory,
         requiresAuth: true,

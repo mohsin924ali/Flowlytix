@@ -3,6 +3,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Container, Typography, Box, Card, CardContent, Grid, Tab, Tabs, Paper, useTheme, alpha } from '@mui/material';
 import {
   People as PeopleIcon,
@@ -23,6 +24,8 @@ import { EmployeesPage } from './EmployeesPage';
  * System Settings Component
  */
 const SystemSettingsComponent: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <Container maxWidth='xl' sx={{ py: 2 }}>
       <Card>
@@ -30,11 +33,11 @@ const SystemSettingsComponent: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             <SettingsIcon sx={{ mr: 2, color: 'primary.main' }} />
             <Typography variant='h5' fontWeight='bold'>
-              System Settings
+              {t('admin.system_settings')}
             </Typography>
           </Box>
           <Typography variant='body1' color='text.secondary'>
-            System configuration and preferences will be available here.
+            {t('admin.system_configuration_description')}
           </Typography>
         </CardContent>
       </Card>
@@ -46,6 +49,7 @@ const SystemSettingsComponent: React.FC = () => {
  * SIMPLIFIED Admin Panel - NO COMPLEX FILTERING
  */
 export const AdminPanelPage: React.FC = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState<string>('users'); // DEFAULT TO USERS
 
@@ -57,37 +61,37 @@ export const AdminPanelPage: React.FC = () => {
   const tabs = [
     {
       id: 'users',
-      label: 'User Management',
+      label: t('admin.user_management'),
       icon: <PeopleIcon />,
-      description: 'Manage system users',
+      description: t('admin.manage_system_users'),
       component: UsersPage,
     },
     {
       id: 'areas',
-      label: 'Area Management',
+      label: t('admin.area_management'),
       icon: <MapIcon />,
-      description: 'Manage areas and territories',
+      description: t('admin.manage_areas_territories'),
       component: AreasPage,
     },
     {
       id: 'agencies',
-      label: 'Agency Management',
+      label: t('admin.agency_management'),
       icon: <BusinessIcon />,
-      description: 'Manage agencies',
+      description: t('admin.manage_agencies'),
       component: AgenciesPage,
     },
     {
       id: 'employees',
-      label: 'Employee Management',
+      label: t('admin.employee_management'),
       icon: <SupervisorIcon />,
-      description: 'Manage employees',
+      description: t('admin.manage_employees'),
       component: EmployeesPage,
     },
     {
       id: 'settings',
-      label: 'System Settings',
+      label: t('admin.system_settings'),
       icon: <SettingsIcon />,
-      description: 'System configuration',
+      description: t('admin.system_configuration'),
       component: SystemSettingsComponent,
     },
   ];
@@ -107,7 +111,7 @@ export const AdminPanelPage: React.FC = () => {
   console.log('🎯 DEBUG: Active component found:', !!ActiveComponent);
 
   return (
-    <DashboardLayout title='Admin Panel'>
+    <DashboardLayout title={t('admin.admin_panel')}>
       <Container maxWidth='xl' sx={{ py: 2 }}>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
           {/* Header */}
@@ -130,11 +134,11 @@ export const AdminPanelPage: React.FC = () => {
                   WebkitTextFillColor: 'transparent',
                 }}
               >
-                Administration Panel
+                {t('admin.administration_panel')}
               </Typography>
             </Box>
             <Typography variant='h6' color='text.secondary'>
-              Complete administrative control panel
+              {t('admin.complete_administrative_control')}
             </Typography>
           </Box>
 

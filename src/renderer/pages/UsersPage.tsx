@@ -17,6 +17,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Container,
   Typography,
@@ -122,12 +123,12 @@ const getRoleColor = (role: string): 'primary' | 'secondary' | 'default' => {
 /**
  * Get role display name - updated for simplified role system
  */
-const getRoleDisplayName = (role: string): string => {
+const getRoleDisplayName = (role: string, t: any): string => {
   switch (role.toLowerCase()) {
     case 'super_admin':
-      return 'Super Administrator';
+      return t('admin.super_administrator');
     case 'admin':
-      return 'Agency Administrator';
+      return t('admin.agency_administrator');
     default:
       return role;
   }
@@ -154,6 +155,7 @@ const UsersTable: React.FC<{
   isLoading: boolean;
   onEditUser: (userId: string) => void;
 }> = ({ users, isLoading, onEditUser }) => {
+  const { t } = useTranslation();
   if (isLoading) {
     return (
       <Box display='flex' justifyContent='center' alignItems='center' minHeight={200}>
@@ -167,10 +169,10 @@ const UsersTable: React.FC<{
       <Box display='flex' flexDirection='column' alignItems='center' py={4}>
         <PersonIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
         <Typography variant='h6' color='text.secondary'>
-          No users found
+          {t('admin.no_users_found')}
         </Typography>
         <Typography variant='body2' color='text.secondary'>
-          Try adjusting your search filters
+          {t('admin.try_adjusting_filters')}
         </Typography>
       </Box>
     );
@@ -181,13 +183,13 @@ const UsersTable: React.FC<{
       <Table>
         <TableHead>
           <TableRow>
-            <TableCell>Name</TableCell>
-            <TableCell>Email</TableCell>
-            <TableCell>Role</TableCell>
-            <TableCell>Agency</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Created</TableCell>
-            <TableCell>Actions</TableCell>
+            <TableCell>{t('admin.name')}</TableCell>
+            <TableCell>{t('admin.email')}</TableCell>
+            <TableCell>{t('admin.role')}</TableCell>
+            <TableCell>{t('admin.agency')}</TableCell>
+            <TableCell>{t('admin.status')}</TableCell>
+            <TableCell>{t('admin.created')}</TableCell>
+            <TableCell>{t('admin.actions')}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -206,7 +208,7 @@ const UsersTable: React.FC<{
                     {user.fullName}
                   </Typography>
                   {user.isAccountLocked && (
-                    <Chip label='Locked' size='small' color='error' variant='outlined' sx={{ mt: 0.5 }} />
+                    <Chip label={t('admin.locked')} size='small' color='error' variant='outlined' sx={{ mt: 0.5 }} />
                   )}
                 </Box>
               </TableCell>
@@ -217,7 +219,7 @@ const UsersTable: React.FC<{
               </TableCell>
               <TableCell>
                 <Chip
-                  label={getRoleDisplayName(user.role)}
+                  label={getRoleDisplayName(user.role, t)}
                   size='small'
                   color={getRoleColor(user.role)}
                   variant='outlined'
@@ -231,7 +233,7 @@ const UsersTable: React.FC<{
                   </Box>
                 ) : (
                   <Typography variant='body2' color='text.secondary' fontStyle='italic'>
-                    No agency
+                    {t('admin.no_agency')}
                   </Typography>
                 )}
               </TableCell>
@@ -245,7 +247,7 @@ const UsersTable: React.FC<{
               </TableCell>
               <TableCell>
                 <Box display='flex' gap={1}>
-                  <Tooltip title='Edit User'>
+                  <Tooltip title={t('admin.edit_user')}>
                     <IconButton size='small' onClick={() => onEditUser(user.id)}>
                       <EditIcon />
                     </IconButton>
@@ -264,6 +266,7 @@ const UsersTable: React.FC<{
  * Users Page Component
  */
 export const UsersPage: React.FC = () => {
+  const { t } = useTranslation();
   const {
     users,
     total,
@@ -412,10 +415,10 @@ export const UsersPage: React.FC = () => {
           <motion.div variants={itemVariants}>
             <Box sx={{ mb: 4 }}>
               <Typography variant='h4' fontWeight='600' color='text.primary' gutterBottom>
-                Users Management
+                {t('admin.users_management')}
               </Typography>
               <Typography variant='body1' color='text.secondary'>
-                Manage and monitor user accounts across your organization
+                {t('admin.manage_monitor_users')}
               </Typography>
             </Box>
           </motion.div>
@@ -437,7 +440,7 @@ export const UsersPage: React.FC = () => {
                   <Grid item xs={12} md={4}>
                     <TextField
                       fullWidth
-                      placeholder='Search users...'
+                      placeholder={t('admin.search_users')}
                       value={filters.search || ''}
                       onChange={handleSearchChange}
                       InputProps={{
@@ -453,33 +456,33 @@ export const UsersPage: React.FC = () => {
                   </Grid>
                   <Grid item xs={12} md={3}>
                     <FormControl fullWidth size='small'>
-                      <InputLabel>Role</InputLabel>
-                      <Select value={filters.role || ''} onChange={handleRoleChange} label='Role'>
-                        <MenuItem value=''>All Roles</MenuItem>
-                        <MenuItem value='super_admin'>Super Administrator</MenuItem>
-                        <MenuItem value='admin'>Agency Administrator</MenuItem>
+                      <InputLabel>{t('admin.role')}</InputLabel>
+                      <Select value={filters.role || ''} onChange={handleRoleChange} label={t('admin.role')}>
+                        <MenuItem value=''>{t('admin.all_roles')}</MenuItem>
+                        <MenuItem value='super_admin'>{t('admin.super_administrator')}</MenuItem>
+                        <MenuItem value='admin'>{t('admin.agency_administrator')}</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
                   <Grid item xs={12} md={3}>
                     <FormControl fullWidth size='small'>
-                      <InputLabel>Status</InputLabel>
-                      <Select value={filters.status || ''} onChange={handleStatusChange} label='Status'>
-                        <MenuItem value=''>All Statuses</MenuItem>
-                        <MenuItem value='active'>Active</MenuItem>
-                        <MenuItem value='inactive'>Inactive</MenuItem>
-                        <MenuItem value='suspended'>Suspended</MenuItem>
+                      <InputLabel>{t('admin.status')}</InputLabel>
+                      <Select value={filters.status || ''} onChange={handleStatusChange} label={t('admin.status')}>
+                        <MenuItem value=''>{t('admin.all_statuses')}</MenuItem>
+                        <MenuItem value='active'>{t('admin.active')}</MenuItem>
+                        <MenuItem value='inactive'>{t('admin.inactive')}</MenuItem>
+                        <MenuItem value='suspended'>{t('admin.suspended')}</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
                   <Grid item xs={12} md={2}>
                     <Box display='flex' gap={1}>
-                      <Tooltip title='Refresh'>
+                      <Tooltip title={t('admin.refresh')}>
                         <IconButton onClick={refetch} disabled={isLoading}>
                           <RefreshIcon />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title='Reset Filters'>
+                      <Tooltip title={t('admin.reset_filters')}>
                         <IconButton onClick={resetFilters}>
                           <FilterIcon />
                         </IconButton>

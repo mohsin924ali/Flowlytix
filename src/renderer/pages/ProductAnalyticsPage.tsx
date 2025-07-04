@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -114,6 +115,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, icon, col
 );
 
 export const ProductAnalyticsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [timeRange, setTimeRange] = useState('30d');
   const [activeTab, setActiveTab] = useState(0);
 
@@ -126,17 +128,17 @@ export const ProductAnalyticsPage: React.FC = () => {
   const formatCurrency = (value: number) => `$${value.toLocaleString()}`;
 
   return (
-    <DashboardLayout title='Product Analytics'>
+    <DashboardLayout title={t('analytics.product_analytics')}>
       <Container maxWidth='xl' sx={{ py: 3 }}>
         <motion.div variants={containerVariants} initial='hidden' animate='visible'>
           {/* Header */}
           <motion.div variants={itemVariants}>
             <Box sx={{ mb: 4 }}>
               <Typography variant='h4' fontWeight='600' color='text.primary' gutterBottom>
-                Product Analytics
+                {t('analytics.product_analytics')}
               </Typography>
               <Typography variant='body1' color='text.secondary'>
-                Product performance and inventory insights with optimization recommendations
+                {t('analytics.product_performance_insights')}
               </Typography>
             </Box>
           </motion.div>
@@ -147,13 +149,13 @@ export const ProductAnalyticsPage: React.FC = () => {
               <Box />
               <ButtonGroup size='small'>
                 <Button variant={timeRange === '7d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('7d')}>
-                  7 Days
+                  {t('analytics.last_7_days')}
                 </Button>
                 <Button variant={timeRange === '30d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('30d')}>
-                  30 Days
+                  {t('analytics.last_30_days')}
                 </Button>
                 <Button variant={timeRange === '90d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('90d')}>
-                  90 Days
+                  {t('analytics.last_90_days')}
                 </Button>
               </ButtonGroup>
             </Box>
@@ -163,7 +165,7 @@ export const ProductAnalyticsPage: React.FC = () => {
           <Grid container spacing={3} sx={{ mb: 4 }}>
             <Grid item xs={12} sm={6} md={3}>
               <MetricCard
-                title='Total Products'
+                title={t('analytics.total_products')}
                 value={analytics?.totalProducts || 0}
                 change={2.4}
                 icon={<Inventory fontSize='large' />}
@@ -172,7 +174,7 @@ export const ProductAnalyticsPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <MetricCard
-                title='Active Products'
+                title={t('analytics.active_products')}
                 value={analytics?.activeProducts || 0}
                 change={1.8}
                 icon={<Assessment fontSize='large' />}
@@ -181,7 +183,7 @@ export const ProductAnalyticsPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <MetricCard
-                title='Low Stock Products'
+                title={t('analytics.low_stock_products')}
                 value={analytics?.lowStockProducts || 0}
                 change={-12.3}
                 icon={<Warning fontSize='large' />}
@@ -190,7 +192,7 @@ export const ProductAnalyticsPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <MetricCard
-                title='Out of Stock'
+                title={t('analytics.out_of_stock')}
                 value={analytics?.outOfStockProducts || 0}
                 change={-8.7}
                 icon={<TrendingDown fontSize='large' />}

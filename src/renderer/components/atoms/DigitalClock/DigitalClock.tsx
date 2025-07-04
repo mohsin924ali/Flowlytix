@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, useTheme, Paper } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
 /**
@@ -23,10 +24,10 @@ export interface DigitalClockProps {
 /**
  * Format time helper
  */
-const formatTime = (date: Date): string => {
+const formatTime = (date: Date, t: (key: string) => string): string => {
   const hours = date.getHours();
   const minutes = date.getMinutes();
-  const period = hours >= 12 ? 'PM' : 'AM';
+  const period = hours >= 12 ? t('time.pm') : t('time.am');
   const displayHours = hours % 12 || 12;
   const timeString = `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   return `${timeString} ${period}`;
@@ -100,6 +101,7 @@ export const DigitalClock: React.FC<DigitalClockProps> = ({
   color = 'primary',
   'data-testid': testId = 'digital-clock',
 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [currentTime, setCurrentTime] = useState(new Date());
   const styles = getSizeStyles(size);
@@ -229,7 +231,7 @@ export const DigitalClock: React.FC<DigitalClockProps> = ({
         >
           {/* Time */}
           <motion.div
-            key={formatTime(currentTime)}
+            key={formatTime(currentTime, t)}
             initial={{ opacity: 0.8 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
@@ -245,7 +247,7 @@ export const DigitalClock: React.FC<DigitalClockProps> = ({
                 lineHeight: 1.2,
               }}
             >
-              {formatTime(currentTime)}
+              {formatTime(currentTime, t)}
             </Typography>
           </motion.div>
 

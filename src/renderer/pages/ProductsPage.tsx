@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Container,
   Grid,
@@ -135,13 +136,15 @@ const StatusIcon: React.FC<{ status: ProductStatus }> = ({ status }) => {
  * Stock level indicator
  */
 const StockIndicator: React.FC<{ product: Product }> = ({ product }) => {
+  const { t } = useTranslation();
+
   const getStockStatus = () => {
     if (product.currentStock === 0) {
-      return { color: 'error', label: 'Out of Stock', icon: Warning };
+      return { color: 'error', label: t('inventory.out_of_stock'), icon: Warning };
     } else if (product.currentStock <= product.reorderLevel) {
-      return { color: 'warning', label: 'Low Stock', icon: TrendingDown };
+      return { color: 'warning', label: t('inventory.low_stock_alert'), icon: TrendingDown };
     } else {
-      return { color: 'success', label: 'In Stock', icon: TrendingUp };
+      return { color: 'success', label: t('inventory.in_stock'), icon: TrendingUp };
     }
   };
 
@@ -159,6 +162,7 @@ const ProductCard: React.FC<{
   onDelete: (product: Product) => void;
   onView: (product: Product) => void;
 }> = ({ product, onEdit, onDelete, onView }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   const getStatusColor = (status: ProductStatus) => {
@@ -225,15 +229,16 @@ const ProductCard: React.FC<{
           <Box sx={{ mb: 2 }}>
             <Typography variant='body2' sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
               <LocalOffer fontSize='small' color='action' />
-              Cost: ${product.costPrice.toFixed(2)} | Selling: ${product.sellingPrice.toFixed(2)}
+              {t('products.cost_price')}: ${product.costPrice.toFixed(2)} | {t('products.selling_price')}: $
+              {product.sellingPrice.toFixed(2)}
             </Typography>
             <Typography variant='body2' sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
               <Scale fontSize='small' color='action' />
-              Unit: {product.unitOfMeasure.replace('_', ' ')}
+              {t('common.unit')}: {product.unitOfMeasure.replace('_', ' ')}
             </Typography>
             <Typography variant='body2' sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <Inventory fontSize='small' color='action' />
-              Stock: {product.currentStock} / {product.maxStockLevel}
+              {t('common.stock')}: {product.currentStock} / {product.maxStockLevel}
             </Typography>
           </Box>
 
@@ -246,7 +251,7 @@ const ProductCard: React.FC<{
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Box>
               <Typography variant='body2' color='text.secondary'>
-                Stock Value
+                {t('products.stock_value')}
               </Typography>
               <Typography variant='h6' sx={{ fontWeight: 600, color: 'primary.main' }}>
                 ${stockValue.toLocaleString()}
@@ -254,7 +259,7 @@ const ProductCard: React.FC<{
             </Box>
             <Box sx={{ textAlign: 'right' }}>
               <Typography variant='body2' color='text.secondary'>
-                Profit Margin
+                {t('products.profit_margin')}
               </Typography>
               <Typography
                 variant='h6'
@@ -276,7 +281,7 @@ const ProductCard: React.FC<{
               onClick={() => onView(product)}
               sx={{ flex: 1 }}
             >
-              View
+              {t('common.view')}
             </Button>
             <Button
               variant='outlined'
@@ -285,7 +290,7 @@ const ProductCard: React.FC<{
               onClick={() => onEdit(product)}
               sx={{ flex: 1 }}
             >
-              Edit
+              {t('common.edit')}
             </Button>
             <IconButton size='small' onClick={() => onDelete(product)} sx={{ color: 'error.main' }}>
               <Delete fontSize='small' />
@@ -568,6 +573,7 @@ const ProductFormDialog: React.FC<{
  * Main Products Page Component
  */
 export const ProductsPage: React.FC = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { user } = useAuthStore();
   const { currentAgency } = useAgencyStore();
@@ -732,7 +738,7 @@ export const ProductsPage: React.FC = () => {
 
   if (loading && products.length === 0) {
     return (
-      <DashboardLayout title='Product Management'>
+      <DashboardLayout title={t('products.title')}>
         <Box
           sx={{
             display: 'flex',
@@ -748,14 +754,14 @@ export const ProductsPage: React.FC = () => {
   }
 
   return (
-    <DashboardLayout title='Product Management'>
+    <DashboardLayout title={t('products.title')}>
       <motion.div variants={containerVariants} initial='hidden' animate='visible'>
         <Container maxWidth='xl' sx={{ py: 3 }}>
           {/* Header Section */}
           <Box sx={{ mb: 4 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
               <Typography variant='h4' sx={{ fontWeight: 700 }}>
-                Product Management
+                {t('products.title')}
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                 <Button
@@ -764,10 +770,10 @@ export const ProductsPage: React.FC = () => {
                   onClick={() => setShowAnalytics(!showAnalytics)}
                   color='info'
                 >
-                  {showAnalytics ? 'Hide' : 'Show'} Analytics
+                  {showAnalytics ? t('common.hide') : t('common.show')} {t('common.analytics')}
                 </Button>
                 <Button variant='contained' startIcon={<Add />} onClick={handleCreateProduct} sx={{ px: 3 }}>
-                  Add Product
+                  {t('products.add_product')}
                 </Button>
               </Box>
             </Box>
@@ -778,7 +784,7 @@ export const ProductsPage: React.FC = () => {
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    placeholder='Search products...'
+                    placeholder={t('products.search_placeholder')}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
@@ -792,20 +798,20 @@ export const ProductsPage: React.FC = () => {
                 <Grid item xs={12} md={6}>
                   <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                     <Button variant='outlined' startIcon={<FilterList />} onClick={() => setShowFilters(!showFilters)}>
-                      Filters
+                      {t('common.filters')}
                     </Button>
                     <Button variant='outlined' startIcon={<Download />}>
-                      Export
+                      {t('common.export')}
                     </Button>
                     <Button variant='outlined' startIcon={<Upload />}>
-                      Import
+                      {t('common.import')}
                     </Button>
                     <Button
                       variant={showAnalytics ? 'contained' : 'outlined'}
                       startIcon={<Assessment />}
                       onClick={() => setShowAnalytics(!showAnalytics)}
                     >
-                      Analytics
+                      {t('common.analytics')}
                     </Button>
                   </Box>
                 </Grid>
@@ -840,13 +846,13 @@ export const ProductsPage: React.FC = () => {
                 >
                   <Accordion expanded sx={{ mb: 3 }}>
                     <AccordionSummary>
-                      <Typography variant='h6'>Filter Options</Typography>
+                      <Typography variant='h6'>{t('common.filter_options')}</Typography>
                     </AccordionSummary>
                     <AccordionDetails>
                       <Grid container spacing={2}>
                         <Grid item xs={12} sm={6} md={3}>
                           <FormControl fullWidth>
-                            <InputLabel>Category</InputLabel>
+                            <InputLabel>{t('common.category')}</InputLabel>
                             <Select
                               multiple
                               value={filters.category || []}
@@ -855,7 +861,7 @@ export const ProductsPage: React.FC = () => {
                                   category: e.target.value as ProductCategory[],
                                 })
                               }
-                              label='Category'
+                              label={t('common.category')}
                             >
                               {Object.values(ProductCategory).map((category) => (
                                 <MenuItem key={category} value={category}>
@@ -867,7 +873,7 @@ export const ProductsPage: React.FC = () => {
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
                           <FormControl fullWidth>
-                            <InputLabel>Status</InputLabel>
+                            <InputLabel>{t('common.status')}</InputLabel>
                             <Select
                               multiple
                               value={filters.status || []}
@@ -876,7 +882,7 @@ export const ProductsPage: React.FC = () => {
                                   status: e.target.value as ProductStatus[],
                                 })
                               }
-                              label='Status'
+                              label={t('common.status')}
                             >
                               {Object.values(ProductStatus).map((status) => (
                                 <MenuItem key={status} value={status}>
@@ -888,7 +894,7 @@ export const ProductsPage: React.FC = () => {
                         </Grid>
                         <Grid item xs={12} sm={6} md={3}>
                           <FormControl fullWidth>
-                            <InputLabel>Stock Filter</InputLabel>
+                            <InputLabel>{t('products.stock_filter')}</InputLabel>
                             <Select
                               value={filters.outOfStock ? 'outOfStock' : filters.lowStock ? 'lowStock' : ''}
                               onChange={(e) => {
@@ -898,11 +904,11 @@ export const ProductsPage: React.FC = () => {
                                   lowStock: value === 'lowStock',
                                 });
                               }}
-                              label='Stock Filter'
+                              label={t('products.stock_filter')}
                             >
-                              <MenuItem value=''>All Products</MenuItem>
-                              <MenuItem value='lowStock'>Low Stock</MenuItem>
-                              <MenuItem value='outOfStock'>Out of Stock</MenuItem>
+                              <MenuItem value=''>{t('products.all_products')}</MenuItem>
+                              <MenuItem value='lowStock'>{t('inventory.low_stock_alert')}</MenuItem>
+                              <MenuItem value='outOfStock'>{t('inventory.out_of_stock')}</MenuItem>
                             </Select>
                           </FormControl>
                         </Grid>
@@ -922,7 +928,7 @@ export const ProductsPage: React.FC = () => {
                       {total}
                     </Typography>
                     <Typography variant='body2' color='text.secondary'>
-                      Total Products
+                      {t('products.total_products')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -936,7 +942,7 @@ export const ProductsPage: React.FC = () => {
                       </Typography>
                     </Badge>
                     <Typography variant='body2' color='text.secondary'>
-                      Low Stock
+                      {t('inventory.low_stock_alert')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -950,7 +956,7 @@ export const ProductsPage: React.FC = () => {
                       </Typography>
                     </Badge>
                     <Typography variant='body2' color='text.secondary'>
-                      Out of Stock
+                      {t('inventory.out_of_stock')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -962,7 +968,7 @@ export const ProductsPage: React.FC = () => {
                       ${totalStockValue.toLocaleString()}
                     </Typography>
                     <Typography variant='body2' color='text.secondary'>
-                      Total Stock Value
+                      {t('products.total_stock_value')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -994,15 +1000,15 @@ export const ProductsPage: React.FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Product</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>SKU</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Category</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Stock</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Cost Price</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Selling Price</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Stock Value</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('products.product_name')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('products.sku')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('common.category')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('common.stock')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('common.status')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('products.cost_price')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('products.selling_price')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('products.stock_value')}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -1019,7 +1025,7 @@ export const ProductsPage: React.FC = () => {
                             {product.name}
                           </Typography>
                           <Typography variant='caption' color='text.secondary'>
-                            {product.description || 'No description'}
+                            {product.description || t('products.no_description')}
                           </Typography>
                         </Box>
                       </TableCell>
@@ -1037,12 +1043,12 @@ export const ProductsPage: React.FC = () => {
                             {product.currentStock} / {product.maxStockLevel}
                           </Typography>
                           <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mb: 0.5 }}>
-                            Reorder at: {product.reorderLevel}
+                            {t('products.reorder_at')}: {product.reorderLevel}
                           </Typography>
                           <StockIndicator product={product} />
                           {product.reservedStock > 0 && (
                             <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mt: 0.5 }}>
-                              Reserved: {product.reservedStock}
+                              {t('products.reserved')}: {product.reservedStock}
                             </Typography>
                           )}
                         </Box>
@@ -1080,23 +1086,23 @@ export const ProductsPage: React.FC = () => {
                             ${stockValue.toLocaleString()}
                           </Typography>
                           <Typography variant='caption' color='text.secondary'>
-                            {profitMargin.toFixed(1)}% margin
+                            {profitMargin.toFixed(1)}% {t('products.margin')}
                           </Typography>
                         </Box>
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                          <Tooltip title='View Details & Manage Inventory'>
+                          <Tooltip title={t('products.view_details_manage_inventory')}>
                             <IconButton size='small' onClick={() => handleViewProduct(product)} color='primary'>
                               <Visibility fontSize='small' />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title='Edit Product'>
+                          <Tooltip title={t('products.edit_product')}>
                             <IconButton size='small' onClick={() => handleEditProduct(product)} color='info'>
                               <Edit fontSize='small' />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title='Delete Product'>
+                          <Tooltip title={t('products.delete_product')}>
                             <IconButton size='small' onClick={() => handleDeleteProduct(product)} color='error'>
                               <Delete fontSize='small' />
                             </IconButton>
@@ -1120,16 +1126,16 @@ export const ProductsPage: React.FC = () => {
             >
               <Inventory sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
               <Typography variant='h5' sx={{ mb: 1 }}>
-                No products found
+                {t('products.no_products_found')}
               </Typography>
               <Typography variant='body2' color='text.secondary' sx={{ mb: 3 }}>
                 {filters.search || filters.status || filters.category
-                  ? 'Try adjusting your search criteria'
-                  : 'Get started by adding your first product'}
+                  ? t('products.try_adjusting_search')
+                  : t('products.get_started_message')}
               </Typography>
               {!filters.search && !filters.status && !filters.category && (
                 <Button variant='contained' startIcon={<Add />} onClick={handleCreateProduct}>
-                  Add First Product
+                  {t('products.add_first_product')}
                 </Button>
               )}
             </Box>

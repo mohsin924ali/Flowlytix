@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   List,
@@ -102,6 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   className,
   'data-testid': testId = 'sidebar',
 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
@@ -171,7 +173,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             ml: isChild ? 2 : 0,
           }}
         >
-          <Tooltip title={isCollapsed && !isChild ? item.description || item.label : ''} placement='right' arrow>
+          <Tooltip title={isCollapsed && !isChild ? item.description || t(item.label) : ''} placement='right' arrow>
             <ListItemButton
               onClick={() => handleNavigationClick(item)}
               disabled={Boolean(item.disabled)}
@@ -239,7 +241,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     style={{ overflow: 'hidden' }}
                   >
                     <ListItemText
-                      primary={item.label}
+                      primary={t(item.label)}
                       sx={{
                         opacity: isCollapsed ? 0 : 1,
                         '& .MuiListItemText-primary': {

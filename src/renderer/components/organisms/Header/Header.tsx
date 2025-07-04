@@ -41,7 +41,7 @@ import { useAuthStore } from '../../../store/auth.store';
 import { useNavigationStore } from '../../../store/navigation.store';
 import { useAgencyStore } from '../../../store/agency.store';
 import { AgencySwitcher, AgencyEditModal } from '../../molecules';
-import { Logo } from '../../atoms';
+import { Logo, LanguageSwitcher } from '../../atoms';
 import { NAVIGATION_CONFIG } from '../../../constants/navigation.constants';
 import { AgencyService } from '../../../services/AgencyService';
 
@@ -523,6 +523,9 @@ export const Header: React.FC<HeaderProps> = ({
               {isDarkMode ? <LightModeIcon /> : <DarkModeIcon />}
             </IconButton>
           </Tooltip>
+
+          {/* Language Switcher */}
+          <LanguageSwitcher />
 
           {/* Notifications */}
           <Tooltip title='Notifications'>

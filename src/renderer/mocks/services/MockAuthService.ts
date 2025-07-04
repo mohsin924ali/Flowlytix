@@ -107,7 +107,7 @@ export class MockAuthService {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          role: user.role,
+          role: user.role.toLowerCase(), // Normalize role to lowercase
           permissions: user.permissions,
           ...(user.agencyId && { agencyId: user.agencyId }),
           ...(user.agency && { agency: user.agency }),

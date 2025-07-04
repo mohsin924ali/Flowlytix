@@ -2,6 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import {
   Container,
   Card,
@@ -16,14 +17,19 @@ import {
 import { Visibility, VisibilityOff, Business, Lock } from '@mui/icons-material';
 
 /**
- * Login form validation schema
+ * Create login form validation schema with translations
+ * Following Instructions file standards for proper schema validation
  */
-const loginSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
-  password: z.string().min(1, 'Password is required').min(6, 'Password must be at least 6 characters'),
-});
+const createLoginSchema = (t: (key: string) => string) =>
+  z.object({
+    email: z.string().min(1, t('forms.required_field')).email(t('forms.invalid_email')),
+    password: z.string().min(1, t('forms.required_field')).min(6, t('forms.password_too_short')),
+  });
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = {
+  email: string;
+  password: string;
+};
 
 interface LoginPageProps {
   onLogin: (credentials: { email: string; password: string }) => Promise<void>;
@@ -33,9 +39,13 @@ interface LoginPageProps {
 /**
  * Login Page Component
  * Professional login interface for Flowlytix Distribution System
+ * Following Instructions file standards with proper internationalization
  */
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isLoading }) => {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = React.useState(false);
+
+  const loginSchema = React.useMemo(() => createLoginSchema(t), [t]);
 
   const {
     register,
@@ -89,10 +99,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isLoading }) => {
               Flowlytix
             </Typography>
             <Typography variant='body1' color='text.secondary'>
-              Distribution System
+              {t('auth.welcome_back')}
             </Typography>
             <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
-              Sign in to your account
+              {t('auth.sign_in_message')}
             </Typography>
           </Box>
 
@@ -101,7 +111,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isLoading }) => {
             <TextField
               {...register('email')}
               fullWidth
-              label='Email Address'
+              label={t('auth.email')}
               type='email'
               autoComplete='email'
               margin='normal'
@@ -120,7 +130,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isLoading }) => {
             <TextField
               {...register('password')}
               fullWidth
-              label='Password'
+              label={t('auth.password')}
               type={showPassword ? 'text' : 'password'}
               autoComplete='current-password'
               margin='normal'
@@ -154,20 +164,20 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isLoading }) => {
                 py: 1.5,
               }}
             >
-              {isLoading || isSubmitting ? 'Signing In...' : 'Sign In'}
+              {isLoading || isSubmitting ? t('common.loading') : t('auth.login_button')}
             </Button>
           </Box>
 
           {/* Demo Credentials Info */}
           <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
             <Typography variant='caption' color='text.secondary' display='block'>
-              Demo Credentials:
+              {t('auth.demo_credentials')}:
             </Typography>
             <Typography variant='caption' color='text.secondary' display='block'>
-              Email: admin@flowlytix.com
+              {t('auth.email')}: admin@flowlytix.com
             </Typography>
             <Typography variant='caption' color='text.secondary' display='block'>
-              Password: admin123
+              {t('auth.password')}: admin123
             </Typography>
           </Box>
         </CardContent>

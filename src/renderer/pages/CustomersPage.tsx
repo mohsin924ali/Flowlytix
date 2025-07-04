@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Container,
   Grid,
@@ -135,6 +136,7 @@ const CustomerCard: React.FC<{
   onDelete: (customer: Customer) => void;
   onView: (customer: Customer) => void;
 }> = ({ customer, onEdit, onDelete, onView }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   const getStatusColor = (status: CustomerStatus) => {
@@ -218,7 +220,7 @@ const CustomerCard: React.FC<{
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Box>
               <Typography variant='body2' color='text.secondary'>
-                Credit Limit
+                {t('customers.credit_limit')}
               </Typography>
               <Typography variant='h6' sx={{ fontWeight: 600, color: 'primary.main' }}>
                 ${customer.creditLimit.toLocaleString()}
@@ -226,7 +228,7 @@ const CustomerCard: React.FC<{
             </Box>
             <Box sx={{ textAlign: 'right' }}>
               <Typography variant='body2' color='text.secondary'>
-                Outstanding
+                {t('customers.outstanding_balance')}
               </Typography>
               <Typography
                 variant='h6'
@@ -248,7 +250,7 @@ const CustomerCard: React.FC<{
               onClick={() => onView(customer)}
               sx={{ flex: 1 }}
             >
-              View
+              {t('common.view')}
             </Button>
             <Button
               variant='outlined'
@@ -257,7 +259,7 @@ const CustomerCard: React.FC<{
               onClick={() => onEdit(customer)}
               sx={{ flex: 1 }}
             >
-              Edit
+              {t('common.edit')}
             </Button>
             <IconButton size='small' onClick={() => onDelete(customer)} sx={{ color: 'error.main' }}>
               <Delete fontSize='small' />
@@ -278,6 +280,7 @@ const CustomerFormDialog: React.FC<{
   onClose: () => void;
   onSave: (data: CreateCustomerData, isEdit: boolean) => void;
 }> = ({ open, customer, onClose, onSave }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<Partial<CreateCustomerData>>({
     customerCode: '',
     firstName: '',
@@ -378,13 +381,13 @@ const CustomerFormDialog: React.FC<{
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
-      <DialogTitle>{customer ? 'Edit Customer' : 'Add New Customer'}</DialogTitle>
+      <DialogTitle>{customer ? t('customers.edit_customer') : t('customers.add_customer')}</DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label='Customer Code'
+              label={t('customers.customer_code')}
               value={formData.customerCode || ''}
               onChange={(e) => updateFormData('customerCode', e.target.value)}
               error={!!errors.customerCode}
@@ -394,7 +397,7 @@ const CustomerFormDialog: React.FC<{
           </Grid>
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
-              <InputLabel>Customer Type</InputLabel>
+              <InputLabel>{t('customers.customer_type')}</InputLabel>
               <Select
                 value={formData.customerType || CustomerType.RETAIL}
                 onChange={(e) => updateFormData('customerType', e.target.value)}
@@ -496,7 +499,7 @@ const CustomerFormDialog: React.FC<{
           <Grid item xs={12}>
             <TextField
               fullWidth
-              label='Street Address'
+              label={t('common.address')}
               value={(formData.addresses as any)?.[0]?.street || ''}
               onChange={(e) => updateAddress('street', e.target.value)}
               required
@@ -505,7 +508,7 @@ const CustomerFormDialog: React.FC<{
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label='City'
+              label={t('common.city')}
               value={(formData.addresses as any)?.[0]?.city || ''}
               onChange={(e) => updateAddress('city', e.target.value)}
               required
@@ -514,7 +517,7 @@ const CustomerFormDialog: React.FC<{
           <Grid item xs={12} sm={3}>
             <TextField
               fullWidth
-              label='State'
+              label={t('common.state')}
               value={(formData.addresses as any)?.[0]?.state || ''}
               onChange={(e) => updateAddress('state', e.target.value)}
               required
@@ -523,7 +526,7 @@ const CustomerFormDialog: React.FC<{
           <Grid item xs={12} sm={3}>
             <TextField
               fullWidth
-              label='Zip Code'
+              label={t('common.zip_code')}
               value={(formData.addresses as any)?.[0]?.zipCode || ''}
               onChange={(e) => updateAddress('zipCode', e.target.value)}
               required
@@ -532,7 +535,7 @@ const CustomerFormDialog: React.FC<{
           <Grid item xs={12}>
             <TextField
               fullWidth
-              label='Notes'
+              label={t('common.notes')}
               multiline
               rows={3}
               value={formData.notes || ''}
@@ -542,9 +545,9 @@ const CustomerFormDialog: React.FC<{
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button variant='contained' onClick={handleSubmit}>
-          {customer ? 'Update' : 'Create'} Customer
+          {customer ? t('common.update') : t('common.create')} {t('customers.customer')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -555,6 +558,7 @@ const CustomerFormDialog: React.FC<{
  * Main Customers Page Component
  */
 export const CustomersPage: React.FC = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { user } = useAuthStore();
   const { currentAgency } = useAgencyStore();
@@ -696,7 +700,7 @@ export const CustomersPage: React.FC = () => {
 
   if (loading && customers.length === 0) {
     return (
-      <DashboardLayout title='Customer Management'>
+      <DashboardLayout title={t('customers.title')}>
         <Box
           sx={{
             display: 'flex',
@@ -712,17 +716,17 @@ export const CustomersPage: React.FC = () => {
   }
 
   return (
-    <DashboardLayout title='Customer Management'>
+    <DashboardLayout title={t('customers.title')}>
       <motion.div variants={containerVariants} initial='hidden' animate='visible'>
         <Container maxWidth='xl' sx={{ py: 3 }}>
           {/* Header Section */}
           <Box sx={{ mb: 4 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
               <Typography variant='h4' sx={{ fontWeight: 700 }}>
-                Customer Management
+                {t('customers.title')}
               </Typography>
               <Button variant='contained' startIcon={<Add />} onClick={handleCreateCustomer} sx={{ px: 3 }}>
-                Add Customer
+                {t('customers.add_customer')}
               </Button>
             </Box>
 
@@ -732,7 +736,7 @@ export const CustomersPage: React.FC = () => {
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
-                    placeholder='Search customers...'
+                    placeholder={t('customers.search_placeholder')}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position='start'>
@@ -746,10 +750,10 @@ export const CustomersPage: React.FC = () => {
                 <Grid item xs={12} md={6}>
                   <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                     <Button variant='outlined' startIcon={<FilterList />} onClick={() => setShowFilters(!showFilters)}>
-                      Filters
+                      {t('common.filters')}
                     </Button>
                     <Button variant='outlined' startIcon={<Download />}>
-                      Export
+                      {t('common.export')}
                     </Button>
                     <Button variant='outlined' startIcon={<Upload />}>
                       Import
@@ -874,7 +878,7 @@ export const CustomersPage: React.FC = () => {
                       {total}
                     </Typography>
                     <Typography variant='body2' color='text.secondary'>
-                      Total Customers
+                      {t('customers.total_customers')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -886,7 +890,7 @@ export const CustomersPage: React.FC = () => {
                       {customers.filter((c) => c.status === CustomerStatus.ACTIVE).length}
                     </Typography>
                     <Typography variant='body2' color='text.secondary'>
-                      Active Customers
+                      {t('customers.active_customers')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -898,7 +902,7 @@ export const CustomersPage: React.FC = () => {
                       {customers.filter((c) => c.outstandingBalance > 0).length}
                     </Typography>
                     <Typography variant='body2' color='text.secondary'>
-                      With Outstanding
+                      {t('customers.with_outstanding')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -910,7 +914,7 @@ export const CustomersPage: React.FC = () => {
                       ${customers.reduce((sum, c) => sum + c.creditLimit, 0).toLocaleString()}
                     </Typography>
                     <Typography variant='body2' color='text.secondary'>
-                      Total Credit Limit
+                      {t('customers.total_credit_limit')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -930,14 +934,14 @@ export const CustomersPage: React.FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Customer</TableCell>
-                  <TableCell>Code</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Contact</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Credit Limit</TableCell>
-                  <TableCell>Outstanding</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell>{t('customers.customer')}</TableCell>
+                  <TableCell>{t('customers.customer_code')}</TableCell>
+                  <TableCell>{t('customers.customer_type')}</TableCell>
+                  <TableCell>{t('common.contact')}</TableCell>
+                  <TableCell>{t('common.status')}</TableCell>
+                  <TableCell>{t('customers.credit_limit')}</TableCell>
+                  <TableCell>{t('customers.outstanding_balance')}</TableCell>
+                  <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -1021,17 +1025,17 @@ export const CustomersPage: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        <Tooltip title='View Details'>
+                        <Tooltip title={t('common.view_details')}>
                           <IconButton size='small' onClick={() => handleViewCustomer(customer)} color='primary'>
                             <Visibility fontSize='small' />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title='Edit Customer'>
+                        <Tooltip title={t('customers.edit_customer')}>
                           <IconButton size='small' onClick={() => handleEditCustomer(customer)} color='info'>
                             <Edit fontSize='small' />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title='Delete Customer'>
+                        <Tooltip title={t('customers.delete_customer')}>
                           <IconButton size='small' onClick={() => handleDeleteCustomer(customer)} color='error'>
                             <Delete fontSize='small' />
                           </IconButton>
@@ -1054,16 +1058,16 @@ export const CustomersPage: React.FC = () => {
             >
               <Person sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
               <Typography variant='h5' sx={{ mb: 1 }}>
-                No customers found
+                {t('customers.no_customers_found')}
               </Typography>
               <Typography variant='body2' color='text.secondary' sx={{ mb: 3 }}>
                 {filters.search || filters.status || filters.customerType
-                  ? 'Try adjusting your search criteria'
-                  : 'Get started by adding your first customer'}
+                  ? t('customers.try_adjusting_search')
+                  : t('customers.get_started_message')}
               </Typography>
               {!filters.search && !filters.status && !filters.customerType && (
                 <Button variant='contained' startIcon={<Add />} onClick={handleCreateCustomer}>
-                  Add First Customer
+                  {t('customers.add_first_customer')}
                 </Button>
               )}
             </Box>
@@ -1087,16 +1091,16 @@ export const CustomersPage: React.FC = () => {
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-          <DialogTitle>Confirm Deletion</DialogTitle>
+          <DialogTitle>{t('common.confirm_deletion')}</DialogTitle>
           <DialogContent>
             <Typography>
-              Are you sure you want to delete customer "{customerToDelete?.fullName}"? This action cannot be undone.
+              {t('customers.delete_confirmation_message', { customerName: customerToDelete?.fullName })}
             </Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => setDeleteDialogOpen(false)}>{t('common.cancel')}</Button>
             <Button variant='contained' color='error' onClick={confirmDeleteCustomer} disabled={loading}>
-              Delete
+              {t('common.delete')}
             </Button>
           </DialogActions>
         </Dialog>

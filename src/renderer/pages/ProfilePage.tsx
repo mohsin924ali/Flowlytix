@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTimeout } from '../utils/performance.utils';
 import {
   Box,
@@ -94,6 +95,7 @@ const mockUser = {
 };
 
 export const ProfilePage: React.FC = () => {
+  const { t } = useTranslation();
   const [user, setUser] = useState(mockUser);
   const [editing, setEditing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -132,12 +134,12 @@ export const ProfilePage: React.FC = () => {
   };
 
   return (
-    <DashboardLayout title='User Profile'>
+    <DashboardLayout title={t('profile.user_profile')}>
       <motion.div variants={containerVariants} initial='hidden' animate='visible'>
         {showSuccess && (
           <motion.div variants={itemVariants}>
             <Alert severity='success' sx={{ mb: 3 }}>
-              Profile updated successfully!
+              {t('profile.profile_updated_successfully')}
             </Alert>
           </motion.div>
         )}
@@ -162,10 +164,10 @@ export const ProfilePage: React.FC = () => {
                     {user.agency}
                   </Typography>
                   <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-                    <Chip icon={<Person />} label='Active User' color='success' size='small' />
+                    <Chip icon={<Person />} label={t('profile.active_user')} color='success' size='small' />
                     <Chip
                       icon={<Shield />}
-                      label={`${user.permissions.length} Permissions`}
+                      label={t('profile.permissions_count', { count: user.permissions.length })}
                       variant='outlined'
                       size='small'
                     />
@@ -177,7 +179,7 @@ export const ProfilePage: React.FC = () => {
                   onClick={() => (editing ? setEditing(false) : setEditing(true))}
                   color={editing ? 'secondary' : 'primary'}
                 >
-                  {editing ? 'Cancel' : 'Edit Profile'}
+                  {editing ? t('common.cancel') : t('profile.edit_profile')}
                 </Button>
               </Box>
             </CardContent>
@@ -192,13 +194,13 @@ export const ProfilePage: React.FC = () => {
                 <CardContent>
                   <Typography variant='h6' gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Person color='primary' />
-                    Personal Information
+                    {t('profile.personal_information')}
                   </Typography>
                   <Grid container spacing={3} sx={{ mt: 1 }}>
                     <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
-                        label='First Name'
+                        label={t('profile.first_name')}
                         value={user.firstName}
                         disabled={!editing}
                         onChange={(e) => setUser((prev) => ({ ...prev, firstName: e.target.value }))}
@@ -208,7 +210,7 @@ export const ProfilePage: React.FC = () => {
                     <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
-                        label='Last Name'
+                        label={t('profile.last_name')}
                         value={user.lastName}
                         disabled={!editing}
                         onChange={(e) => setUser((prev) => ({ ...prev, lastName: e.target.value }))}
@@ -218,7 +220,7 @@ export const ProfilePage: React.FC = () => {
                     <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
-                        label='Email'
+                        label={t('profile.email')}
                         value={user.email}
                         disabled={!editing}
                         onChange={(e) => setUser((prev) => ({ ...prev, email: e.target.value }))}
@@ -231,7 +233,7 @@ export const ProfilePage: React.FC = () => {
                     <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
-                        label='Phone'
+                        label={t('profile.phone')}
                         value={user.phone}
                         disabled={!editing}
                         onChange={(e) => setUser((prev) => ({ ...prev, phone: e.target.value }))}
@@ -244,7 +246,7 @@ export const ProfilePage: React.FC = () => {
                     <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
-                        label='Position'
+                        label={t('profile.position')}
                         value={user.position}
                         disabled={!editing}
                         onChange={(e) => setUser((prev) => ({ ...prev, position: e.target.value }))}
@@ -254,7 +256,7 @@ export const ProfilePage: React.FC = () => {
                     <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
-                        label='Department'
+                        label={t('profile.department')}
                         value={user.department}
                         disabled={!editing}
                         onChange={(e) => setUser((prev) => ({ ...prev, department: e.target.value }))}
@@ -266,10 +268,10 @@ export const ProfilePage: React.FC = () => {
                   {editing && (
                     <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
                       <Button variant='contained' startIcon={<Save />} onClick={handleSave}>
-                        Save Changes
+                        {t('profile.save_changes')}
                       </Button>
                       <Button variant='outlined' startIcon={<Cancel />} onClick={() => setEditing(false)}>
-                        Cancel
+                        {t('common.cancel')}
                       </Button>
                     </Box>
                   )}
@@ -285,32 +287,32 @@ export const ProfilePage: React.FC = () => {
                 <CardContent>
                   <Typography variant='h6' gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Business color='primary' />
-                    Account Information
+                    {t('profile.account_information')}
                   </Typography>
                   <List>
                     <ListItem>
                       <ListItemIcon>
                         <LocationOn />
                       </ListItemIcon>
-                      <ListItemText primary='Agency' secondary={user.agency} />
+                      <ListItemText primary={t('profile.agency')} secondary={user.agency} />
                     </ListItem>
                     <ListItem>
                       <ListItemIcon>
                         <Person />
                       </ListItemIcon>
-                      <ListItemText primary='User ID' secondary={user.id} />
+                      <ListItemText primary={t('profile.user_id')} secondary={user.id} />
                     </ListItem>
                     <ListItem>
                       <ListItemIcon>
                         <Shield />
                       </ListItemIcon>
-                      <ListItemText primary='Join Date' secondary={formatDate(user.joinDate)} />
+                      <ListItemText primary={t('profile.join_date')} secondary={formatDate(user.joinDate)} />
                     </ListItem>
                     <ListItem>
                       <ListItemIcon>
                         <Key />
                       </ListItemIcon>
-                      <ListItemText primary='Last Login' secondary={formatDate(user.lastLogin)} />
+                      <ListItemText primary={t('profile.last_login')} secondary={formatDate(user.lastLogin)} />
                     </ListItem>
                   </List>
                 </CardContent>
@@ -325,7 +327,7 @@ export const ProfilePage: React.FC = () => {
                 <CardContent>
                   <Typography variant='h6' gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Notifications color='primary' />
-                    Notification Preferences
+                    {t('profile.notification_preferences')}
                   </Typography>
                   <Box sx={{ mt: 2 }}>
                     <FormControlLabel
@@ -335,10 +337,10 @@ export const ProfilePage: React.FC = () => {
                           onChange={(e) => handlePreferenceChange('emailNotifications', e.target.checked)}
                         />
                       }
-                      label='Email Notifications'
+                      label={t('profile.email_notifications')}
                     />
                     <Typography variant='body2' color='text.secondary' sx={{ ml: 4, mb: 2 }}>
-                      Receive important updates via email
+                      {t('profile.email_notifications_desc')}
                     </Typography>
 
                     <FormControlLabel
@@ -348,10 +350,10 @@ export const ProfilePage: React.FC = () => {
                           onChange={(e) => handlePreferenceChange('pushNotifications', e.target.checked)}
                         />
                       }
-                      label='Push Notifications'
+                      label={t('profile.push_notifications')}
                     />
                     <Typography variant='body2' color='text.secondary' sx={{ ml: 4, mb: 2 }}>
-                      Get real-time notifications in browser
+                      {t('profile.push_notifications_desc')}
                     </Typography>
 
                     <FormControlLabel
@@ -361,10 +363,10 @@ export const ProfilePage: React.FC = () => {
                           onChange={(e) => handlePreferenceChange('marketingEmails', e.target.checked)}
                         />
                       }
-                      label='Marketing Emails'
+                      label={t('profile.marketing_emails')}
                     />
                     <Typography variant='body2' color='text.secondary' sx={{ ml: 4 }}>
-                      Receive product updates and newsletters
+                      {t('profile.marketing_emails_desc')}
                     </Typography>
                   </Box>
                 </CardContent>
@@ -379,11 +381,11 @@ export const ProfilePage: React.FC = () => {
                 <CardContent>
                   <Typography variant='h6' gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Security color='primary' />
-                    Security & Permissions
+                    {t('profile.security_permissions')}
                   </Typography>
                   <Box sx={{ mt: 2 }}>
                     <Typography variant='subtitle2' gutterBottom>
-                      Current Permissions
+                      {t('profile.current_permissions')}
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
                       {user.permissions.map((permission, index) => (
@@ -398,11 +400,11 @@ export const ProfilePage: React.FC = () => {
                     </Box>
 
                     <Button variant='outlined' startIcon={<Key />} fullWidth sx={{ mb: 2 }}>
-                      Change Password
+                      {t('profile.change_password')}
                     </Button>
 
                     <Button variant='outlined' startIcon={<Security />} fullWidth>
-                      Two-Factor Authentication
+                      {t('profile.two_factor_authentication')}
                     </Button>
                   </Box>
                 </CardContent>

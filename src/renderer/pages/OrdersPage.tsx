@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Container,
   Grid,
@@ -469,6 +470,7 @@ const OrderTable: React.FC<{
  * Main Orders Page Component
  */
 export const OrdersPage: React.FC = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const { user } = useAuthStore();
   const { currentAgency } = useAgencyStore();
@@ -653,7 +655,7 @@ export const OrdersPage: React.FC = () => {
 
   if (loading && orders.length === 0) {
     return (
-      <DashboardLayout title='Order Management'>
+      <DashboardLayout title={t('orders.title')}>
         <Box
           sx={{
             display: 'flex',
@@ -692,7 +694,7 @@ export const OrdersPage: React.FC = () => {
                       {total}
                     </Typography>
                     <Typography variant='body2' color='text.secondary'>
-                      Total Orders
+                      {t('orders.total_orders')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -706,7 +708,7 @@ export const OrdersPage: React.FC = () => {
                       </Typography>
                     </Badge>
                     <Typography variant='body2' color='text.secondary'>
-                      Pending Orders
+                      {t('orders.pending_orders')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -720,7 +722,7 @@ export const OrdersPage: React.FC = () => {
                       </Typography>
                     </Badge>
                     <Typography variant='body2' color='text.secondary'>
-                      Overdue Payments
+                      {t('orders.overdue_payments')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -732,7 +734,7 @@ export const OrdersPage: React.FC = () => {
                       ${totalSales.toLocaleString()}
                     </Typography>
                     <Typography variant='body2' color='text.secondary'>
-                      Total Sales Value
+                      {t('orders.total_sales_value')}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -773,7 +775,7 @@ export const OrdersPage: React.FC = () => {
                 <Tab
                   label={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      All Orders
+                      {t('orders.all_orders')}
                       <Chip label={orders.length} size='small' variant='outlined' />
                     </Box>
                   }
@@ -784,7 +786,7 @@ export const OrdersPage: React.FC = () => {
                 <Tab
                   label={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      Pending
+                      {t('status.pending')}
                       <Chip
                         label={pendingOrders.length}
                         size='small'
@@ -800,7 +802,7 @@ export const OrdersPage: React.FC = () => {
                 <Tab
                   label={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      In Progress
+                      {t('status.in_progress')}
                       <Chip
                         label={inProgressOrders.length}
                         size='small'
@@ -816,7 +818,7 @@ export const OrdersPage: React.FC = () => {
                 <Tab
                   label={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      Shipped
+                      {t('orders.shipped')}
                       <Chip
                         label={shippedOrders.length}
                         size='small'
@@ -832,7 +834,7 @@ export const OrdersPage: React.FC = () => {
                 <Tab
                   label={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      Delivered
+                      {t('status.delivered')}
                       <Chip
                         label={deliveredOrders.length}
                         size='small'
@@ -848,7 +850,7 @@ export const OrdersPage: React.FC = () => {
                 <Tab
                   label={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      Payment Issues
+                      {t('orders.payment_issues')}
                       <Chip
                         label={overdueOrders.length}
                         size='small'

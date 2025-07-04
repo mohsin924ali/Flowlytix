@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -99,6 +100,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, icon, col
 );
 
 export const CustomerAnalyticsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [timeRange, setTimeRange] = useState('30d');
 
   // Mock agency ID
@@ -110,17 +112,17 @@ export const CustomerAnalyticsPage: React.FC = () => {
   const formatCurrency = (value: number) => `$${value.toLocaleString()}`;
 
   return (
-    <DashboardLayout title='Customer Analytics'>
+    <DashboardLayout title={t('analytics.customer_analytics')}>
       <Container maxWidth='xl' sx={{ py: 3 }}>
         <motion.div variants={containerVariants} initial='hidden' animate='visible'>
           {/* Header */}
           <motion.div variants={itemVariants}>
             <Box sx={{ mb: 4 }}>
               <Typography variant='h4' fontWeight='600' color='text.primary' gutterBottom>
-                Customer Analytics
+                {t('analytics.customer_analytics')}
               </Typography>
               <Typography variant='body1' color='text.secondary'>
-                Customer behavior insights, segmentation, and lifetime value analysis
+                {t('analytics.customer_behavior_insights')}
               </Typography>
             </Box>
           </motion.div>
@@ -131,13 +133,13 @@ export const CustomerAnalyticsPage: React.FC = () => {
               <Box />
               <ButtonGroup size='small'>
                 <Button variant={timeRange === '7d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('7d')}>
-                  7 Days
+                  {t('analytics.last_7_days')}
                 </Button>
                 <Button variant={timeRange === '30d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('30d')}>
-                  30 Days
+                  {t('analytics.last_30_days')}
                 </Button>
                 <Button variant={timeRange === '90d' ? 'contained' : 'outlined'} onClick={() => setTimeRange('90d')}>
-                  90 Days
+                  {t('analytics.last_90_days')}
                 </Button>
               </ButtonGroup>
             </Box>
@@ -147,7 +149,7 @@ export const CustomerAnalyticsPage: React.FC = () => {
           <Grid container spacing={3} sx={{ mb: 4 }}>
             <Grid item xs={12} sm={6} md={3}>
               <MetricCard
-                title='Total Customers'
+                title={t('analytics.total_customers')}
                 value={analytics?.totalCustomers || 0}
                 change={8.5}
                 icon={<People fontSize='large' />}
@@ -156,7 +158,7 @@ export const CustomerAnalyticsPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <MetricCard
-                title='Active Customers'
+                title={t('analytics.active_customers')}
                 value={analytics?.activeCustomers || 0}
                 change={5.7}
                 icon={<Star fontSize='large' />}
@@ -165,7 +167,7 @@ export const CustomerAnalyticsPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <MetricCard
-                title='New Customers'
+                title={t('analytics.new_customers')}
                 value={analytics?.newCustomers || 0}
                 change={12.3}
                 icon={<PersonAdd fontSize='large' />}
@@ -174,7 +176,7 @@ export const CustomerAnalyticsPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <MetricCard
-                title='Churn Rate'
+                title={t('analytics.churn_rate')}
                 value={`${analytics?.churnRate?.toFixed(1) || 0}%`}
                 change={-1.2}
                 icon={<TrendingDown fontSize='large' />}
@@ -191,7 +193,7 @@ export const CustomerAnalyticsPage: React.FC = () => {
                   <CardContent>
                     <Typography variant='h6' gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <AttachMoney color='success' />
-                      Customer Lifetime Value
+                      {t('analytics.customer_lifetime_value')}
                     </Typography>
                     <Box sx={{ mt: 3 }}>
                       <Box sx={{ textAlign: 'center', mb: 3 }}>

@@ -494,7 +494,7 @@ export class AgencyService {
           }
         }
 
-        // Notification settings (flattened)
+        // Notifications (flattened)
         if (params.settings.notifications) {
           if (params.settings.notifications.lowStock !== undefined) {
             requestData.notificationsLowStock = params.settings.notifications.lowStock;
@@ -508,33 +508,88 @@ export class AgencyService {
         }
       }
 
-      console.log('📤 AgencyService.updateAgency: Sending flattened request data:', requestData);
+      console.log('📤 AgencyService.updateAgency: Sending request data:', requestData);
 
-      // Call IPC API with flattened structure
+      // Call IPC API
       const response = await window.electronAPI.agency.updateAgency(requestData);
 
       console.log('📥 AgencyService.updateAgency: Response received:', response);
 
       if (!response.success) {
-        console.error('❌ AgencyService.updateAgency: Backend returned error:', response.error);
+        console.error('❌ AgencyService.updateAgency: Update failed:', response.error);
         throw new Error(response.error || 'Failed to update agency');
       }
 
       console.log('✅ AgencyService.updateAgency: Update successful');
-
       return {
         success: true,
-        message: 'Agency updated successfully',
+        message: response.message || 'Agency updated successfully',
       };
     } catch (error) {
       console.error('❌ AgencyService.updateAgency error:', error);
-      throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred while updating agency');
+      throw error;
     }
   }
 
   /**
-   * Validate email format
-   * @private
+   * Switch to a different agency context
+   * @param agencyId - Agency ID to switch to
+   * @param agencyName - Agency name (for logging/display)
+   * @returns Promise with switch result
+   */
+  public static async switchAgency(
+    agencyId: string,
+    agencyName: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('🔄 AgencyService.switchAgency: Switching to agency:', agencyId, agencyName);
+
+      // Validate parameters
+      if (!agencyId || typeof agencyId !== 'string') {
+        throw new Error('Agency ID is required');
+      }
+
+      if (!agencyName || typeof agencyName !== 'string') {
+        throw new Error('Agency name is required');
+      }
+
+      // Get current user for the switch request
+      const requestedBy = this.getCurrentUserId();
+
+      // Build the request data
+      const requestData = {
+        agencyId,
+        agencyName,
+        requestedBy,
+      };
+
+      console.log('📤 AgencyService.switchAgency: Sending request data:', requestData);
+
+      // Call IPC API
+      const response = await window.electronAPI.agency.switchAgency(agencyId, agencyName);
+
+      console.log('📥 AgencyService.switchAgency: Response received:', response);
+
+      if (!response.success) {
+        console.error('❌ AgencyService.switchAgency: Switch failed:', response.error);
+        throw new Error(response.error || 'Failed to switch agency');
+      }
+
+      console.log('✅ AgencyService.switchAgency: Switch successful');
+      return {
+        success: true,
+        message: response.message || `Successfully switched to ${agencyName}`,
+      };
+    } catch (error) {
+      console.error('❌ AgencyService.switchAgency error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Email validation helper
+   * @param email - Email to validate
+   * @returns True if valid email format
    */
   private static isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -542,12 +597,13 @@ export class AgencyService {
   }
 
   /**
-   * Validate phone number format
-   * @private
+   * Phone validation helper
+   * @param phone - Phone number to validate
+   * @returns True if valid phone format
    */
   private static isValidPhone(phone: string): boolean {
-    // Allow various phone formats: +1-555-123-4567, (555) 123-4567, 555.123.4567, etc.
-    const phoneRegex = /^[\+]?[\d\s\(\)\-\.]{10,20}$/;
+    // Basic phone validation - accepts various formats
+    const phoneRegex = /^[\+]?[\d\s\-\(\)\.]{10,}$/;
     return phoneRegex.test(phone);
   }
 

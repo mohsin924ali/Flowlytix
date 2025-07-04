@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Container,
   Grid,
@@ -154,6 +155,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
 
 /**
  * Inventory status chip component following design system
+ * Following Instructions file standards with proper internationalization
  */
 const InventoryStatusChip: React.FC<{
   available: number;
@@ -161,16 +163,17 @@ const InventoryStatusChip: React.FC<{
   damaged: number;
   reorderLevel: number;
 }> = ({ available, reserved, damaged, reorderLevel }) => {
+  const { t } = useTranslation();
   const isLowStock = available <= reorderLevel;
   const isOutOfStock = available === 0;
 
   if (isOutOfStock) {
-    return <Chip label='Out of Stock' color='error' size='small' icon={<ErrorIcon />} />;
+    return <Chip label={t('inventory.out_of_stock')} color='error' size='small' icon={<ErrorIcon />} />;
   }
   if (isLowStock) {
-    return <Chip label='Low Stock' color='warning' size='small' icon={<WarningIcon />} />;
+    return <Chip label={t('inventory.low_stock_alert')} color='warning' size='small' icon={<WarningIcon />} />;
   }
-  return <Chip label='In Stock' color='success' size='small' icon={<CheckCircleIcon />} />;
+  return <Chip label={t('inventory.in_stock')} color='success' size='small' icon={<CheckCircleIcon />} />;
 };
 
 /**
@@ -250,6 +253,7 @@ const ProductStatusChip: React.FC<{ status: ProductStatus }> = ({ status }) => {
  * Main Inventory Management Page Component
  */
 const InventoryPage: React.FC = () => {
+  const { t } = useTranslation();
   const { currentAgency } = useAgencyStore();
   const theme = useTheme();
 
@@ -425,10 +429,10 @@ const InventoryPage: React.FC = () => {
       <Box sx={{ mb: 3 }}>
         <Box display='flex' alignItems='center' justifyContent='space-between' mb={2}>
           <Typography variant='h5' component='h2' sx={{ fontWeight: 600 }}>
-            Product Catalog
+            {t('products.title')}
           </Typography>
           <Button variant='contained' startIcon={<AddIcon />} onClick={handleCreateProduct}>
-            Add Product
+            {t('products.add_product')}
           </Button>
         </Box>
 
@@ -438,7 +442,7 @@ const InventoryPage: React.FC = () => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                placeholder='Search products...'
+                placeholder={t('products.search_placeholder')}
                 value={searchTerm}
                 onChange={(e) => handleSearch(e.target.value)}
                 InputProps={{
@@ -1007,28 +1011,28 @@ const InventoryPage: React.FC = () => {
   };
 
   return (
-    <DashboardLayout title='Inventory Management'>
+    <DashboardLayout title={t('inventory.title')}>
       <Container maxWidth={false} sx={{ py: 3 }}>
         {/* Header Section */}
         <Box sx={{ mb: 4 }}>
           <Typography variant='h4' fontWeight='600' color='text.primary' gutterBottom>
-            Inventory Management
+            {t('inventory.title')}
           </Typography>
           <Typography variant='body1' color='text.secondary' sx={{ mb: 3 }}>
-            Comprehensive inventory and product management system
+            {t('inventory.comprehensive_system')}
           </Typography>
 
           <Box display='flex' alignItems='center' justifyContent='space-between' mb={2}>
             <Box />
             <Stack direction='row' spacing={2}>
               <FormControl size='small' sx={{ minWidth: 200 }}>
-                <InputLabel>Warehouse</InputLabel>
+                <InputLabel>{t('inventory.warehouse')}</InputLabel>
                 <Select
                   value={selectedWarehouse}
                   onChange={(e) => handleWarehouseChange(e.target.value)}
-                  label='Warehouse'
+                  label={t('inventory.warehouse')}
                 >
-                  <MenuItem value=''>All Warehouses</MenuItem>
+                  <MenuItem value=''>{t('inventory.all_warehouses')}</MenuItem>
                   {warehouses.map((warehouse) => (
                     <MenuItem key={warehouse.id} value={warehouse.id}>
                       {warehouse.name}
@@ -1044,11 +1048,11 @@ const InventoryPage: React.FC = () => {
                 disabled={loading}
                 size='small'
               >
-                Refresh
+                {t('common.refresh')}
               </Button>
 
               <Button variant='outlined' startIcon={<ExportIcon />} disabled={loading} size='small'>
-                Export
+                {t('common.export')}
               </Button>
             </Stack>
           </Box>
@@ -1072,14 +1076,14 @@ const InventoryPage: React.FC = () => {
         <Paper sx={{ width: '100%', borderRadius: 2 }}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs value={currentTab} onChange={handleTabChange} aria-label='inventory tabs'>
-              <Tab label='Products' icon={<InventoryIcon />} />
-              <Tab label='Warehouses' icon={<WarehouseIcon />} />
-              <Tab label='Stock Levels' icon={<ViewIcon />} />
-              <Tab label='Stock Movements' icon={<TransferIcon />} />
-              <Tab label='Transfers' icon={<SwapHoriz />} />
-              <Tab label='Reservations' icon={<ReserveIcon />} />
-              <Tab label='Purchase Orders' icon={<ShoppingCart />} />
-              <Tab label='Analytics' icon={<AnalyticsIcon />} />
+              <Tab label={t('products.title')} icon={<InventoryIcon />} />
+              <Tab label={t('inventory.warehouses')} icon={<WarehouseIcon />} />
+              <Tab label={t('inventory.stock_levels')} icon={<ViewIcon />} />
+              <Tab label={t('inventory.stock_movements')} icon={<TransferIcon />} />
+              <Tab label={t('inventory.transfers')} icon={<SwapHoriz />} />
+              <Tab label={t('inventory.reservations')} icon={<ReserveIcon />} />
+              <Tab label={t('inventory.purchase_orders')} icon={<ShoppingCart />} />
+              <Tab label={t('navigation.analytics')} icon={<AnalyticsIcon />} />
             </Tabs>
           </Box>
 
@@ -1101,14 +1105,14 @@ const InventoryPage: React.FC = () => {
 
           <TabPanel value={currentTab} index={4}>
             <Typography variant='h6' gutterBottom>
-              Stock Transfers
+              {t('inventory.stock_transfer')}
             </Typography>
             {/* Stock transfers table would go here */}
           </TabPanel>
 
           <TabPanel value={currentTab} index={5}>
             <Typography variant='h6' gutterBottom>
-              Stock Reservations
+              {t('inventory.stock_reservations')}
             </Typography>
             {/* Stock reservations table would go here */}
           </TabPanel>
@@ -1147,20 +1151,20 @@ const InventoryPage: React.FC = () => {
         {/* Action Dialogs */}
         <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth='md' fullWidth>
           <DialogTitle>
-            {dialogType === 'movement' && 'Create Stock Movement'}
-            {dialogType === 'transfer' && 'Create Stock Transfer'}
-            {dialogType === 'adjustment' && 'Inventory Adjustment'}
-            {dialogType === 'reservation' && 'Reserve Stock'}
-            {dialogType === 'product' && 'Product Management'}
-            {dialogType === 'purchase_order' && 'Purchase Order Management'}
+            {dialogType === 'movement' && t('inventory.create_stock_movement')}
+            {dialogType === 'transfer' && t('inventory.create_stock_transfer')}
+            {dialogType === 'adjustment' && t('inventory.stock_adjustment')}
+            {dialogType === 'reservation' && t('inventory.reserve_stock')}
+            {dialogType === 'product' && t('products.title')}
+            {dialogType === 'purchase_order' && t('inventory.purchase_order_management')}
           </DialogTitle>
           <DialogContent>
             <Typography>{dialogType} form would be implemented here with proper validation and submission.</Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleDialogClose}>Cancel</Button>
+            <Button onClick={handleDialogClose}>{t('common.cancel')}</Button>
             <Button variant='contained' onClick={handleDialogClose}>
-              Save
+              {t('common.save')}
             </Button>
           </DialogActions>
         </Dialog>

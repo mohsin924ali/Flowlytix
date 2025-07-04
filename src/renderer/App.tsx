@@ -12,6 +12,7 @@ import { theme } from './utils/theme';
 import { MockDataProvider } from './mocks';
 import { useAuthStore } from './store/auth.store';
 import { AppRouter } from './components/routing';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 /**
  * Loading component optimized for performance
@@ -100,23 +101,27 @@ export const App: React.FC = () => {
   if (!initComplete) {
     console.log('⏳ App: Still initializing...');
     return (
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <LoadingScreen />
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <LoadingScreen />
+        </ThemeProvider>
+      </LanguageProvider>
     );
   }
 
   console.log('✅ App: Rendering main application');
 
   return (
-    <MockDataProvider enabled={true}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <BrowserRouter>
-          <AppRouter />
-        </BrowserRouter>
-      </ThemeProvider>
-    </MockDataProvider>
+    <LanguageProvider>
+      <MockDataProvider enabled={true}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <BrowserRouter>
+            <AppRouter />
+          </BrowserRouter>
+        </ThemeProvider>
+      </MockDataProvider>
+    </LanguageProvider>
   );
 };

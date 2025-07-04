@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Container,
   Paper,
@@ -78,6 +79,7 @@ import { DashboardLayout } from '../components/templates';
  * Professional employee management interface following established patterns.
  */
 export function EmployeesPage(): JSX.Element {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   // State management (simplified and working)
@@ -385,15 +387,15 @@ export function EmployeesPage(): JSX.Element {
   );
 
   return (
-    <DashboardLayout title='Employees'>
+    <DashboardLayout title={t('admin.employees')}>
       <Box sx={{ p: 3 }}>
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Typography variant='h4' fontWeight='600' color='text.primary' gutterBottom>
-            Employee Management
+            {t('admin.employee_management')}
           </Typography>
           <Typography variant='body1' color='text.secondary'>
-            Manage employees across departments with comprehensive tools
+            {t('admin.manage_employees_comprehensive')}
           </Typography>
         </Box>
 
@@ -413,7 +415,7 @@ export function EmployeesPage(): JSX.Element {
                   <PersonIcon sx={{ mr: 2, color: 'primary.main' }} />
                   <Box>
                     <Typography color='text.secondary' gutterBottom>
-                      Total Employees
+                      {t('admin.total_employees')}
                     </Typography>
                     <Typography variant='h5'>{loading ? <Skeleton width={40} /> : totalCount}</Typography>
                   </Box>
@@ -428,7 +430,7 @@ export function EmployeesPage(): JSX.Element {
                   <WorkIcon sx={{ mr: 2, color: 'success.main' }} />
                   <Box>
                     <Typography color='text.secondary' gutterBottom>
-                      Active Employees
+                      {t('admin.active_employees')}
                     </Typography>
                     <Typography variant='h5'>
                       {loading ? (

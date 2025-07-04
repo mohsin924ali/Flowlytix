@@ -10,6 +10,7 @@
 
 import React from 'react';
 import { Chip, ChipProps } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { Warning, TrendingDown, TrendingUp, CheckCircle } from '@mui/icons-material';
 
 /**
@@ -34,6 +35,7 @@ export interface InventoryStatusChipProps extends Omit<ChipProps, 'color' | 'ico
 const getInventoryStatus = (
   currentStock: number,
   reorderLevel: number,
+  t: (key: string) => string,
   maxStockLevel?: number
 ): {
   status: InventoryStatus;
@@ -44,7 +46,7 @@ const getInventoryStatus = (
   if (currentStock === 0) {
     return {
       status: 'OUT_OF_STOCK',
-      label: 'Out of Stock',
+      label: t('inventory.out_of_stock'),
       color: 'error',
       icon: Warning,
     };
@@ -53,7 +55,7 @@ const getInventoryStatus = (
   if (currentStock <= reorderLevel) {
     return {
       status: 'LOW_STOCK',
-      label: 'Low Stock',
+      label: t('inventory.low_stock_alert'),
       color: 'warning',
       icon: TrendingDown,
     };
@@ -62,7 +64,7 @@ const getInventoryStatus = (
   if (maxStockLevel && currentStock > maxStockLevel) {
     return {
       status: 'OVERSTOCKED',
-      label: 'Overstocked',
+      label: t('inventory.overstocked'),
       color: 'info',
       icon: TrendingUp,
     };
@@ -70,7 +72,7 @@ const getInventoryStatus = (
 
   return {
     status: 'IN_STOCK',
-    label: 'In Stock',
+    label: t('inventory.in_stock'),
     color: 'success',
     icon: CheckCircle,
   };
@@ -88,7 +90,8 @@ export const InventoryStatusChip: React.FC<InventoryStatusChipProps> = ({
   size = 'small',
   ...props
 }) => {
-  const { label, color, icon: Icon } = getInventoryStatus(currentStock, reorderLevel, maxStockLevel);
+  const { t } = useTranslation();
+  const { label, color, icon: Icon } = getInventoryStatus(currentStock, reorderLevel, t, maxStockLevel);
 
   return (
     <Chip {...(showIcon && { icon: <Icon /> })} label={label} color={color} variant={variant} size={size} {...props} />
