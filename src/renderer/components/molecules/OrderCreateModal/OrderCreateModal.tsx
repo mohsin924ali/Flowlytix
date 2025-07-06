@@ -33,6 +33,7 @@ import {
   IconButton,
   Chip,
   Alert,
+  AlertTitle,
   CircularProgress,
   FormControl,
   InputLabel,
@@ -63,6 +64,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { z } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+
+// Custom hooks for payment and credit integration
+import { useCredit } from '../../../hooks/useCredit';
+import type { CreditCheckResult } from '../../../domains/payment/types/PaymentTypes';
+import { CreditStatus, CreditRiskLevel } from '../../../domains/payment/valueObjects/PaymentStatus';
+import { CreditStatusChip } from '../../atoms/CreditStatusChip';
+import { CreditLimitDisplay } from '../../atoms/CreditLimitDisplay';
 
 // Types
 interface Customer {
@@ -288,6 +296,16 @@ export interface OrderCreateModalProps {
 export const OrderCreateModal: React.FC<OrderCreateModalProps> = ({ open, onClose, onSubmit, agencyId }) => {
   const theme = useTheme();
 
+  // Custom hooks for credit management
+  const {
+    performCreditCheck,
+    getCreditStatusColor,
+    getCreditStatusText,
+    getRiskLevelColor,
+    getRiskLevelText,
+    canExtendCredit,
+  } = useCredit();
+
   // State management
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<MockProduct | null>(null);
@@ -296,6 +314,11 @@ export const OrderCreateModal: React.FC<OrderCreateModalProps> = ({ open, onClos
   const [productSearch, setProductSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Credit check state
+  const [creditCheckResult, setCreditCheckResult] = useState<CreditCheckResult | null>(null);
+  const [creditCheckLoading, setCreditCheckLoading] = useState(false);
+  const [showCreditWarning, setShowCreditWarning] = useState(false);
 
   // Form management
   const orderForm = useForm<OrderFormData>({

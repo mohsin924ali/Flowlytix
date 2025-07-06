@@ -18,3 +18,10 @@ export * from './StockMovementModal';
 export { PurchaseOrderCreateModal, type PurchaseOrderCreateModalProps } from './PurchaseOrderCreateModal';
 export { PurchaseOrderViewModal, type PurchaseOrderViewModalProps } from './PurchaseOrderViewModal';
 export { PurchaseOrderPrintModal, type PurchaseOrderPrintModalProps } from './PurchaseOrderPrintModal';
+
+// Payment & Credit Management Components
+export { PaymentCollectionModal } from './PaymentCollectionModal';
+export { CreditApprovalModal } from './CreditApprovalModal';
+export { InvoiceGenerationModal } from './InvoiceGenerationModal';
+export { PaymentHistoryCard } from './PaymentHistoryCard';
+export { CreditAssessmentCard } from './CreditAssessmentCard';

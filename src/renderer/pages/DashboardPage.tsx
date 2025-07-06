@@ -51,7 +51,6 @@ import {
   Assignment,
   Settings,
   AttachMoney,
-  LocalShipping,
   Warning,
   CheckCircle,
   AccessTime,
@@ -88,7 +87,7 @@ interface DashboardStat {
  */
 interface RecentActivity {
   id: string;
-  type: 'ORDER' | 'CUSTOMER' | 'PRODUCT' | 'PAYMENT' | 'SHIPMENT';
+  type: 'ORDER' | 'CUSTOMER' | 'PRODUCT' | 'PAYMENT';
   title: string;
   description: string;
   timestamp: Date;
@@ -551,15 +550,6 @@ const RecentActivityFeed: React.FC = () => {
         status: 'SUCCESS',
       },
       {
-        id: '3',
-        type: 'SHIPMENT',
-        title: 'Shipment Delivered',
-        description: 'Order #ORD-2024-045 - Golden Gate Grocers',
-        timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-        user: 'Mike Wilson',
-        status: 'SUCCESS',
-      },
-      {
         id: '4',
         type: 'PAYMENT',
         title: 'Payment Received',
@@ -588,8 +578,6 @@ const RecentActivityFeed: React.FC = () => {
         return <ShoppingCart sx={{ color: theme.palette.primary.main }} />;
       case 'CUSTOMER':
         return <Person sx={{ color: theme.palette.success.main }} />;
-      case 'SHIPMENT':
-        return <LocalShipping sx={{ color: theme.palette.info.main }} />;
       case 'PAYMENT':
         return <AttachMoney sx={{ color: theme.palette.warning.main }} />;
       case 'PRODUCT':

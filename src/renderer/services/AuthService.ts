@@ -184,11 +184,6 @@ declare global {
         updateCustomer: (id: string, updates: any) => Promise<any>;
         deleteCustomer: (id: string) => Promise<void>;
       };
-      shipping: {
-        getShipments: (filters?: any) => Promise<any[]>;
-        createShipment: (shipment: any) => Promise<any>;
-        trackShipment: (trackingNumber: string) => Promise<any>;
-      };
       lotBatch: {
         getLotBatches: (filters?: any) => Promise<any[]>;
         createLotBatch: (lotBatch: any) => Promise<any>;

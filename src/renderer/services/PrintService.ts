@@ -1,6 +1,6 @@
 /**
  * Print Service - Order Document Generation & Printing
- * Handles Invoice, Packing Slip (Delivery Sheet), and Shipping Label generation
+ * Handles Invoice, Packing Slip (Delivery Sheet), and Purchase Order generation
  * Following Instructions file standards with strict TypeScript compliance
  *
  * @domain Order Management
@@ -17,7 +17,6 @@ import { PurchaseOrder } from './InventoryService';
 export enum PrintDocumentType {
   INVOICE = 'INVOICE',
   PACKING_SLIP = 'PACKING_SLIP',
-  SHIPPING_LABEL = 'SHIPPING_LABEL',
   PURCHASE_ORDER = 'PURCHASE_ORDER',
   PURCHASE_RECEIPT = 'PURCHASE_RECEIPT',
 }
@@ -183,12 +182,6 @@ class PrintService {
           documents.push({
             html: this.generatePackingSlip(order, options),
             title: `PackingSlip-${order.orderNumber}`,
-          });
-          break;
-        case PrintDocumentType.SHIPPING_LABEL:
-          documents.push({
-            html: this.generateShippingLabel(order, options),
-            title: `ShippingLabel-${order.orderNumber}`,
           });
           break;
       }
@@ -425,95 +418,6 @@ class PrintService {
                 <div class="signature-line"></div>
                 <small>Customer Signature</small>
               </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-  }
-
-  /**
-   * Generate Shipping Label HTML
-   */
-  private generateShippingLabel(order: Order, options: PrintOptions): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Shipping Label - ${order.orderNumber}</title>
-          <style>
-            ${this.getCommonStyles()}
-            .label { 
-              width: 4in; 
-              height: 6in; 
-              border: 2px solid #000; 
-              padding: 10px; 
-              font-family: Arial, sans-serif;
-              font-size: 12px;
-            }
-            .label-header { text-align: center; border-bottom: 1px solid #000; margin-bottom: 10px; padding-bottom: 10px; }
-            .barcode { text-align: center; font-family: monospace; font-size: 24px; letter-spacing: 2px; }
-            .from-address, .to-address { margin: 10px 0; }
-            .to-address { border: 1px solid #000; padding: 8px; }
-            .order-info { background: #f0f0f0; padding: 5px; margin: 5px 0; }
-            .logo-compact { font-size: 0.8em; margin-bottom: 5px; }
-          </style>
-        </head>
-        <body>
-          <div class="label">
-            <div class="label-header">
-              ${
-                options.includeLogo
-                  ? `
-                <div class="logo-compact">
-                  <div style="font-weight: bold; color: #1976d2;">FLOWLYTIX</div>
-                  <div style="font-size: 0.8em; color: #666;">Distribution System</div>
-                </div>
-              `
-                  : ''
-              }
-              <strong>SHIPPING LABEL</strong>
-            </div>
-
-            <div class="from-address">
-              <strong>FROM:</strong><br>
-              Flowlytix Distribution Center<br>
-              123 Warehouse District<br>
-              Industrial Zone, City 12345<br>
-              Tel: (555) 123-4567
-            </div>
-
-            <div class="to-address">
-              <strong>SHIP TO:</strong><br>
-              <strong>${order.customerName}</strong><br>
-              Customer Code: ${order.customerCode}<br>
-              Area: ${order.areaName}<br>
-              ${order.deliveryDate ? `Delivery: ${order.deliveryDate.toLocaleDateString()}` : ''}
-            </div>
-
-            <div class="order-info">
-              <strong>Order #:</strong> ${order.orderNumber}<br>
-              <strong>Items:</strong> ${order.items.length} products<br>
-              <strong>Weight:</strong> ${this.calculateWeight(order)} kg<br>
-              <strong>Delivery Person:</strong> ${order.workerName || 'TBD'}
-            </div>
-
-            ${
-              options.includeBarcode
-                ? `
-              <div class="barcode">
-                *${order.orderNumber}*<br>
-                <small>${order.orderNumber}</small>
-              </div>
-            `
-                : ''
-            }
-
-            <div style="margin-top: 10px; text-align: center; font-size: 10px;">
-              <strong>Handling Instructions:</strong><br>
-              ${order.status === 'CONFIRMED' ? '⚠️ PRIORITY DELIVERY' : '📦 Standard Delivery'}<br>
-              Signature Required: ${order.totalAmount > 1000 ? 'YES' : 'NO'}
             </div>
           </div>
         </body>

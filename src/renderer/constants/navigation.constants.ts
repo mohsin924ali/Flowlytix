@@ -13,7 +13,6 @@ import {
   Settings,
   Person,
   Business,
-  LocalShipping,
   Assessment,
   AccountBalance,
   SupervisorAccount,
@@ -69,11 +68,6 @@ export const ROUTES = {
   EMPLOYEES_CREATE: '/employees/create',
   EMPLOYEES_DETAILS: '/employees/:id',
 
-  SHIPPING: '/shipping',
-  SHIPPING_LIST: '/shipping',
-  SHIPPING_CREATE: '/shipping/create',
-  SHIPPING_TRACKING: '/shipping/tracking',
-
   // System routes
   ADMIN_PANEL: '/admin',
   USERS: '/users',
@@ -124,33 +118,6 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
     requiresAuth: true,
     description: 'Order management and processing',
     group: 'business',
-  },
-  {
-    id: 'shipping',
-    label: 'navigation.shipping',
-    path: ROUTES.SHIPPING,
-    icon: LocalShipping,
-    requiresAuth: true,
-    description: 'Shipping and logistics management',
-    group: 'operations',
-    children: [
-      {
-        id: 'shipping-list',
-        label: 'navigation.all_shipments',
-        path: ROUTES.SHIPPING_LIST,
-        icon: LocalShipping,
-        requiresAuth: true,
-        description: 'View all shipments',
-      },
-      {
-        id: 'shipping-tracking',
-        label: 'navigation.tracking',
-        path: ROUTES.SHIPPING_TRACKING,
-        icon: LocalShipping,
-        requiresAuth: true,
-        description: 'Track shipments',
-      },
-    ],
   },
   {
     id: 'analytics',

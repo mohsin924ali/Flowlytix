@@ -16,7 +16,6 @@ export { MockUsersService } from './MockUsersService';
 export { MockAreaService } from './MockAreaService';
 export { MockEmployeeService } from './MockEmployeeService';
 export { MockAnalyticsService } from './MockAnalyticsService';
-export { MockShippingService } from './MockShippingService';
 export { MockOrderService } from './MockOrderService';
 export { MockProductService } from './MockProductService';
 export { MockCustomerService } from './MockCustomerService';

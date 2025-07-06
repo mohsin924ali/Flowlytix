@@ -18,7 +18,6 @@ import { EmployeesPage } from '../../pages/EmployeesPage';
 import { CustomersPage } from '../../pages/CustomersPage';
 import InventoryPage from '../../pages/InventoryPage';
 import { OrdersPage } from '../../pages/OrdersPage';
-import { ShippingPage } from '../../pages/ShippingPage';
 import { AnalyticsPage } from '../../pages/AnalyticsPage';
 import { SalesAnalyticsPage } from '../../pages/SalesAnalyticsPage';
 import { CustomerAnalyticsPage } from '../../pages/CustomerAnalyticsPage';
@@ -302,27 +301,6 @@ export const AppRouter: React.FC = () => {
               <PlaceholderPage
                 title='Employee Details'
                 description='View employee information, performance metrics, and manage human resource details.'
-              />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Shipping Routes */}
-        <Route
-          path='/shipping'
-          element={
-            <ProtectedRoute>
-              <ShippingPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/shipping/tracking'
-          element={
-            <ProtectedRoute>
-              <PlaceholderPage
-                title='Shipment Tracking'
-                description='Track all shipments in real-time with detailed status updates and delivery confirmations.'
               />
             </ProtectedRoute>
           }

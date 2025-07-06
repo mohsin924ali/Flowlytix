@@ -33,7 +33,6 @@ import {
   Print as PrintIcon,
   Receipt as InvoiceIcon,
   Assignment as PackingIcon,
-  LocalShipping as ShippingIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Order } from '../../../services/OrderService';
@@ -74,14 +73,6 @@ const DOCUMENT_CONFIGS = [
     icon: PackingIcon,
     color: 'success' as const,
     defaultSelected: true,
-  },
-  {
-    type: PrintDocumentType.SHIPPING_LABEL,
-    label: 'Shipping Label',
-    description: 'Address label for package shipping',
-    icon: ShippingIcon,
-    color: 'info' as const,
-    defaultSelected: false,
   },
 ];
 

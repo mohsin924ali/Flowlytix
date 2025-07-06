@@ -8,7 +8,6 @@ import { allMockCustomers } from '../data/customers.mock';
 import { allMockProducts } from '../data/products.mock';
 import { allMockOrders } from '../data/orders.mock';
 import { allMockAgencies } from '../data/agencies.mock';
-import { allMockShipments } from '../data/shipping.mock';
 import { allMockAnalytics } from '../data/analytics.mock';
 import { allMockEmployees } from '../data/employees.mock';
 import { allMockAreas } from '../data/areas.mock';
@@ -316,25 +315,6 @@ export const configureMocks = () => {
         console.log('📋 Mock cancelOrder called:', id, reason);
         await new Promise((resolve) => setTimeout(resolve, 400));
         return { success: true };
-      },
-    },
-
-    shipping: {
-      getShipments: async (filters?: any) => {
-        console.log('🚚 Mock getShipments called with filters:', filters);
-        await new Promise((resolve) => setTimeout(resolve, 400));
-        return allMockShipments;
-      },
-      createShipment: async (shipment: any) => {
-        console.log('🚚 Mock createShipment called:', shipment);
-        await new Promise((resolve) => setTimeout(resolve, 600));
-        return { success: true, shipment: { id: 'new-shipment', ...shipment } };
-      },
-      trackShipment: async (trackingNumber: string) => {
-        console.log('🚚 Mock trackShipment called:', trackingNumber);
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        const shipment = allMockShipments.find((s) => s.trackingNumber === trackingNumber);
-        return shipment || null;
       },
     },
 

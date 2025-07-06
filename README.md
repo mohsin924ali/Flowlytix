@@ -21,7 +21,7 @@ Flowlytix Frontend is a comprehensive React-based frontend application for goods
 - 🏢 **Agency Management** - Multi-agency support with switching capabilities
 - 📦 **Product Management** - Inventory tracking and product administration
 - 📋 **Order Management** - Order processing and tracking
-- 🚚 **Shipping Management** - Logistics and delivery tracking
+
 - 👤 **Employee Management** - Staff administration and role management
 - 🗺️ **Area Management** - Geographic area management with hierarchical structure
 

@@ -37,7 +37,6 @@ export enum EmployeeDepartment {
   CUSTOMER_SERVICE = 'customer_service',
   ADMINISTRATION = 'administration',
   QUALITY_CONTROL = 'quality_control',
-  SHIPPING = 'shipping',
 }
 
 export enum EmployeeStatus {
@@ -428,7 +427,7 @@ export class EmployeeService {
         break;
 
       case EmployeeDepartment.WAREHOUSE:
-        const warehousePositions = ['warehouse', 'forklift', 'inventory', 'shipping', 'receiving'];
+        const warehousePositions = ['warehouse', 'forklift', 'inventory', 'receiving'];
         if (!warehousePositions.some((pos) => positionLower.includes(pos))) {
           throw new Error('Position should be warehouse-related for Warehouse department');
         }
@@ -458,7 +457,6 @@ export class EmployeeService {
       [EmployeeDepartment.WAREHOUSE]: { min: 25000, max: 80000 },
       [EmployeeDepartment.CUSTOMER_SERVICE]: { min: 28000, max: 70000 },
       [EmployeeDepartment.QUALITY_CONTROL]: { min: 32000, max: 90000 },
-      [EmployeeDepartment.SHIPPING]: { min: 26000, max: 75000 },
     };
 
     const range = salaryRanges[department];
@@ -488,8 +486,6 @@ export class EmployeeService {
         return 'Administration';
       case EmployeeDepartment.QUALITY_CONTROL:
         return 'Quality Control';
-      case EmployeeDepartment.SHIPPING:
-        return 'Shipping';
       default:
         return department;
     }
