@@ -20,6 +20,7 @@ from app.core.exceptions import (
     general_exception_handler,
 )
 from app.core.middleware import setup_middleware
+from app.api.routes import subscription
 
 logger = structlog.get_logger(__name__)
 
@@ -89,9 +90,9 @@ def create_app() -> FastAPI:
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(Exception, general_exception_handler)
     
-    # Include routers (will be added as we create them)
+    # Include routers
+    app.include_router(subscription.router, prefix=settings.api_v1_prefix)
     # app.include_router(auth_router, prefix=settings.api_v1_prefix)
-    # app.include_router(subscription_router, prefix=settings.api_v1_prefix)
     # app.include_router(device_router, prefix=settings.api_v1_prefix)
     # app.include_router(analytics_router, prefix=settings.api_v1_prefix)
     
