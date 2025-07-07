@@ -29,12 +29,12 @@ import type {
   CreditAnalytics,
   AgingReportItem,
   CreditLimitAdjustmentForm,
-  CreditLimitAdjustmentFormSchema,
   AgingBucketSummary,
   CreditTrendData,
   ApiResponse,
   PaginatedResponse,
 } from '../domains/payment';
+import { CreditLimitAdjustmentFormSchema } from '../domains/payment';
 
 /**
  * Credit score calculation result interface

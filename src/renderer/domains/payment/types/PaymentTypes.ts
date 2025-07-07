@@ -564,6 +564,126 @@ export interface IInvoiceService {
   generateInvoicePdf(invoiceId: string): Promise<Buffer>;
 }
 
+// ==================== MISSING INTERFACE EXPORTS ====================
+
+/**
+ * Invoice list item interface (for UI)
+ */
+export interface InvoiceListItem {
+  readonly id: string;
+  readonly invoiceNumber: string;
+  readonly customerId: string;
+  readonly customerName: string;
+  readonly totalAmount: number;
+  readonly paidAmount: number;
+  readonly outstandingAmount: number;
+  readonly status: InvoiceStatus;
+  readonly statusText: string;
+  readonly statusColor: string;
+  readonly dueDate: Date;
+  readonly overdueDays: number;
+  readonly isOverdue: boolean;
+  readonly currency: string;
+  readonly formattedTotal: string;
+  readonly agencyId: string;
+  readonly createdAt: Date;
+}
+
+/**
+ * Invoice filters interface
+ */
+export interface InvoiceFilters {
+  readonly customerId?: string;
+  readonly customerName?: string;
+  readonly statuses?: InvoiceStatus[];
+  readonly dateFrom?: Date;
+  readonly dateTo?: Date;
+  readonly amountMin?: number;
+  readonly amountMax?: number;
+  readonly invoiceNumber?: string;
+  readonly orderNumber?: string;
+  readonly agencyId?: string;
+  readonly search?: string;
+}
+
+/**
+ * Invoice list response interface
+ */
+export interface InvoiceListResponse {
+  readonly invoices: InvoiceListItem[];
+  readonly total: number;
+  readonly page: number;
+  readonly limit: number;
+  readonly totalPages: number;
+  readonly hasNextPage: boolean;
+  readonly hasPreviousPage: boolean;
+}
+
+/**
+ * Invoice template interface
+ */
+export interface InvoiceTemplate {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly isDefault: boolean;
+  readonly layout: 'standard' | 'detailed' | 'simple';
+  readonly logoUrl?: string;
+  readonly headerText?: string;
+  readonly footerText?: string;
+  readonly showTaxDetails: boolean;
+  readonly showPaymentTerms: boolean;
+  readonly agencyId: string;
+  readonly createdAt: Date;
+}
+
+/**
+ * Invoice generation request interface
+ */
+export interface InvoiceGenerationRequest {
+  readonly customerId: string;
+  readonly orderId?: string;
+  readonly templateId?: string;
+  readonly dueDate: Date;
+  readonly paymentTerms: string;
+  readonly notes?: string;
+  readonly agencyId: string;
+}
+
+/**
+ * Invoice analytics interface
+ */
+export interface InvoiceAnalytics {
+  readonly totalInvoices: number;
+  readonly totalAmount: number;
+  readonly totalPaid: number;
+  readonly totalOutstanding: number;
+  readonly averageInvoiceAmount: number;
+  readonly collectionRate: number;
+  readonly averageDaysToPayment: number;
+  readonly overdueInvoices: number;
+  readonly overdueAmount: number;
+  readonly agencyId: string;
+  readonly periodStart: Date;
+  readonly periodEnd: Date;
+  readonly generatedAt: Date;
+}
+
+/**
+ * Invoice payment interface
+ */
+export interface InvoicePayment {
+  readonly id: string;
+  readonly invoiceId: string;
+  readonly paymentId: string;
+  readonly amount: number;
+  readonly currency: string;
+  readonly paidAt: Date;
+  readonly paymentMethod: PaymentMethod;
+  readonly reference?: string;
+  readonly notes?: string;
+}
+
 // ==================== VALIDATION SCHEMAS ====================
 
 /**
@@ -675,34 +795,8 @@ export type FilterType<T> = {
   [K in keyof T]?: T[K] | T[K][];
 };
 
+// Export validation schemas as default for easy access
 export default {
-  // Core interfaces
-  PaymentRecord,
-  PaymentListItem,
-  PaymentFilters,
-  PaymentListResponse,
-
-  // Credit interfaces
-  CreditAccount,
-  CreditCheckRequest,
-  CreditCheckResult,
-  CreditLimitAdjustment,
-
-  // Invoice interfaces
-  Invoice,
-  InvoiceItem,
-  InvoicePaymentAllocation,
-
-  // Analytics interfaces
-  PaymentAnalytics,
-  CreditAnalytics,
-
-  // Service interfaces
-  IPaymentService,
-  ICreditService,
-  IInvoiceService,
-
-  // Validation schemas
   PaymentRecordFormSchema,
   CreditLimitAdjustmentFormSchema,
   CollectionActivityFormSchema,

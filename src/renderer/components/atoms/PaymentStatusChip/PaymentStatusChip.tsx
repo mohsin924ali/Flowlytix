@@ -23,7 +23,7 @@ import {
   TrendingUp,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { PaymentStatus, PaymentStatusUtils } from '../../../domains/payment';
+import { PaymentStatus } from '../../../domains/payment';
 
 /**
  * Props interface for PaymentStatusChip

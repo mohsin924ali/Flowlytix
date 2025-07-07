@@ -34,7 +34,7 @@ import {
   CheckCircle,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PaymentMethod, PaymentMethodUtils } from '../../../domains/payment';
+import { PaymentMethod } from '../../../domains/payment';
 
 /**
  * Props interface for PaymentMethodSelector
@@ -224,7 +224,10 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   };
 
   // Get selected method configuration
-  const selectedConfig = value && value !== '' ? getPaymentMethodConfig(value as PaymentMethod, t) : null;
+  const selectedConfig =
+    value && Object.values(PaymentMethod).includes(value as PaymentMethod)
+      ? getPaymentMethodConfig(value as PaymentMethod, t)
+      : null;
 
   // Render individual method item
   const renderMethodItem = (method: PaymentMethod) => {
@@ -315,7 +318,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
           onClose={() => setIsOpen(false)}
           data-testid={testId}
           renderValue={(selected) => {
-            if (!selected || selected === '') {
+            if (!selected || !Object.values(PaymentMethod).includes(selected as PaymentMethod)) {
               return <Typography color='text.secondary'>{t('payment.select_method')}</Typography>;
             }
 

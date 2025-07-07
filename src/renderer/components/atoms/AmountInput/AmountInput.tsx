@@ -13,7 +13,7 @@ import { TextField, type TextFieldProps, InputAdornment, Box, Typography } from 
 import { useTranslation } from 'react-i18next';
 import { AttachMoney, Euro, CurrencyPound } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { Currency, PaymentFormatters, PaymentDomainUtils } from '../../../domains/payment';
+import { PaymentFormatters, PaymentDomainUtils } from '../../../domains/payment';
 
 /**
  * Props interface for AmountInput
@@ -21,7 +21,7 @@ import { Currency, PaymentFormatters, PaymentDomainUtils } from '../../../domain
 export interface AmountInputProps extends Omit<TextFieldProps, 'value' | 'onChange' | 'type'> {
   readonly value: number | '';
   readonly onChange: (value: number | '') => void;
-  readonly currency?: Currency;
+  readonly currency?: string;
   readonly showCurrencySymbol?: boolean;
   readonly showCurrencyCode?: boolean;
   readonly allowNegative?: boolean;
@@ -35,7 +35,7 @@ export interface AmountInputProps extends Omit<TextFieldProps, 'value' | 'onChan
 /**
  * Get currency symbol component
  */
-const getCurrencySymbol = (currency: Currency): React.ReactNode => {
+const getCurrencySymbol = (currency: string): React.ReactNode => {
   switch (currency) {
     case 'USD':
       return <AttachMoney />;
@@ -162,7 +162,7 @@ export const AmountInput = forwardRef<HTMLInputElement, AmountInputProps>(
 
     // Get formatted amount for preview
     const formattedAmount =
-      value !== '' && typeof value === 'number' ? PaymentFormatters.formatCurrency(value, currency as Currency) : '';
+      value !== '' && typeof value === 'number' ? PaymentFormatters.formatCurrency(value, currency || 'USD') : '';
 
     // Currency symbol/code adornment
     const currencyAdornment = (
@@ -260,16 +260,16 @@ export const AmountInput = forwardRef<HTMLInputElement, AmountInputProps>(
             <Typography variant='caption' color='text.secondary'>
               {minAmount > 0 && maxAmount
                 ? t('payment.amount.range', {
-                    min: PaymentFormatters.formatCurrency(minAmount, currency as Currency),
-                    max: PaymentFormatters.formatCurrency(maxAmount, currency as Currency),
+                    min: PaymentFormatters.formatCurrency(minAmount, currency || 'USD'),
+                    max: PaymentFormatters.formatCurrency(maxAmount, currency || 'USD'),
                   })
                 : minAmount > 0
                   ? t('payment.amount.minimum', {
-                      min: PaymentFormatters.formatCurrency(minAmount, currency as Currency),
+                      min: PaymentFormatters.formatCurrency(minAmount, currency || 'USD'),
                     })
                   : maxAmount
                     ? t('payment.amount.maximum', {
-                        max: PaymentFormatters.formatCurrency(maxAmount, currency as Currency),
+                        max: PaymentFormatters.formatCurrency(maxAmount, currency || 'USD'),
                       })
                     : ''}
             </Typography>

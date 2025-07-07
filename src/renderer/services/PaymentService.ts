@@ -36,9 +36,9 @@ import type {
   DailyPaymentSummary,
   TopPayingCustomer,
   PaymentRecordForm,
-  PaymentRecordFormSchema,
   ApiResponse,
 } from '../domains/payment';
+import { PaymentRecordFormSchema } from '../domains/payment';
 
 /**
  * Payment processing result interface
