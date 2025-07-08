@@ -131,15 +131,19 @@ export const useSubscriptions = (initialFilters?: SubscriptionFilters): UseSubsc
         const response = await subscriptionService.getSubscriptions(state.filters, page, state.pageSize);
 
         if (response.success && response.data) {
+          const responseData = response.data;
           const newSubscriptions =
-            page === 1 || reset ? response.data.items : [...state.subscriptions, ...response.data.items];
+            page === 1 || reset ? responseData.data : [...state.subscriptions, ...responseData.data];
+
+          // Calculate if there are more pages
+          const hasMore = page < responseData.totalPages;
 
           setState((prev) => ({
             ...prev,
             subscriptions: newSubscriptions,
-            totalCount: response.data.total,
+            totalCount: responseData.totalCount,
             currentPage: page,
-            hasMore: response.data.has_more,
+            hasMore,
             [loadingState]: false,
             error: null,
           }));

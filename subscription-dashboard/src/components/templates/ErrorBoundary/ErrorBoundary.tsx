@@ -4,6 +4,8 @@
  * Following Instructions file standards with comprehensive error handling
  */
 
+'use client';
+
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Box, Typography, Button, Paper } from '@mui/material';
 import { ErrorOutline, Refresh } from '@mui/icons-material';

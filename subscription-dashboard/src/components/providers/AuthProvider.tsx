@@ -4,6 +4,8 @@
  * Following Instructions file standards with comprehensive auth handling
  */
 
+'use client';
+
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { AuthUser, AuthState } from '@/types';
 
