@@ -189,6 +189,17 @@ declare global {
         createLotBatch: (lotBatch: any) => Promise<any>;
         updateLotBatch: (id: string, updates: any) => Promise<any>;
       };
+      subscription: {
+        activateDevice: (credentials: any) => Promise<any>;
+        validateStartup: () => Promise<any>;
+        performSync: () => Promise<any>;
+        getCurrentState: () => Promise<any>;
+        checkFeatureAccess: (featureId: string) => Promise<any>;
+        getExpiryWarning: () => Promise<any>;
+        needsActivation: () => Promise<any>;
+        resetSubscription: () => Promise<any>;
+        getDeviceDescription: () => Promise<any>;
+      };
     };
   }
 }

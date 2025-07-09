@@ -53,7 +53,7 @@ export class MockAuthService {
       }
 
       // Simulate network delay
-      await this.delay();
+      await MockAuthService.delay();
 
       // Validate input
       if (!credentials.email || !credentials.password) {
@@ -136,7 +136,7 @@ export class MockAuthService {
       console.log(`🔐 MockAuthService.getUserPermissions called for userId: ${userId}`);
 
       // Simulate network delay
-      await this.delay(200);
+      await MockAuthService.delay(200);
 
       const user = mockUsers.find((u) => u.id === userId);
 
@@ -160,7 +160,7 @@ export class MockAuthService {
   static async validateSession(): Promise<boolean> {
     try {
       // Simulate quick network check
-      await this.delay(100);
+      await MockAuthService.delay(100);
 
       // Check if localStorage has user data
       const storedUser = localStorage.getItem('flowlytix_user');
@@ -194,7 +194,7 @@ export class MockAuthService {
       console.log('👤 MockAuthService.createUser called with:', userData);
 
       // Simulate network delay
-      await this.delay();
+      await MockAuthService.delay();
 
       // Validate input
       if (!userData.email || !userData.password || !userData.firstName || !userData.lastName) {
@@ -253,7 +253,7 @@ export class MockAuthService {
       console.log('👥 MockAuthService.getAllUsers called');
 
       // Simulate network delay
-      await this.delay(300);
+      await MockAuthService.delay(300);
 
       const users = mockUsers.map((user) => ({
         id: user.id,
@@ -287,7 +287,7 @@ export class MockAuthService {
   static async logout(): Promise<boolean> {
     try {
       // Simulate brief network call
-      await this.delay(200);
+      await MockAuthService.delay(200);
 
       // Clear any stored auth data
       localStorage.removeItem('flowlytix_user');

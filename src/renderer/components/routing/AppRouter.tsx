@@ -27,6 +27,7 @@ import { SettingsPage } from '../../pages/SettingsPage';
 import { DashboardLayout } from '../templates';
 import { ROUTES } from '../../constants/navigation.constants';
 import { useAuthStore } from '../../store/auth.store';
+import { SubscriptionTestPage } from '../pages/SubscriptionTestPage';
 // Logo path corrected to use public directory
 const logoMainSrc = '/assets/images/logo-main.svg';
 
@@ -373,6 +374,18 @@ export const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Development/Testing Routes */}
+        {process.env.NODE_ENV === 'development' && (
+          <Route
+            path='/subscription-test'
+            element={
+              <ProtectedRoute>
+                <SubscriptionTestPage />
+              </ProtectedRoute>
+            }
+          />
+        )}
 
         {/* Fallback Route */}
         <Route path='*' element={<Navigate to='/' replace />} />

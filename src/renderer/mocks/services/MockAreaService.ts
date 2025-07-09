@@ -126,7 +126,7 @@ export class MockAreaService {
       console.log('🗺️ MockAreaService.getAreas called with:', request);
 
       // Simulate network delay
-      await this.delay();
+      await MockAreaService.delay();
 
       // Start with all areas for the agency
       let filteredAreas = getAreasByAgency(request.agencyId);
@@ -242,7 +242,7 @@ export class MockAreaService {
       console.log('🗺️ MockAreaService.createArea called with:', request);
 
       // Simulate network delay
-      await this.delay();
+      await MockAreaService.delay();
 
       // Validate required fields
       if (!request.areaCode || !request.areaName || !request.agencyId) {
@@ -294,7 +294,7 @@ export class MockAreaService {
       console.log(`🗺️ MockAreaService.updateArea called for ${request.areaId} with:`, request);
 
       // Simulate network delay
-      await this.delay();
+      await MockAreaService.delay();
 
       const area = getAreaById(request.areaId);
 
@@ -334,7 +334,7 @@ export class MockAreaService {
       console.log(`🗺️ MockAreaService.getAreaById called for: ${areaId}`);
 
       // Simulate network delay
-      await this.delay(200);
+      await MockAreaService.delay(200);
 
       const area = getAreaById(areaId);
 
@@ -362,7 +362,7 @@ export class MockAreaService {
       console.log(`🗺️ MockAreaService.getAreaByCode called for code: ${areaCode}, agency: ${agencyId}`);
 
       // Simulate network delay
-      await this.delay(200);
+      await MockAreaService.delay(200);
 
       const area = getAreaByCode(areaCode, agencyId);
 
@@ -390,7 +390,7 @@ export class MockAreaService {
       console.log(`🗺️ MockAreaService.deleteArea called for ${areaId} by ${deletedBy}`);
 
       // Simulate network delay
-      await this.delay();
+      await MockAreaService.delay();
 
       const area = getAreaById(areaId);
 
@@ -426,7 +426,7 @@ export class MockAreaService {
     topLevel: number;
   }> {
     try {
-      await this.delay(100); // Shorter delay for stats
+      await MockAreaService.delay(100); // Shorter delay for stats
 
       const agencyAreas = getAreasByAgency(agencyId);
 

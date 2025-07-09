@@ -73,6 +73,9 @@ export const ROUTES = {
   USERS: '/users',
   SETTINGS: '/settings',
   PROFILE: '/profile',
+
+  // Development routes
+  SUBSCRIPTION_TEST: '/subscription-test',
 } as const;
 
 /**
@@ -223,6 +226,19 @@ export const SYSTEM_ROUTES: NavigationRoute[] = [
         description: 'Configure system-wide settings',
         requiredRole: 'admin',
       },
+      // Development only - subscription testing
+      ...(process.env.NODE_ENV === 'development'
+        ? [
+            {
+              id: 'admin-subscription-test',
+              label: 'Subscription Test',
+              path: '/subscription-test',
+              icon: Settings,
+              requiresAuth: true,
+              description: 'Test subscription management integration',
+            },
+          ]
+        : []),
     ],
   },
 ];

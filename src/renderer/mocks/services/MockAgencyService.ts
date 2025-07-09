@@ -203,7 +203,7 @@ export class MockAgencyService {
       console.log('🏢 MockAgencyService.listAgencies called with:', params);
 
       // Simulate network delay
-      await this.delay();
+      await MockAgencyService.delay();
 
       // Start with all agencies
       let filteredAgencies = [...mockAgencyData];
@@ -268,7 +268,7 @@ export class MockAgencyService {
       console.log('🏢 MockAgencyService.createAgency called with:', params);
 
       // Simulate network delay
-      await this.delay();
+      await MockAgencyService.delay();
 
       // Generate new agency ID
       const newAgencyId = `agency-${Date.now()}`;
@@ -303,7 +303,7 @@ export class MockAgencyService {
       console.log(`🏢 MockAgencyService.updateAgency called for ${agencyId} with:`, params);
 
       // Simulate network delay
-      await this.delay();
+      await MockAgencyService.delay();
 
       const agency = mockAgencyData.find((a) => a.id === agencyId);
 
@@ -341,7 +341,7 @@ export class MockAgencyService {
       console.log(`🏢 MockAgencyService.getAgencyById called for: ${agencyId}`);
 
       // Simulate network delay
-      await this.delay(200);
+      await MockAgencyService.delay(200);
 
       const agency = mockAgencyData.find((a) => a.id === agencyId);
 
@@ -369,7 +369,7 @@ export class MockAgencyService {
     suspended: number;
   }> {
     try {
-      await this.delay(100); // Shorter delay for stats
+      await MockAgencyService.delay(100); // Shorter delay for stats
 
       const stats = {
         total: mockAgencyData.length,

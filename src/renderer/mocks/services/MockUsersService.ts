@@ -58,7 +58,7 @@ export class MockUsersService {
       });
 
       // Simulate network delay
-      await this.delay();
+      await MockUsersService.delay();
 
       // Start with all users
       let filteredUsers = [...mockUsers];
@@ -185,7 +185,7 @@ export class MockUsersService {
       console.log(`👤 MockUsersService.getUserById called for userId: ${userId}, requestedBy: ${requestedBy}`);
 
       // Simulate network delay
-      await this.delay();
+      await MockUsersService.delay();
 
       const user = mockUsers.find((u) => u.id === userId);
 
@@ -227,7 +227,7 @@ export class MockUsersService {
       console.log('👥 MockUsersService.updateUser called with:', params);
 
       // Simulate network delay
-      await this.delay();
+      await MockUsersService.delay();
 
       const userIndex = mockUsers.findIndex((u) => u.id === params.userId);
 
@@ -267,7 +267,7 @@ export class MockUsersService {
     locked: number;
   }> {
     try {
-      await this.delay(100); // Shorter delay for stats
+      await MockUsersService.delay(100); // Shorter delay for stats
 
       const stats = {
         total: mockUsers.length,
