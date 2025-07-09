@@ -22,7 +22,7 @@ from app.core.exceptions import (
     http_exception_handler,
     general_exception_handler,
 )
-from app.api.routes import subscription
+from app.api.routes import subscription, payment
 
 # Configure simple logging
 logging.basicConfig(
@@ -102,6 +102,7 @@ def create_app() -> FastAPI:
     
     # Include routers
     app.include_router(subscription.router, prefix=settings.api_v1_prefix)
+    app.include_router(payment.router, prefix=settings.api_v1_prefix)
     
     return app
 

@@ -109,6 +109,193 @@ export interface DeviceLocation {
   ipAddress: string;
 }
 
+// Payment related types
+export enum PaymentStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled',
+  REFUNDED = 'refunded',
+  PARTIALLY_REFUNDED = 'partially_refunded',
+  EXPIRED = 'expired',
+}
+
+export enum PaymentMethod {
+  MANUAL = 'manual',
+  BANK_TRANSFER = 'bank_transfer',
+  CREDIT_CARD = 'credit_card',
+  DEBIT_CARD = 'debit_card',
+  PAYPAL = 'paypal',
+  STRIPE = 'stripe',
+  CASH = 'cash',
+  CHECK = 'check',
+  WIRE_TRANSFER = 'wire_transfer',
+  CRYPTOCURRENCY = 'cryptocurrency',
+  OTHER = 'other',
+}
+
+export enum PaymentType {
+  SUBSCRIPTION = 'subscription',
+  RENEWAL = 'renewal',
+  UPGRADE = 'upgrade',
+  REFUND = 'refund',
+}
+
+export interface Payment extends BaseEntity {
+  subscriptionId: string;
+  amount: number;
+  currency: string;
+  paymentMethod: PaymentMethod;
+  paymentType: PaymentType;
+  status: PaymentStatus;
+  referenceId?: string;
+  description?: string;
+  notes?: string;
+  metadata: Record<string, any>;
+  processedAt?: Date;
+  adminUserId?: string;
+}
+
+export interface PaymentHistory extends BaseEntity {
+  paymentId: string;
+  oldStatus?: PaymentStatus;
+  newStatus: PaymentStatus;
+  action: string;
+  adminUserId?: string;
+  reason?: string;
+  notes?: string;
+  metadata: Record<string, any>;
+}
+
+export interface PaymentAnalytics {
+  totalPayments: number;
+  totalRevenue: number;
+  statusBreakdown: Record<PaymentStatus, number>;
+  methodBreakdown: Record<PaymentMethod, number>;
+  period: {
+    startDate?: Date;
+    endDate?: Date;
+  };
+}
+
+export interface RevenueDataPoint {
+  period: Date;
+  revenue: number;
+  count: number;
+}
+
+export interface PaymentMethodStats {
+  count: number;
+  totalAmount: number;
+  averageAmount: number;
+}
+
+export interface PaymentFilters {
+  status?: PaymentStatus[];
+  paymentMethod?: PaymentMethod[];
+  paymentType?: PaymentType[];
+  subscriptionId?: string;
+  adminUserId?: string;
+  startDate?: Date;
+  endDate?: Date;
+  minAmount?: number;
+  maxAmount?: number;
+  currency?: string;
+}
+
+export interface CreatePaymentForm {
+  subscriptionId: string;
+  amount: number;
+  currency: string;
+  paymentMethod: PaymentMethod;
+  paymentType: PaymentType;
+  description?: string;
+  referenceId?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface ProcessPaymentForm {
+  adminUserId: string;
+  notes?: string;
+}
+
+export interface FailPaymentForm {
+  adminUserId: string;
+  reason: string;
+}
+
+export interface RefundPaymentForm {
+  adminUserId: string;
+  reason: string;
+}
+
+export interface AddPaymentNoteForm {
+  adminUserId: string;
+  note: string;
+}
+
+export interface BulkPaymentActionForm {
+  paymentIds: string[];
+  adminUserId: string;
+  action: 'process' | 'fail';
+  reason?: string;
+}
+
+export interface PaymentListResponse {
+  payments: Payment[];
+  total: number;
+  limit?: number;
+  offset?: number;
+  hasMore: boolean;
+}
+
+export interface RefundResponse {
+  originalPayment: Payment;
+  refundPayment: Payment;
+}
+
+export interface BulkPaymentActionResponse {
+  successful: string[];
+  failed: Array<{
+    paymentId: string;
+    error: string;
+  }>;
+  total: number;
+  successCount: number;
+  failureCount: number;
+}
+
+export interface PaymentStatusSummary {
+  total: number;
+  byStatus: Record<string, number>;
+  byMethod: Record<string, number>;
+  totalAmount: number;
+  completedAmount: number;
+}
+
+export interface AdminActivityEntry {
+  id: string;
+  paymentId: string;
+  oldStatus?: PaymentStatus;
+  newStatus: PaymentStatus;
+  action: string;
+  reason?: string;
+  notes?: string;
+  metadata: Record<string, any>;
+  createdAt: Date;
+}
+
+export interface AdminActivityResponse {
+  entries: AdminActivityEntry[];
+  total: number;
+  limit?: number;
+  offset?: number;
+  adminUserId: string;
+  startDate?: Date;
+  endDate?: Date;
+}
+
 // Analytics types
 export interface AnalyticsData {
   totalSubscriptions: number;
