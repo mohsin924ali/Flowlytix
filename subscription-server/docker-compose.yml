@@ -46,6 +46,7 @@ services:
       - SECRET_KEY=dev-secret-key-change-in-production
       - ALLOWED_ORIGINS=["http://localhost:3000", "http://localhost:8080"]
     volumes:
+      - .:/app
       - ./keys:/app/keys
       - ./logs:/app/logs
     depends_on:

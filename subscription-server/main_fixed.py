@@ -95,6 +95,19 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
+    # Add security headers middleware for production
+    @app.middleware("http")
+    async def add_security_headers(request, call_next):
+        response = await call_next(request)
+        if settings.is_production:
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["X-XSS-Protection"] = "1; mode=block"
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            response.headers["Content-Security-Policy"] = "default-src 'self'"
+            response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+    
     # Setup exception handlers
     app.add_exception_handler(BaseSubscriptionException, subscription_exception_handler)
     app.add_exception_handler(HTTPException, http_exception_handler)
