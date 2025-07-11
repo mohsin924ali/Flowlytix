@@ -78,26 +78,15 @@ export const useAuth = (): UseAuthReturn => {
       if (token && userStr) {
         const user = JSON.parse(userStr);
 
-        // Verify token with server
-        const response = await apiClient.get<User>('/api/v1/auth/profile');
-
-        if (response.success && response.data) {
-          setState((prev) => ({
-            ...prev,
-            user: response.data!,
-            token,
-            isAuthenticated: true,
-            isInitializing: false,
-          }));
-        } else {
-          // Invalid token, clear auth data
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('auth_user');
-          setState((prev) => ({
-            ...prev,
-            isInitializing: false,
-          }));
-        }
+        // For subscription server, we don't have auth endpoints
+        // Just restore from local storage if valid
+        setState((prev) => ({
+          ...prev,
+          user,
+          token,
+          isAuthenticated: true,
+          isInitializing: false,
+        }));
       } else {
         setState((prev) => ({
           ...prev,

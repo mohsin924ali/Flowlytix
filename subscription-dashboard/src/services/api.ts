@@ -78,8 +78,11 @@ class ApiClient {
    */
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
-      const response = await this.instance.get<ApiResponse<T>>(url, config);
-      return response.data;
+      const response = await this.instance.get<T>(url, config);
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
       return this.handleError(error);
     }
@@ -90,8 +93,11 @@ class ApiClient {
    */
   async post<T, D = any>(url: string, data?: D, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
-      const response = await this.instance.post<ApiResponse<T>>(url, data, config);
-      return response.data;
+      const response = await this.instance.post<T>(url, data, config);
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
       return this.handleError(error);
     }
@@ -102,8 +108,11 @@ class ApiClient {
    */
   async put<T, D = any>(url: string, data?: D, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
-      const response = await this.instance.put<ApiResponse<T>>(url, data, config);
-      return response.data;
+      const response = await this.instance.put<T>(url, data, config);
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
       return this.handleError(error);
     }
@@ -114,8 +123,11 @@ class ApiClient {
    */
   async patch<T, D = any>(url: string, data?: D, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
-      const response = await this.instance.patch<ApiResponse<T>>(url, data, config);
-      return response.data;
+      const response = await this.instance.patch<T>(url, data, config);
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
       return this.handleError(error);
     }
@@ -126,8 +138,11 @@ class ApiClient {
    */
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
-      const response = await this.instance.delete<ApiResponse<T>>(url, config);
-      return response.data;
+      const response = await this.instance.delete<T>(url, config);
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
       return this.handleError(error);
     }
@@ -166,7 +181,7 @@ class ApiClient {
     formData.append('file', file);
 
     try {
-      const response = await this.instance.post<ApiResponse<T>>(url, formData, {
+      const response = await this.instance.post<T>(url, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -177,7 +192,10 @@ class ApiClient {
           }
         },
       });
-      return response.data;
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
       return this.handleError(error);
     }

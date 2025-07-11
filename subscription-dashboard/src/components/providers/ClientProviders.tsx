@@ -10,7 +10,9 @@ import { Toaster } from 'sonner';
 import { theme } from '@/styles/theme';
 import { globalStyles } from '@/styles/globals';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { AuthGuard } from '@/components/organisms/AuthGuard/AuthGuard';
 import { ErrorBoundary } from '@/components/templates/ErrorBoundary/ErrorBoundary';
+import { LayoutProvider } from '@/components/providers/LayoutProvider';
 
 // React Query client configuration
 const queryClient = new QueryClient({
@@ -39,7 +41,9 @@ export function ClientProviders({ children }: ClientProvidersProps) {
           <GlobalStyles styles={globalStyles} />
           <ErrorBoundary>
             <AuthProvider>
-              {children}
+              <AuthGuard>
+                <LayoutProvider>{children}</LayoutProvider>
+              </AuthGuard>
               <Toaster
                 position='top-right'
                 toastOptions={{
