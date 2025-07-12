@@ -98,23 +98,36 @@ export const useSubscription = (): UseSubscriptionReturn => {
   const isCompletelyExpired = isExpired && !isInGracePeriod;
   const shouldShowWarning = expiryWarning?.shouldShow || false;
 
-  // Initialize subscription on mount
+  // Initialize subscription on mount (only once)
+  const [hasInitialized, setHasInitialized] = useState(false);
+
   useEffect(() => {
+    if (hasInitialized) return;
+
+    let mounted = true;
+
     const initializeSubscription = async () => {
+      if (!mounted || hasInitialized) return;
+
       console.log('🚀 useSubscription: Initializing subscription...');
 
-      // Get device description
-      await getDeviceDescription();
+      try {
+        setHasInitialized(true);
 
-      // Validate on startup
-      await validateOnStartup();
-
-      // Schedule background sync if needed
-      scheduleBackgroundSync();
+        // Use the centralized initialization method
+        await useSubscriptionStore.getState().initializeSubscription();
+      } catch (error) {
+        console.error('❌ useSubscription: Initialization error:', error);
+        setHasInitialized(false); // Reset on error to allow retry
+      }
     };
 
     initializeSubscription();
-  }, [validateOnStartup, scheduleBackgroundSync, getDeviceDescription]);
+
+    return () => {
+      mounted = false;
+    };
+  }, []); // Remove hasInitialized dependency to prevent re-initialization
 
   // Wrapped sync function with automatic rescheduling
   const performSync = useCallback(async (): Promise<boolean> => {

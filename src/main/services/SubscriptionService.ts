@@ -82,17 +82,20 @@ export class SubscriptionService {
         throw new Error('License key is required for activation');
       }
 
+      // Convert fingerprint object to string as expected by server
+      const fingerprintString = `${deviceInfo.fingerprint.hardwareId}-${deviceInfo.fingerprint.osFingerprint}-${deviceInfo.fingerprint.networkFingerprint}`;
+
       const activationRequest: ActivationRequest = {
         license_key: credentials.licenseKey,
         device_id: deviceInfo.deviceId,
         device_info: {
           device_id: deviceInfo.deviceId,
-          fingerprint: deviceInfo.fingerprint,
-          device_name: deviceInfo.platform,
+          fingerprint: fingerprintString,
+          device_name: `Flowlytix Client - ${deviceInfo.platform}`,
           device_type: 'desktop',
-          os_name: deviceInfo.platform,
-          os_version: deviceInfo.platform,
-          app_version: '1.0.0',
+          os_name: deviceInfo.platform === 'mac' ? 'macOS' : deviceInfo.platform,
+          os_version: deviceInfo.platform === 'mac' ? '14.0' : 'Unknown',
+          app_version: deviceInfo.appVersion,
         },
       };
 
@@ -101,7 +104,7 @@ export class SubscriptionService {
       // Call activation API
       const response = await this.apiClient.activateDevice(activationRequest);
 
-      if (response.success && response.subscription && response.token) {
+      if (response.token && response.subscription) {
         console.log('✅ SubscriptionService: Activation successful');
 
         // Create subscription object from server response
@@ -135,10 +138,11 @@ export class SubscriptionService {
           subscription,
         };
       } else {
-        console.log('❌ SubscriptionService: Activation failed:', response.error);
+        const errorMessage = response.error || 'Activation failed - no token or subscription returned';
+        console.log('❌ SubscriptionService: Activation failed:', errorMessage);
         return {
           success: false,
-          error: response.error || 'Activation failed',
+          error: errorMessage,
         };
       }
     } catch (error) {

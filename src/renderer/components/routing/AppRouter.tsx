@@ -8,6 +8,7 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ProtectedRoute } from './ProtectedRoute';
+import { SubscriptionGate } from './SubscriptionGate';
 import { LoginPage } from '../organisms/LoginPage/LoginPage';
 import { DashboardPage } from '../../pages/DashboardPage';
 import { AdminPanelPage } from '../../pages/AdminPanelPage';
@@ -149,7 +150,9 @@ export const AppRouter: React.FC = () => {
           path='/'
           element={
             <ProtectedRoute>
-              <DashboardPage />
+              <SubscriptionGate>
+                <DashboardPage />
+              </SubscriptionGate>
             </ProtectedRoute>
           }
         />
@@ -159,7 +162,9 @@ export const AppRouter: React.FC = () => {
           path='/customers'
           element={
             <ProtectedRoute>
-              <CustomersPage />
+              <SubscriptionGate>
+                <CustomersPage />
+              </SubscriptionGate>
             </ProtectedRoute>
           }
         />
@@ -167,10 +172,12 @@ export const AppRouter: React.FC = () => {
           path='/customers/create'
           element={
             <ProtectedRoute>
-              <PlaceholderPage
-                title='Add New Customer'
-                description='Create new customer profiles with detailed information, contact details, and business relationships.'
-              />
+              <SubscriptionGate>
+                <PlaceholderPage
+                  title='Add New Customer'
+                  description='Create new customer profiles with detailed information, contact details, and business relationships.'
+                />
+              </SubscriptionGate>
             </ProtectedRoute>
           }
         />
@@ -178,10 +185,12 @@ export const AppRouter: React.FC = () => {
           path='/customers/:id'
           element={
             <ProtectedRoute>
-              <PlaceholderPage
-                title='Customer Details'
-                description='View and edit detailed customer information, order history, and relationship management.'
-              />
+              <SubscriptionGate>
+                <PlaceholderPage
+                  title='Customer Details'
+                  description='View and edit detailed customer information, order history, and relationship management.'
+                />
+              </SubscriptionGate>
             </ProtectedRoute>
           }
         />
@@ -196,7 +205,9 @@ export const AppRouter: React.FC = () => {
           path='/inventory'
           element={
             <ProtectedRoute>
-              <InventoryPage />
+              <SubscriptionGate>
+                <InventoryPage />
+              </SubscriptionGate>
             </ProtectedRoute>
           }
         />
@@ -206,7 +217,9 @@ export const AppRouter: React.FC = () => {
           path='/orders'
           element={
             <ProtectedRoute>
-              <OrdersPage />
+              <SubscriptionGate>
+                <OrdersPage />
+              </SubscriptionGate>
             </ProtectedRoute>
           }
         />

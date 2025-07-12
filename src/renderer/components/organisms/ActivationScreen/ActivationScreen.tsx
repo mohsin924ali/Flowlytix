@@ -55,7 +55,7 @@ const ActivationSchema = z.object({
   licenseKey: z
     .string()
     .min(1, 'License key is required')
-    .regex(/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/, 'License key must be in format XXXX-XXXX-XXXX-XXXX'),
+    .regex(/^[A-Z0-9-]{4,30}$/, 'License key must contain only letters, numbers, and dashes'),
 });
 
 type ActivationForm = z.infer<typeof ActivationSchema>;
@@ -124,9 +124,9 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
 
   // Format license key input
   const formatLicenseKey = (value: string) => {
-    const cleaned = value.replace(/[^A-Z0-9]/g, '').toUpperCase();
-    const formatted = cleaned.replace(/(.{4})/g, '$1-').replace(/-$/, '');
-    return formatted.slice(0, 19); // Max length with dashes
+    // Allow letters, numbers, and dashes, convert to uppercase
+    const cleaned = value.replace(/[^A-Z0-9-]/g, '').toUpperCase();
+    return cleaned.slice(0, 30); // Max length for license keys
   };
 
   return (
@@ -159,7 +159,7 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
               textAlign: 'center',
             }}
           >
-            <Logo size='large' variant='white' sx={{ mb: 2 }} />
+            <Logo size='large' variant='text' sx={{ mb: 2 }} />
             <Typography variant='h4' component='h1' gutterBottom fontWeight='bold'>
               Activate Flowlytix
             </Typography>
@@ -226,7 +226,7 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
                       <TextField
                         {...field}
                         label='Enter License Key'
-                        placeholder='XXXX-XXXX-XXXX-XXXX'
+                        placeholder='FL-GQHBEQ-H1L107-NGGIO6-SNETVB'
                         fullWidth
                         variant='outlined'
                         error={!!fieldState.error}

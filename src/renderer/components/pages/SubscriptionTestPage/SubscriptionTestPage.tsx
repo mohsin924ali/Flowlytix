@@ -1,505 +1,275 @@
 /**
  * Subscription Test Page
- * Comprehensive testing interface for the 5-step subscription flow
- * Task 9: Test complete user flow and integration with subscription server
+ * Testing component for subscription functionality
  */
 
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Grid,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Alert,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  LinearProgress,
-  Divider,
-  TextField,
-  Paper,
-} from '@mui/material';
-import {
-  ExpandMore,
-  PlayArrow,
-  Stop,
-  Refresh,
-  Settings,
-  CheckCircle,
-  Error,
-  Warning,
-  Info,
-  VpnKey,
-  Cloud,
-  Security,
-  Schedule,
-  Computer,
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
-
+import React, { useEffect, useState } from 'react';
+import { Box, Typography, Button, Card, CardContent, Alert, Chip, Divider } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { useSubscription } from '../../../hooks/useSubscription';
-import { ActivationScreen } from '../../organisms/ActivationScreen';
-import { FeatureGate } from '../../molecules/FeatureGate';
-import { ExpiryWarning } from '../../molecules/ExpiryWarning';
-
-interface TestStep {
-  id: string;
-  title: string;
-  description: string;
-  status: 'pending' | 'running' | 'success' | 'error';
-  result?: any;
-  error?: string;
-}
+import { useSubscriptionStore } from '../../../store/subscription.store';
+import { DashboardLayout } from '../../templates/DashboardLayout/DashboardLayout';
 
 export const SubscriptionTestPage: React.FC = () => {
   const subscription = useSubscription();
-  const [testSteps, setTestSteps] = useState<TestStep[]>([
-    {
-      id: 'step1-activation',
-      title: 'Step 1: License Activation',
-      description: 'Test license key activation and device registration',
-      status: 'pending',
-    },
-    {
-      id: 'step2-startup-validation',
-      title: 'Step 2: Startup Validation',
-      description: 'Test offline-first validation on app startup',
-      status: 'pending',
-    },
-    {
-      id: 'step3-periodic-sync',
-      title: 'Step 3: Periodic Sync',
-      description: 'Test background sync with licensing server',
-      status: 'pending',
-    },
-    {
-      id: 'step4-expiry-warning',
-      title: 'Step 4: Expiry Warning',
-      description: 'Test approaching expiry and grace period warnings',
-      status: 'pending',
-    },
-    {
-      id: 'step5-feature-gating',
-      title: 'Step 5: Feature Access Control',
-      description: 'Test feature gating based on subscription tier',
-      status: 'pending',
-    },
-  ]);
+  const { resetSubscription } = useSubscriptionStore();
+  const navigate = useNavigate();
+  const [testResults, setTestResults] = useState<string[]>([]);
+  const [isResetting, setIsResetting] = useState(false);
+  const [realUserFlowResult, setRealUserFlowResult] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [showActivationDialog, setShowActivationDialog] = useState(false);
-  const [testLicenseKey, setTestLicenseKey] = useState('TEST-1234-5678-9012');
-  const [isRunningFullTest, setIsRunningFullTest] = useState(false);
-
-  // Update test steps based on subscription state
+  // Log initialization state
   useEffect(() => {
-    updateTestStepsFromSubscriptionState();
-  }, [subscription]);
-
-  const updateTestStepsFromSubscriptionState = () => {
-    setTestSteps((prev) =>
-      prev.map((step) => {
-        switch (step.id) {
-          case 'step1-activation':
-            return {
-              ...step,
-              status: subscription.isActivated ? 'success' : 'pending',
-              result: subscription.isActivated
-                ? {
-                    deviceId: subscription.deviceId,
-                    tier: subscription.subscriptionTier,
-                  }
-                : undefined,
-            };
-          case 'step2-startup-validation':
-            return {
-              ...step,
-              status: subscription.lastValidatedAt ? 'success' : 'pending',
-              result: subscription.lastValidatedAt
-                ? {
-                    lastValidated: subscription.lastValidatedAt,
-                    daysRemaining: subscription.daysRemaining,
-                  }
-                : undefined,
-            };
-          default:
-            return step;
-        }
-      })
-    );
-  };
-
-  // Run individual test step
-  const runTestStep = async (stepId: string) => {
-    setTestSteps((prev) =>
-      prev.map((step) => (step.id === stepId ? { ...step, status: 'running', error: undefined } : step))
-    );
-
-    try {
-      let result: any;
-
-      switch (stepId) {
-        case 'step1-activation':
-          result = await testActivation();
-          break;
-        case 'step2-startup-validation':
-          result = await testStartupValidation();
-          break;
-        case 'step3-periodic-sync':
-          result = await testPeriodicSync();
-          break;
-        case 'step4-expiry-warning':
-          result = await testExpiryWarning();
-          break;
-        case 'step5-feature-gating':
-          result = await testFeatureGating();
-          break;
-        default:
-          throw new Error('Unknown test step');
-      }
-
-      setTestSteps((prev) => prev.map((step) => (step.id === stepId ? { ...step, status: 'success', result } : step)));
-    } catch (error) {
-      setTestSteps((prev) =>
-        prev.map((step) =>
-          step.id === stepId
-            ? {
-                ...step,
-                status: 'error',
-                error: error instanceof Error ? error.message : 'Unknown error',
-              }
-            : step
-        )
-      );
-    }
-  };
-
-  // Test implementations
-  const testActivation = async () => {
-    const success = await subscription.activateDevice({
-      licenseKey: testLicenseKey,
-    });
-
-    if (!success) {
-      throw new Error('License activation failed');
-    }
-
-    return {
-      activated: true,
+    console.log('🧪 SubscriptionTestPage: Component mounted, subscription state:', {
+      isActivated: subscription.isActivated,
+      isLoading: subscription.isLoading,
+      error: subscription.error,
       deviceId: subscription.deviceId,
-      tier: subscription.subscriptionTier,
-    };
+      subscriptionTier: subscription.subscriptionTier,
+    });
+  }, []);
+
+  // Log state changes
+  useEffect(() => {
+    const log = `State Change: isActivated=${subscription.isActivated}, isLoading=${subscription.isLoading}, error=${subscription.error}`;
+    console.log('🧪 SubscriptionTestPage:', log);
+  }, [subscription.isActivated, subscription.isLoading, subscription.error]);
+
+  const addTestResult = (result: string) => {
+    setTestResults((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${result}`]);
   };
 
-  const testStartupValidation = async () => {
-    const success = await subscription.validateOnStartup();
-
-    if (!success) {
-      throw new Error('Startup validation failed');
+  const testActivation = async () => {
+    addTestResult('Testing activation...');
+    try {
+      const success = await subscription.activateDevice({
+        licenseKey: 'FL-GQHBEQ-H1L107-NGGIO6-SNETVB',
+        email: 'test@example.com',
+      });
+      addTestResult(`Activation ${success ? 'successful' : 'failed'}`);
+    } catch (error) {
+      addTestResult(`Activation error: ${error}`);
     }
-
-    return {
-      validated: true,
-      lastValidated: subscription.lastValidatedAt,
-      daysRemaining: subscription.daysRemaining,
-    };
   };
 
-  const testPeriodicSync = async () => {
-    const success = await subscription.performSync();
-
-    if (!success) {
-      throw new Error('Periodic sync failed');
+  const testReset = async () => {
+    addTestResult('Testing reset...');
+    try {
+      const success = await subscription.resetSubscription();
+      addTestResult(`Reset ${success ? 'successful' : 'failed'}`);
+    } catch (error) {
+      addTestResult(`Reset error: ${error}`);
     }
-
-    return {
-      synced: true,
-      lastSync: new Date(),
-      needsOnlineValidation: subscription.needsOnlineValidation,
-    };
   };
 
-  const testExpiryWarning = async () => {
-    // This test checks if expiry warning system is working
-    return {
-      hasWarning: !!subscription.expiryWarning,
-      warningType: subscription.expiryWarning?.type,
-      daysRemaining: subscription.daysRemaining,
-      isInGracePeriod: subscription.isInGracePeriod,
-    };
-  };
-
-  const testFeatureGating = async () => {
-    // Test feature access for different features
-    const features = ['advanced_analytics', 'multi_agency', 'api_access'];
-    const accessResults = {};
-
-    for (const feature of features) {
-      accessResults[feature] = await subscription.checkFeatureAccess(feature);
-    }
-
-    return {
-      featureAccess: accessResults,
-      tier: subscription.subscriptionTier,
-    };
-  };
-
-  // Run full test suite
-  const runFullTestSuite = async () => {
-    setIsRunningFullTest(true);
+  // NEW: Test real user flow
+  const testRealUserFlow = async () => {
+    setIsResetting(true);
+    addTestResult('🎭 Starting REAL USER FLOW test...');
 
     try {
-      for (const step of testSteps) {
-        await runTestStep(step.id);
-        // Add delay between steps
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Reset subscription state
+      addTestResult('Resetting subscription state...');
+      const success = await resetSubscription();
+
+      if (success) {
+        addTestResult('✅ Subscription reset successful');
+        addTestResult('🔄 Redirecting to protected route to trigger ActivationScreen...');
+
+        // Wait a moment for the state to update
+        setTimeout(() => {
+          // Navigate to any protected route - this will trigger the ActivationScreen
+          navigate('/dashboard');
+        }, 1000);
+      } else {
+        addTestResult('❌ Subscription reset failed');
       }
     } catch (error) {
-      console.error('Full test suite error:', error);
+      addTestResult(`❌ Real user flow test error: ${error}`);
     } finally {
-      setIsRunningFullTest(false);
+      setIsResetting(false);
     }
   };
 
-  // Reset all tests
-  const resetAllTests = () => {
-    setTestSteps((prev) =>
-      prev.map((step) => ({
-        ...step,
-        status: 'pending',
-        result: undefined,
-        error: undefined,
-      }))
-    );
-  };
+  const handleRealUserFlowTest = async () => {
+    try {
+      setRealUserFlowResult('Testing real user flow...');
 
-  // Get status icon for test step
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'running':
-        return <Refresh className='animate-spin' color='primary' />;
-      case 'success':
-        return <CheckCircle color='success' />;
-      case 'error':
-        return <Error color='error' />;
-      default:
-        return <Schedule color='disabled' />;
+      // Reset subscription state first
+      const resetResult = await window.electronAPI.subscription.resetSubscription();
+      console.log('🔄 Reset result:', resetResult);
+
+      // Navigate to ActivationScreen
+      navigate('/activation');
+
+      setRealUserFlowResult('✅ Redirected to activation screen. Please complete activation manually.');
+    } catch (error) {
+      console.error('❌ Real user flow test failed:', error);
+      setRealUserFlowResult(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
-  // Get status color for test step
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'running':
-        return 'primary';
-      case 'success':
-        return 'success';
-      case 'error':
-        return 'error';
-      default:
-        return 'default';
+  // Add a debug activation test
+  const handleDebugActivationTest = async () => {
+    try {
+      setRealUserFlowResult('Testing activation with debugging...');
+
+      const credentials = {
+        licenseKey: 'FL-GQHBEQ-H1L107-NGGIO6-SNETVB',
+      };
+
+      console.log('🔍 DEBUG: Calling activateDevice with:', credentials);
+
+      const response = await window.electronAPI.subscription.activateDevice(credentials);
+
+      console.log('🔍 DEBUG: Full response received:', response);
+      console.log('🔍 DEBUG: Response success:', response.success);
+      console.log('🔍 DEBUG: Response subscription:', response.subscription);
+      console.log('🔍 DEBUG: Response error:', response.error);
+
+      if (response.success) {
+        setRealUserFlowResult(
+          `✅ DEBUG: Activation successful! Subscription: ${JSON.stringify(response.subscription, null, 2)}`
+        );
+      } else {
+        setRealUserFlowResult(`❌ DEBUG: Activation failed! Error: ${response.error}`);
+      }
+    } catch (error) {
+      console.error('❌ DEBUG: Activation test failed:', error);
+      setRealUserFlowResult(`❌ DEBUG: Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Typography variant='h4' gutterBottom>
-        Subscription System Test Suite
-      </Typography>
-      <Typography variant='body1' color='textSecondary' sx={{ mb: 4 }}>
-        Test the complete 5-step subscription flow and server integration
-      </Typography>
-
-      {/* Current Status */}
-      <Card elevation={2} sx={{ mb: 4 }}>
-        <CardContent>
-          <Typography variant='h6' gutterBottom>
-            Current Subscription Status
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Chip
-                label={subscription.isActivated ? 'Activated' : 'Not Activated'}
-                color={subscription.isActivated ? 'success' : 'default'}
-                icon={<VpnKey />}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Chip
-                label={subscription.subscriptionTier?.toUpperCase() || 'Unknown'}
-                color='primary'
-                icon={<Security />}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Chip
-                label={subscription.needsOnlineValidation ? 'Needs Sync' : 'Synced'}
-                color={subscription.needsOnlineValidation ? 'warning' : 'success'}
-                icon={<Cloud />}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Chip
-                label={`${subscription.daysRemaining} days left`}
-                color={subscription.daysRemaining <= 7 ? 'error' : 'default'}
-                icon={<Schedule />}
-              />
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* Control Buttons */}
-      <Box sx={{ mb: 4, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-        <Button
-          variant='contained'
-          startIcon={<PlayArrow />}
-          onClick={runFullTestSuite}
-          disabled={isRunningFullTest}
-          size='large'
-        >
-          Run Full Test Suite
-        </Button>
-
-        <Button variant='outlined' startIcon={<Refresh />} onClick={resetAllTests} disabled={isRunningFullTest}>
-          Reset All Tests
-        </Button>
-
-        <Button variant='outlined' startIcon={<VpnKey />} onClick={() => setShowActivationDialog(true)}>
-          Test Activation Screen
-        </Button>
-
-        <TextField
-          label='Test License Key'
-          value={testLicenseKey}
-          onChange={(e) => setTestLicenseKey(e.target.value)}
-          size='small'
-          sx={{ minWidth: 200 }}
-        />
-      </Box>
-
-      {/* Test Steps */}
-      <Grid container spacing={3}>
-        {testSteps.map((step, index) => (
-          <Grid item xs={12} key={step.id}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Accordion>
-                <AccordionSummary expandIcon={<ExpandMore />}>
-                  <Box display='flex' alignItems='center' width='100%'>
-                    <Box sx={{ mr: 2 }}>{getStatusIcon(step.status)}</Box>
-                    <Box flex={1}>
-                      <Typography variant='h6'>{step.title}</Typography>
-                      <Typography variant='body2' color='textSecondary'>
-                        {step.description}
-                      </Typography>
-                    </Box>
-                    <Chip label={step.status.toUpperCase()} color={getStatusColor(step.status)} size='small' />
-                  </Box>
-                </AccordionSummary>
-
-                <AccordionDetails>
-                  {step.status === 'running' && (
-                    <Box sx={{ mb: 2 }}>
-                      <LinearProgress />
-                      <Typography variant='body2' sx={{ mt: 1 }}>
-                        Running test...
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {step.error && (
-                    <Alert severity='error' sx={{ mb: 2 }}>
-                      {step.error}
-                    </Alert>
-                  )}
-
-                  {step.result && (
-                    <Paper elevation={1} sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
-                      <Typography variant='subtitle2' gutterBottom>
-                        Test Result:
-                      </Typography>
-                      <pre style={{ fontSize: '0.875rem', margin: 0, whiteSpace: 'pre-wrap' }}>
-                        {JSON.stringify(step.result, null, 2)}
-                      </pre>
-                    </Paper>
-                  )}
-
-                  <Button
-                    variant='contained'
-                    size='small'
-                    onClick={() => runTestStep(step.id)}
-                    disabled={step.status === 'running' || isRunningFullTest}
-                    startIcon={<PlayArrow />}
-                  >
-                    Run Test
-                  </Button>
-                </AccordionDetails>
-              </Accordion>
-            </motion.div>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Demo Components */}
-      <Box sx={{ mt: 6 }}>
-        <Typography variant='h5' gutterBottom>
-          Component Demonstrations
+    <DashboardLayout>
+      <Box sx={{ p: 3 }}>
+        <Typography variant='h4' gutterBottom>
+          🧪 Subscription Testing
         </Typography>
 
-        <Grid container spacing={3}>
-          {/* Expiry Warning Demo */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant='h6' gutterBottom>
-                  Expiry Warning Component
-                </Typography>
-                <ExpiryWarning position='inline' />
-              </CardContent>
-            </Card>
-          </Grid>
+        <Typography variant='body1' sx={{ mb: 3 }}>
+          Test subscription functionality and state management
+        </Typography>
 
-          {/* Feature Gate Demo */}
-          <Grid item xs={12} md={6}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {/* Current State */}
+          <Card>
+            <CardContent>
+              <Typography variant='h6' gutterBottom>
+                📊 Current State
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                <Chip
+                  label={`Activated: ${subscription.isActivated}`}
+                  color={subscription.isActivated ? 'success' : 'default'}
+                />
+                <Chip
+                  label={`Loading: ${subscription.isLoading}`}
+                  color={subscription.isLoading ? 'warning' : 'default'}
+                />
+                <Chip
+                  label={`Tier: ${subscription.subscriptionTier || 'None'}`}
+                  color={subscription.subscriptionTier ? 'info' : 'default'}
+                />
+              </Box>
+              {subscription.error && (
+                <Alert severity='error' sx={{ mt: 1 }}>
+                  {subscription.error}
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Real User Flow Testing */}
+          <Card>
+            <CardContent>
+              <Typography variant='h6' gutterBottom sx={{ color: 'primary.main' }}>
+                🎭 Real User Flow Testing
+              </Typography>
+              <Typography variant='body2' sx={{ mb: 3, color: 'text.secondary' }}>
+                Test the actual user experience - this will reset your subscription and show the real ActivationScreen
+              </Typography>
+
+              <Alert severity='info' sx={{ mb: 2 }}>
+                <Typography variant='body2'>
+                  <strong>What this does:</strong>
+                  <br />
+                  1. Resets your subscription state (marks as not activated)
+                  <br />
+                  2. Redirects you to a protected route
+                  <br />
+                  3. Shows the real ActivationScreen where you enter a license key manually
+                  <br />
+                  4. You can test with: <code>FL-GQHBEQ-H1L107-NGGIO6-SNETVB</code>
+                </Typography>
+              </Alert>
+
+              <Button
+                variant='contained'
+                color='primary'
+                onClick={testRealUserFlow}
+                disabled={isResetting}
+                sx={{ mb: 2 }}
+              >
+                {isResetting ? 'Testing Real User Flow...' : '🎭 Test Real User Flow'}
+              </Button>
+
+              <Button variant='contained' onClick={handleRealUserFlowTest} disabled={isLoading} sx={{ mb: 2 }}>
+                Test Real User Flow
+              </Button>
+
+              <Button variant='outlined' onClick={handleDebugActivationTest} disabled={isLoading} sx={{ mb: 2 }}>
+                Debug Activation Test
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Divider sx={{ my: 2 }} />
+
+          {/* Developer Testing */}
+          <Card>
+            <CardContent>
+              <Typography variant='h6' gutterBottom sx={{ color: 'secondary.main' }}>
+                🔧 Developer Testing (Programmatic)
+              </Typography>
+              <Typography variant='body2' sx={{ mb: 3, color: 'text.secondary' }}>
+                These tests use hardcoded values for developer testing
+              </Typography>
+
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Button variant='outlined' onClick={testActivation}>
+                  Test Activation (Hardcoded)
+                </Button>
+                <Button variant='outlined' onClick={testReset}>
+                  Test Reset
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Test Results */}
+          {testResults.length > 0 && (
             <Card>
               <CardContent>
                 <Typography variant='h6' gutterBottom>
-                  Feature Gate Component
+                  📋 Test Results
                 </Typography>
-                <FeatureGate featureId='advanced_analytics'>
-                  <Alert severity='success'>✅ You have access to Advanced Analytics!</Alert>
-                </FeatureGate>
+                <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
+                  {testResults.map((result, index) => (
+                    <Typography key={index} variant='body2' sx={{ fontFamily: 'monospace' }}>
+                      {result}
+                    </Typography>
+                  ))}
+                </Box>
+                <Button variant='outlined' size='small' onClick={() => setTestResults([])} sx={{ mt: 2 }}>
+                  Clear Results
+                </Button>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          )}
+        </Box>
       </Box>
-
-      {/* Activation Screen Dialog */}
-      <Dialog open={showActivationDialog} onClose={() => setShowActivationDialog(false)} maxWidth='lg' fullWidth>
-        <DialogContent sx={{ p: 0 }}>
-          <ActivationScreen
-            onActivationSuccess={() => setShowActivationDialog(false)}
-            onTrialMode={() => setShowActivationDialog(false)}
-          />
-        </DialogContent>
-      </Dialog>
-    </Box>
+    </DashboardLayout>
   );
 };

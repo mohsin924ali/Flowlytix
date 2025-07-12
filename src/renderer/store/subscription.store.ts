@@ -8,6 +8,10 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
+// Global initialization guard
+let isInitialized = false;
+let initializationPromise: Promise<void> | null = null;
+
 // Subscription types and interfaces
 export interface SubscriptionState {
   // Core subscription data
@@ -56,6 +60,7 @@ export interface SubscriptionStore extends SubscriptionState {
   // Step 2: Normal Daily Use Actions
   validateOnStartup: () => Promise<boolean>;
   getCurrentState: () => Promise<void>;
+  initializeSubscription: () => Promise<void>;
 
   // Step 3: Periodic Sync Actions
   performPeriodicSync: () => Promise<boolean>;
@@ -118,6 +123,48 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
     persist(
       immer((set, get) => ({
         ...initialState,
+
+        /**
+         * Initialize subscription system (only once per session)
+         */
+        initializeSubscription: async (): Promise<void> => {
+          // Return existing promise if already initializing
+          if (initializationPromise) {
+            return initializationPromise;
+          }
+
+          // Return immediately if already initialized
+          if (isInitialized) {
+            return;
+          }
+
+          console.log('🚀 Store: Starting subscription initialization...');
+
+          // Create initialization promise
+          initializationPromise = (async () => {
+            try {
+              // Get device description
+              await get().getDeviceDescription();
+
+              // Validate on startup
+              await get().validateOnStartup();
+
+              // Schedule background sync
+              get().scheduleBackgroundSync();
+
+              isInitialized = true;
+              console.log('✅ Store: Subscription initialization completed');
+            } catch (error) {
+              console.error('❌ Store: Subscription initialization failed:', error);
+              // Reset so it can be retried
+              isInitialized = false;
+              initializationPromise = null;
+              throw error;
+            }
+          })();
+
+          return initializationPromise;
+        },
 
         /**
          * STEP 1: FIRST INSTALL/ACTIVATION FLOW
@@ -196,6 +243,12 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
          * Validate subscription on app startup
          */
         validateOnStartup: async (): Promise<boolean> => {
+          // Skip if already initialized to prevent loops
+          if (isInitialized) {
+            console.log('🔄 Store: Skipping validation - already initialized');
+            return true;
+          }
+
           console.log('🌐 Store: Starting startup validation...');
 
           set((state) => {
@@ -363,7 +416,8 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
 
             const response = await window.electronAPI.subscription.getExpiryWarning();
 
-            if (response.success && response.data) {
+            // Add null check before accessing response properties
+            if (response && response.success && response.data) {
               set((state) => {
                 state.expiryWarning = response.data;
               });
@@ -444,6 +498,10 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
             const response = await window.electronAPI.subscription.resetSubscription();
 
             if (response.success) {
+              // Reset global initialization state
+              isInitialized = false;
+              initializationPromise = null;
+
               set(() => ({ ...initialState }));
               return true;
             }

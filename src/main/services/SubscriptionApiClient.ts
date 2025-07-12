@@ -26,7 +26,6 @@ export interface ActivationRequest {
 }
 
 export interface ActivationResponse {
-  success: boolean;
   token?: string;
   subscription?: {
     id: string;
@@ -132,12 +131,11 @@ export class SubscriptionApiClient {
         body: JSON.stringify(request),
       });
 
-      console.log('✅ Device activation response:', response.success);
+      console.log('✅ Device activation response:', response.token ? 'Success' : 'Failed');
       return response;
     } catch (error) {
       console.error('❌ Device activation failed:', error);
       return {
-        success: false,
         error: error instanceof Error ? error.message : 'Activation failed',
       };
     }
