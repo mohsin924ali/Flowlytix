@@ -19,7 +19,32 @@ import {
  * Provides methods for managing subscriptions
  */
 class SubscriptionService {
-  private readonly baseUrl = '/api/v1/subscriptions';
+  private readonly baseUrl = '/api/v1/subscription/subscriptions';
+
+  /**
+   * Transform backend subscription data to frontend format
+   */
+  private transformSubscription(item: any): Subscription {
+    return {
+      id: item.id,
+      customerName: item.customer_name || 'Unknown Customer',
+      customerId: item.customer_id,
+      licenseKey: item.license_key,
+      tier: item.tier,
+      status: item.status,
+      features: item.features?.enabled_features || [],
+      maxDevices: item.max_devices,
+      devicesConnected: item.devices?.length || 0,
+      startsAt: item.starts_at,
+      expiresAt: item.expires_at,
+      gracePeriodDays: item.grace_period_days || 0,
+      lastActivity: item.updated_at,
+      lastSyncAt: item.updated_at,
+      notes: item.metadata?.notes || '',
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
+    };
+  }
 
   /**
    * Get all subscriptions with optional filtering and pagination
@@ -31,9 +56,10 @@ class SubscriptionService {
   ): Promise<ApiResponse<PaginatedResponse<Subscription>>> {
     const params = new URLSearchParams();
 
-    // Add pagination
-    params.append('page', page.toString());
-    params.append('page_size', pageSize.toString());
+    // Backend uses offset/limit, frontend uses page/pageSize
+    const offset = (page - 1) * pageSize;
+    params.append('limit', pageSize.toString());
+    params.append('offset', offset.toString());
 
     // Add filters
     if (filters) {
@@ -58,28 +84,80 @@ class SubscriptionService {
     }
 
     const url = `${this.baseUrl}?${params.toString()}`;
-    return apiClient.get<PaginatedResponse<Subscription>>(url);
+    const response = await apiClient.get<any>(url);
+
+    // Transform backend response to frontend format
+    if (response.success && response.data) {
+      const backendData = response.data;
+      const totalPages = Math.ceil(backendData.total / pageSize);
+
+      // Transform each subscription item
+      const transformedSubscriptions = (backendData.items || []).map((item: any) => this.transformSubscription(item));
+
+      return {
+        success: true,
+        data: {
+          data: transformedSubscriptions,
+          totalCount: backendData.total || 0,
+          page,
+          pageSize,
+          totalPages,
+        },
+      };
+    }
+
+    return response;
   }
 
   /**
    * Get a single subscription by ID
    */
   async getSubscription(id: string): Promise<ApiResponse<Subscription>> {
-    return apiClient.get<Subscription>(`${this.baseUrl}/${id}`);
+    const response = await apiClient.get<any>(`${this.baseUrl}/${id}`);
+
+    // Transform backend response to frontend format
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: this.transformSubscription(response.data),
+      };
+    }
+
+    return response;
   }
 
   /**
    * Create a new subscription
    */
   async createSubscription(data: CreateSubscriptionForm): Promise<ApiResponse<Subscription>> {
-    return apiClient.post<Subscription>(this.baseUrl, data);
+    const response = await apiClient.post<any>(this.baseUrl, data);
+
+    // Transform backend response to frontend format
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: this.transformSubscription(response.data),
+      };
+    }
+
+    return response;
   }
 
   /**
    * Update an existing subscription
    */
   async updateSubscription(id: string, data: UpdateSubscriptionForm): Promise<ApiResponse<Subscription>> {
-    return apiClient.patch<Subscription>(`${this.baseUrl}/${id}`, data);
+    const response = await apiClient.patch<any>(`${this.baseUrl}/${id}`, data);
+
+    // Transform backend response to frontend format
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: this.transformSubscription(response.data),
+      };
+    }
+
+    return response;
   }
 
   /**
@@ -93,30 +171,70 @@ class SubscriptionService {
    * Suspend a subscription
    */
   async suspendSubscription(id: string, reason?: string): Promise<ApiResponse<Subscription>> {
-    return apiClient.post<Subscription>(`${this.baseUrl}/${id}/suspend`, { reason });
+    const response = await apiClient.put<any>(`${this.baseUrl}/${id}/suspend`, { reason });
+
+    // Transform backend response to frontend format
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: this.transformSubscription(response.data),
+      };
+    }
+
+    return response;
   }
 
   /**
    * Resume a suspended subscription
    */
   async resumeSubscription(id: string): Promise<ApiResponse<Subscription>> {
-    return apiClient.post<Subscription>(`${this.baseUrl}/${id}/resume`);
+    const response = await apiClient.put<any>(`${this.baseUrl}/${id}/resume`);
+
+    // Transform backend response to frontend format
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: this.transformSubscription(response.data),
+      };
+    }
+
+    return response;
   }
 
   /**
    * Cancel a subscription
    */
   async cancelSubscription(id: string, reason?: string): Promise<ApiResponse<Subscription>> {
-    return apiClient.post<Subscription>(`${this.baseUrl}/${id}/cancel`, { reason });
+    const response = await apiClient.put<any>(`${this.baseUrl}/${id}/cancel`, { reason });
+
+    // Transform backend response to frontend format
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: this.transformSubscription(response.data),
+      };
+    }
+
+    return response;
   }
 
   /**
    * Renew a subscription
    */
   async renewSubscription(id: string, expiresAt: Date): Promise<ApiResponse<Subscription>> {
-    return apiClient.post<Subscription>(`${this.baseUrl}/${id}/renew`, {
+    const response = await apiClient.post<any>(`${this.baseUrl}/${id}/renew`, {
       expires_at: expiresAt.toISOString(),
     });
+
+    // Transform backend response to frontend format
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: this.transformSubscription(response.data),
+      };
+    }
+
+    return response;
   }
 
   /**

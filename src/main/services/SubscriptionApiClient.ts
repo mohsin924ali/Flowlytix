@@ -178,13 +178,16 @@ export class SubscriptionApiClient {
   async syncSubscription(request: SyncRequest): Promise<SyncResponse> {
     try {
       console.log('🔄 Syncing subscription with licensing API...');
+      console.log('🔄 API Client: Sync request:', JSON.stringify(request, null, 2));
 
       const response = await this.makeRequest<SyncResponse>('/api/v1/subscription/validate', {
         method: 'POST',
         body: JSON.stringify(request),
       });
 
-      console.log('✅ Subscription sync response:', response.success);
+      console.log('✅ API Client: Subscription sync response:', JSON.stringify(response, null, 2));
+      console.log('✅ API Client: Response success:', response.success);
+      console.log('✅ API Client: Response status:', response.status);
       return response;
     } catch (error) {
       console.error('❌ Subscription sync failed:', error);
@@ -267,6 +270,8 @@ export class SubscriptionApiClient {
   ): Promise<T> {
     return new Promise((resolve, reject) => {
       const url = `${SUBSCRIPTION_API_BASE_URL}${endpoint}`;
+      console.log(`🌐 API Client: Making ${options.method} request to:`, url);
+      console.log(`🌐 API Client: Request body:`, options.body || 'No body');
 
       const request = net.request({
         method: options.method,
@@ -302,8 +307,12 @@ export class SubscriptionApiClient {
 
         response.on('end', () => {
           try {
+            console.log(`🌐 API Client: Response status:`, response.statusCode);
+            console.log(`🌐 API Client: Raw response data:`, data);
+
             if (response.statusCode >= 200 && response.statusCode < 300) {
               const parsedData = JSON.parse(data);
+              console.log(`🌐 API Client: Parsed response:`, JSON.stringify(parsedData, null, 2));
               resolve(parsedData);
             } else {
               reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));

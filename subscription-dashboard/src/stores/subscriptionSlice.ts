@@ -182,14 +182,14 @@ const subscriptionSlice = createSlice({
         state.isFetching = false;
 
         if (page === 1 || reset) {
-          state.subscriptions = data.items;
+          state.subscriptions = data.data;
         } else {
-          state.subscriptions.push(...data.items);
+          state.subscriptions.push(...data.data);
         }
 
-        state.totalCount = data.total;
+        state.totalCount = data.totalCount;
         state.currentPage = page;
-        state.hasMore = data.has_more;
+        state.hasMore = page < data.totalPages;
         state.error = null;
       })
       .addCase(fetchSubscriptions.rejected, (state, action) => {

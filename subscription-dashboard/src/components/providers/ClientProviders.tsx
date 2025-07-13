@@ -58,7 +58,9 @@ export function ClientProviders({ children }: ClientProvidersProps) {
               />
             </AuthProvider>
           </ErrorBoundary>
-          <ReactQueryDevtools initialIsOpen={false} />
+          {process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_ENABLE_DEVTOOLS === 'true' && (
+            <ReactQueryDevtools initialIsOpen={false} />
+          )}
         </ThemeProvider>
       </QueryClientProvider>
     </AppRouterCacheProvider>

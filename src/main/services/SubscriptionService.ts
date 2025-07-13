@@ -5,7 +5,7 @@
  */
 
 import { DeviceManager } from './DeviceManager.js';
-import { SubscriptionApiClient, ActivationRequest, SyncRequest } from './SubscriptionApiClient.js';
+import { SubscriptionApiClient, ActivationRequest } from './SubscriptionApiClient.js';
 import { SecureStorage } from './SecureStorage.js';
 import { Subscription, SubscriptionStatus, SubscriptionTier } from '../shared/subscription.types.js';
 
@@ -30,6 +30,7 @@ export interface SyncResult {
 
 export interface ValidationResult {
   isActivated: boolean;
+  subscriptionStatus?: string; // 'active', 'expired', 'suspended', 'cancelled'
   subscriptionTier?: string;
   expiresAt?: Date;
   deviceId?: string;
@@ -112,7 +113,7 @@ export class SubscriptionService {
           licenseKey: credentials.licenseKey || '',
           email: '', // Server doesn't use email for activation
           tier: SubscriptionTier.fromString(response.subscription.tier),
-          status: SubscriptionStatus.ACTIVE,
+          status: SubscriptionStatus.fromString(response.subscription.status),
           features: response.subscription.features || [],
           maxDevices: response.subscription.max_devices || 1,
           deviceId: deviceInfo.deviceId,
@@ -131,7 +132,16 @@ export class SubscriptionService {
         });
 
         // Store subscription securely
+        console.log('💾 SubscriptionService: Storing subscription with status:', subscription.status.toString());
         await this.secureStorage.storeSubscription(subscription);
+
+        // Verify storage worked
+        const storedSubscription = await this.secureStorage.getSubscription();
+        console.log('✅ SubscriptionService: Verified stored subscription:', {
+          found: !!storedSubscription,
+          status: storedSubscription?.status?.toString(),
+          deviceId: storedSubscription?.deviceId,
+        });
 
         return {
           success: true,
@@ -161,8 +171,28 @@ export class SubscriptionService {
   async validateOnStartup(): Promise<ValidationResult> {
     try {
       console.log('🌐 SubscriptionService: Starting startup validation...');
+      console.log('🔍 SubscriptionService: Checking for stored subscription...');
 
       const subscription = await this.secureStorage.getSubscription();
+      console.log('🔍 SubscriptionService: Subscription found:', !!subscription);
+
+      if (subscription) {
+        console.log(
+          '🔍 SubscriptionService: Found subscription with license key:',
+          subscription.licenseKey?.substring(0, 10) + '...'
+        );
+      }
+
+      if (subscription) {
+        console.log('🔍 SubscriptionService: Subscription details:', {
+          status: subscription.status.toString(),
+          tier: subscription.tier.toString(),
+          deviceId: subscription.deviceId,
+          expiresAt: subscription.expiresAt,
+          isExpired: subscription.isExpired(),
+          isInGracePeriod: subscription.isInGracePeriod(),
+        });
+      }
 
       if (!subscription) {
         console.log('⚠️ SubscriptionService: No subscription found');
@@ -178,8 +208,9 @@ export class SubscriptionService {
       await this.secureStorage.markAsValidated(subscription.deviceId);
       const updatedSubscription = await this.secureStorage.getSubscription();
 
-      return {
+      const result = {
         isActivated: true,
+        subscriptionStatus: subscription.status.toString(),
         subscriptionTier: subscription.tier.toString(),
         expiresAt: subscription.expiresAt,
         deviceId: subscription.deviceId,
@@ -189,6 +220,9 @@ export class SubscriptionService {
         ...(updatedSubscription?.lastValidatedAt && { lastValidatedAt: updatedSubscription.lastValidatedAt }),
         needsOnlineValidation: subscription.needsValidation(),
       };
+
+      console.log('✅ SubscriptionService: Validation result:', result);
+      return result;
     } catch (error) {
       console.error('❌ SubscriptionService: Startup validation error:', error);
       return {
@@ -205,6 +239,7 @@ export class SubscriptionService {
   async performSync(): Promise<SyncResult> {
     try {
       console.log('🔄 SubscriptionService: Starting periodic sync...');
+      console.log('🔄 SubscriptionService: Syncing with server to get latest subscription status...');
 
       const subscription = await this.secureStorage.getSubscription();
       if (!subscription) {
@@ -216,15 +251,17 @@ export class SubscriptionService {
         };
       }
 
-      // Prepare sync request
-      const syncRequest: SyncRequest = {
-        deviceId: subscription.deviceId,
-        tenantId: subscription.tenantId,
-        ...(subscription.signedToken && { currentToken: subscription.signedToken }),
+      // Prepare sync request with correct field names for server
+      const syncRequest = {
+        license_key: subscription.licenseKey,
+        device_id: subscription.deviceId,
+        ...(subscription.signedToken && { current_token: subscription.signedToken }),
       };
 
       // Call sync API
-      const response = await this.apiClient.syncSubscription(syncRequest);
+      console.log('🔄 SubscriptionService: Calling API client sync with request:', syncRequest);
+      const response = await this.apiClient.syncSubscription(syncRequest as any);
+      console.log('🔄 SubscriptionService: API response:', response);
 
       if (response.success && response.subscriptionTier && response.expiresAt) {
         console.log('✅ SubscriptionService: Sync successful');
@@ -235,6 +272,12 @@ export class SubscriptionService {
         updatedData.expiresAt = new Date(response.expiresAt);
         updatedData.features = response.features || updatedData.features;
         updatedData.gracePeriodDays = response.gracePeriodDays || updatedData.gracePeriodDays;
+
+        // CRITICAL FIX: Update subscription status from sync response
+        if (response.status) {
+          console.log('🔄 SubscriptionService: Updating subscription status from server:', response.status);
+          updatedData.status = SubscriptionStatus.fromString(response.status);
+        }
 
         if (response.signedToken) {
           updatedData.signedToken = response.signedToken;
@@ -322,6 +365,7 @@ export class SubscriptionService {
 
       return {
         isActivated: true,
+        subscriptionStatus: subscription.status.toString(),
         subscriptionTier: subscription.tier.toString(),
         expiresAt: subscription.expiresAt,
         deviceId: subscription.deviceId,

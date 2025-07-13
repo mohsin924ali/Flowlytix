@@ -25,3 +25,6 @@ export { CreditApprovalModal } from './CreditApprovalModal';
 export { InvoiceGenerationModal } from './InvoiceGenerationModal';
 export { PaymentHistoryCard } from './PaymentHistoryCard';
 export { CreditAssessmentCard } from './CreditAssessmentCard';
+
+// Subscription Management Components
+export { SubscriptionWarning, type SubscriptionWarningProps } from './SubscriptionWarning';

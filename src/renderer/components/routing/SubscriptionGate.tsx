@@ -4,7 +4,7 @@
  * Shows activation screen if subscription is needed, otherwise shows children
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Alert, CircularProgress, Typography } from '@mui/material';
 import { useSubscription } from '../../hooks/useSubscription';
 import { ActivationScreen } from '../organisms/ActivationScreen/ActivationScreen';
@@ -17,12 +17,34 @@ interface SubscriptionGateProps {
 export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ children }) => {
   const { isAuthenticated } = useAuthStore();
   const { isActivated, isLoading, error, clearError } = useSubscription();
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Debug logging to track activation state changes
+  useEffect(() => {
+    console.log('🚪 SubscriptionGate: State changed', {
+      isAuthenticated,
+      isActivated,
+      isLoading,
+      isTransitioning,
+      error: error ? error.substring(0, 100) : null,
+    });
+  }, [isAuthenticated, isActivated, isLoading, isTransitioning, error]);
 
   // Handle successful activation
   const handleActivationSuccess = () => {
-    console.log('🎉 SubscriptionGate: Activation successful');
+    console.log('🎉 SubscriptionGate: Activation successful, starting transition');
     clearError();
-    // The subscription store will update isActivated automatically
+    setIsTransitioning(true);
+
+    // Brief transition delay to ensure state is properly updated
+    setTimeout(() => {
+      console.log('🔄 SubscriptionGate: Transition completed, current state:', {
+        isActivated,
+        isLoading,
+        error,
+      });
+      setIsTransitioning(false);
+    }, 100);
   };
 
   // Handle trial mode (if you want to support it)
@@ -34,11 +56,13 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ children }) 
 
   // If not authenticated, don't show anything (login screen will be shown)
   if (!isAuthenticated) {
+    console.log('🔒 SubscriptionGate: Not authenticated, returning null');
     return null;
   }
 
-  // Show loading while initializing
-  if (isLoading) {
+  // Show loading while initializing or transitioning
+  if (isLoading || isTransitioning) {
+    console.log('⏳ SubscriptionGate: Loading subscription status...');
     return (
       <Box
         sx={{
@@ -52,7 +76,7 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ children }) 
       >
         <CircularProgress size={40} />
         <Typography variant='body1' color='text.secondary'>
-          Checking subscription status...
+          {isTransitioning ? 'Activating subscription...' : 'Checking subscription status...'}
         </Typography>
       </Box>
     );
@@ -60,6 +84,7 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ children }) 
 
   // Show error if there's an issue
   if (error) {
+    console.log('❌ SubscriptionGate: Error state:', error);
     return (
       <Box
         sx={{
@@ -85,6 +110,7 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ children }) 
 
   // Show activation screen if needed
   if (needsActivation) {
+    console.log('🔑 SubscriptionGate: Showing activation screen');
     return (
       <ActivationScreen
         onActivationSuccess={handleActivationSuccess}
@@ -94,6 +120,8 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ children }) 
     );
   }
 
-  // Show main app if subscription is valid
+  // Show main app - even if subscription is suspended/ended
+  // Individual pages (Dashboard/Analytics) will show warnings
+  console.log('✅ SubscriptionGate: Allowing access to main app');
   return <>{children}</>;
 };

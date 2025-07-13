@@ -227,73 +227,35 @@ async def get_system_health():
     }
 
 
-# Additional subscriptions endpoint with pagination support
-@app.get("/api/v1/subscriptions")
-async def get_subscriptions_paginated(
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(10, ge=1, le=100, description="Items per page"),
-    status: Optional[str] = Query(None, description="Filter by status"),
-    search: Optional[str] = Query(None, description="Search term")
-):
+@app.get("/api/v1/analytics/realtime")
+async def get_realtime_analytics():
     """
-    Get subscriptions with pagination support.
+    Get real-time analytics metrics.
     """
-    # Mock data for subscriptions
-    mock_subscriptions = [
-        {
-            "id": str(i),
-            "customerName": f"Customer {i}",
-            "customerId": f"cust_{i}",
-            "licenseKey": f"FL-{i:04d}-{i*2:04d}-{i*3:04d}",
-            "tier": "premium" if i % 3 == 0 else "basic" if i % 2 == 0 else "pro",
-            "status": "active" if i % 4 != 0 else "expired" if i % 6 == 0 else "suspended",
-            "features": ["core", "analytics"] if i % 2 == 0 else ["core"],
-            "maxDevices": 5 if i % 3 == 0 else 3,
-            "devicesConnected": i % 5 + 1,
-            "startsAt": f"2024-01-{15 + (i % 15):02d}T10:00:00Z",
-            "expiresAt": f"2024-12-{15 + (i % 15):02d}T10:00:00Z",
-            "gracePeriodDays": 30,
-            "lastActivity": f"2024-01-{20 + (i % 10):02d}T14:30:00Z",
-            "lastSyncAt": f"2024-01-{20 + (i % 10):02d}T14:30:00Z",
-            "createdAt": f"2024-01-{15 + (i % 15):02d}T10:00:00Z",
-            "updatedAt": f"2024-01-{20 + (i % 10):02d}T14:30:00Z",
-            "notes": f"Test subscription {i}"
-        }
-        for i in range(1, 201)  # 200 mock subscriptions
-    ]
-    
-    # Apply filters
-    filtered_subscriptions = mock_subscriptions
-    
-    if status:
-        filtered_subscriptions = [s for s in filtered_subscriptions if s["status"] == status]
-    
-    if search:
-        filtered_subscriptions = [
-            s for s in filtered_subscriptions 
-            if search.lower() in s["customerName"].lower() or search.lower() in s["licenseKey"].lower()
-        ]
-    
-    # Calculate pagination
-    total_items = len(filtered_subscriptions)
-    total_pages = (total_items + page_size - 1) // page_size
-    start_index = (page - 1) * page_size
-    end_index = start_index + page_size
-    
-    paginated_subscriptions = filtered_subscriptions[start_index:end_index]
-    
-    # Return structure that matches frontend PaginatedResponse<T> type
     return {
-        "success": True,
         "data": {
-            "data": paginated_subscriptions,  # This is what frontend expects in PaginatedResponse<T>
-            "totalCount": total_items,
-            "page": page,
-            "pageSize": page_size,
-            "totalPages": total_pages
+            "active_users": 245,
+            "active_sessions": 189,
+            "requests_per_second": 12.5,
+            "response_time_avg": 150.3,
+            "error_rate": 0.001,
+            "subscriptions_today": 8,
+            "activations_today": 15,
+            "revenue_today": 2340.50,
+            "cpu_usage": 34.2,
+            "memory_usage": 68.5,
+            "database_connections": 12,
+            "cache_hits": 1247,
+            "cache_misses": 78,
+            "last_updated": datetime.now().isoformat(),
+            "timestamp": datetime.now().isoformat()
         },
-        "message": f"Retrieved {len(paginated_subscriptions)} subscriptions"
+        "success": True,
+        "message": "Real-time analytics retrieved successfully"
     }
+
+
+
 
 
 if __name__ == "__main__":

@@ -28,6 +28,8 @@ import {
   Paper,
   IconButton,
   InputAdornment,
+  Collapse,
+  Link,
 } from '@mui/material';
 import {
   VpnKey,
@@ -41,6 +43,9 @@ import {
   Security,
   Cloud,
   DeviceHub,
+  ExpandMore,
+  ContactSupport,
+  Help,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -49,6 +54,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { useSubscription } from '../../../hooks/useSubscription';
 import { Logo } from '../../atoms/Logo/Logo';
+import {
+  parseSubscriptionError,
+  getSubscriptionErrorInfo,
+  SubscriptionErrorType,
+} from '../../../domains/subscription/valueObjects/SubscriptionStatus';
 
 // Validation schema for license key
 const ActivationSchema = z.object({
@@ -79,6 +89,11 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
   const [showLicenseKey, setShowLicenseKey] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [activationResult, setActivationResult] = useState<any>(null);
+  const [parsedError, setParsedError] = useState<{
+    type: SubscriptionErrorType;
+    info: ReturnType<typeof getSubscriptionErrorInfo>;
+  } | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const form = useForm<ActivationForm>({
     resolver: zodResolver(ActivationSchema),
@@ -87,13 +102,23 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
     },
   });
 
-  // Clear errors when form changes
+  // Parse error when it changes
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => {
-        clearError();
-      }, 5000);
-      return () => clearTimeout(timer);
+      const errorType = parseSubscriptionError(error);
+      const errorInfo = getSubscriptionErrorInfo(errorType);
+      setParsedError({ type: errorType, info: errorInfo });
+
+      // Auto-clear error after 10 seconds for recoverable errors
+      if (errorInfo.recoverable) {
+        const timer = setTimeout(() => {
+          clearError();
+          setParsedError(null);
+        }, 10000);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      setParsedError(null);
     }
   }, [error, clearError]);
 
@@ -110,6 +135,11 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
           deviceId: deviceDescription,
         });
         setShowSuccessDialog(true);
+
+        // CRITICAL FIX: Call onActivationSuccess immediately when activation is successful
+        // This ensures the SubscriptionGate component re-renders and checks the updated state
+        // Remove the problematic 2-second timeout that was causing the redirect issue
+        onActivationSuccess?.();
       }
     } catch (error) {
       console.error('Activation failed:', error);
@@ -119,7 +149,14 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
   // Handle success dialog close
   const handleSuccessClose = () => {
     setShowSuccessDialog(false);
-    onActivationSuccess?.();
+    // Remove the onActivationSuccess call from here as it's now called immediately after successful activation
+  };
+
+  // Handle retry
+  const handleRetry = () => {
+    clearError();
+    setParsedError(null);
+    form.reset();
   };
 
   // Format license key input
@@ -127,6 +164,100 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
     // Allow letters, numbers, and dashes, convert to uppercase
     const cleaned = value.replace(/[^A-Z0-9-]/g, '').toUpperCase();
     return cleaned.slice(0, 30); // Max length for license keys
+  };
+
+  // Render enhanced error alert
+  const renderErrorAlert = () => {
+    if (!parsedError) return null;
+
+    const { info } = parsedError;
+
+    return (
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+        <Alert
+          severity={info.severity}
+          sx={{ mb: 3 }}
+          action={
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {info.recoverable && (
+                <Button color='inherit' size='small' onClick={handleRetry} startIcon={<Refresh />}>
+                  Retry
+                </Button>
+              )}
+              <IconButton
+                aria-label='close'
+                color='inherit'
+                size='small'
+                onClick={() => {
+                  clearError();
+                  setParsedError(null);
+                }}
+              >
+                <Error />
+              </IconButton>
+            </Box>
+          }
+        >
+          <Typography variant='subtitle2' gutterBottom>
+            {info.title}
+          </Typography>
+          <Typography variant='body2' sx={{ mb: 1 }}>
+            {info.message}
+          </Typography>
+
+          <Box sx={{ mt: 2 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                py: 1,
+                px: 2,
+                bgcolor: 'grey.50',
+                borderRadius: 1,
+                border: '1px solid',
+                borderColor: 'grey.200',
+              }}
+              onClick={() => setShowSuggestions(!showSuggestions)}
+            >
+              <Typography variant='body2' color='text.secondary' sx={{ flex: 1 }}>
+                <Help sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />
+                Show suggestions
+              </Typography>
+              <ExpandMore
+                sx={{
+                  transform: showSuggestions ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s',
+                }}
+              />
+            </Box>
+            <Collapse in={showSuggestions}>
+              <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mt: 1 }}>
+                <List dense>
+                  {info.suggestions.map((suggestion, index) => (
+                    <ListItem key={index} sx={{ pl: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        <Info color='primary' sx={{ fontSize: 16 }} />
+                      </ListItemIcon>
+                      <ListItemText primary={suggestion} />
+                    </ListItem>
+                  ))}
+                </List>
+
+                <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant='body2' color='text.secondary'>
+                    Need additional help?{' '}
+                    <Link href='#' onClick={() => console.log('Open support')}>
+                      Contact Support
+                    </Link>
+                  </Typography>
+                </Box>
+              </Box>
+            </Collapse>
+          </Box>
+        </Alert>
+      </motion.div>
+    );
   };
 
   return (
@@ -138,38 +269,91 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
         p: 2,
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background:
+            'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+        },
       }}
     >
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+      {/* Background Pattern */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage:
+            'radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        style={{ position: 'relative', zIndex: 1 }}
+      >
         <Card
           elevation={24}
           sx={{
-            maxWidth: 800,
+            maxWidth: 900,
             width: '100%',
-            borderRadius: 3,
+            borderRadius: 4,
             overflow: 'hidden',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           }}
         >
-          {/* Header */}
+          {/* Enhanced Header */}
           <Box
             sx={{
               background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
               color: 'white',
-              p: 4,
+              p: 5,
               textAlign: 'center',
+              position: 'relative',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background:
+                  'url("data:image/svg+xml,%3Csvg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M20 20c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm0 0c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+                pointerEvents: 'none',
+              },
             }}
           >
-            <Logo size='large' variant='text' sx={{ mb: 2 }} />
-            <Typography variant='h4' component='h1' gutterBottom fontWeight='bold'>
-              Activate Flowlytix
-            </Typography>
-            <Typography variant='subtitle1' sx={{ opacity: 0.9 }}>
-              Enter your license key to activate your distribution management system
-            </Typography>
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              <Logo size='large' variant='text' sx={{ mb: 3 }} />
+              <Typography variant='h3' component='h1' gutterBottom fontWeight='bold' sx={{ mb: 2 }}>
+                Activate Flowlytix
+              </Typography>
+              <Typography variant='h6' sx={{ opacity: 0.9, fontWeight: 300, maxWidth: 600, mx: 'auto' }}>
+                Enter your license key to activate your professional distribution management system and start managing
+                your business operations.
+              </Typography>
+            </motion.div>
           </Box>
 
-          <CardContent sx={{ p: 4 }}>
-            {/* Loading Progress */}
+          <CardContent sx={{ p: 5, backgroundColor: 'rgba(255, 255, 255, 0.98)' }}>
+            {/* Enhanced Loading Progress */}
             <AnimatePresence>
               {activationInProgress && (
                 <motion.div
@@ -177,178 +361,271 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                 >
-                  <Box sx={{ mb: 3 }}>
-                    <LinearProgress />
-                    <Typography variant='body2' sx={{ mt: 1, textAlign: 'center' }}>
-                      Activating your license...
+                  <Box sx={{ mb: 4 }}>
+                    <LinearProgress
+                      sx={{
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: 'rgba(81, 63, 242, 0.1)',
+                        '& .MuiLinearProgress-bar': {
+                          background: 'linear-gradient(90deg, #513ff2 0%, #6b52f5 100%)',
+                          borderRadius: 3,
+                        },
+                      }}
+                    />
+                    <Typography variant='body2' sx={{ mt: 2, textAlign: 'center', color: 'text.secondary' }}>
+                      <Security sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle' }} />
+                      Securely activating your license...
                     </Typography>
                   </Box>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Error Alert */}
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                >
-                  <Alert
-                    severity='error'
-                    sx={{ mb: 3 }}
-                    action={
-                      <IconButton aria-label='close' color='inherit' size='small' onClick={clearError}>
-                        <Error />
-                      </IconButton>
-                    }
-                  >
-                    {error}
-                  </Alert>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Enhanced Error Alert */}
+            <AnimatePresence>{parsedError && renderErrorAlert()}</AnimatePresence>
 
             <Grid container spacing={4}>
-              {/* Activation Form */}
-              <Grid item xs={12} md={showDeviceInfo ? 8 : 12}>
-                <form onSubmit={form.handleSubmit(handleActivation)}>
-                  <Typography variant='h6' gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                    <VpnKey sx={{ mr: 1, color: 'primary.main' }} />
-                    License Key
+              {/* Enhanced Activation Form */}
+              <Grid item xs={12} md={showDeviceInfo ? 7 : 12}>
+                <Box sx={{ p: 3, backgroundColor: 'rgba(255, 255, 255, 0.7)', borderRadius: 3, mb: 3 }}>
+                  <form onSubmit={form.handleSubmit(handleActivation)}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                      <VpnKey sx={{ mr: 2, color: 'primary.main', fontSize: 28 }} />
+                      <Box>
+                        <Typography variant='h5' gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                          License Key
+                        </Typography>
+                        <Typography variant='body2' color='text.secondary'>
+                          Enter your unique license key to activate your subscription
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Controller
+                      name='licenseKey'
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <TextField
+                          {...field}
+                          label='License Key'
+                          placeholder='FL-GQHBEQ-H1L107-NGGIO6-SNETVB'
+                          fullWidth
+                          variant='outlined'
+                          error={!!fieldState.error}
+                          helperText={fieldState.error?.message}
+                          disabled={activationInProgress}
+                          type={showLicenseKey ? 'text' : 'password'}
+                          onChange={(e) => {
+                            const formatted = formatLicenseKey(e.target.value);
+                            field.onChange(formatted);
+                          }}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position='start'>
+                                <Security color='action' />
+                              </InputAdornment>
+                            ),
+                            endAdornment: (
+                              <InputAdornment position='end'>
+                                <IconButton onClick={() => setShowLicenseKey(!showLicenseKey)} edge='end'>
+                                  {showLicenseKey ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={{
+                            mb: 4,
+                            '& .MuiOutlinedInput-root': {
+                              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                              borderRadius: 2,
+                              '&:hover': {
+                                backgroundColor: 'rgba(255, 255, 255, 1)',
+                              },
+                              '&.Mui-focused': {
+                                backgroundColor: 'rgba(255, 255, 255, 1)',
+                              },
+                            },
+                          }}
+                        />
+                      )}
+                    />
+
+                    <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                      <Button
+                        type='submit'
+                        variant='contained'
+                        size='large'
+                        disabled={activationInProgress || !form.formState.isValid}
+                        startIcon={<VpnKey />}
+                        sx={{
+                          flex: 1,
+                          py: 2,
+                          fontSize: '1.1rem',
+                          fontWeight: 'bold',
+                          borderRadius: 3,
+                          background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
+                          boxShadow: '0 8px 32px rgba(81, 63, 242, 0.3)',
+                          '&:hover': {
+                            boxShadow: '0 12px 40px rgba(81, 63, 242, 0.4)',
+                            transform: 'translateY(-2px)',
+                          },
+                          '&:disabled': {
+                            background: 'rgba(81, 63, 242, 0.3)',
+                            boxShadow: 'none',
+                          },
+                          transition: 'all 0.3s ease',
+                        }}
+                      >
+                        {activationInProgress ? 'Activating...' : 'Activate License'}
+                      </Button>
+
+                      {onTrialMode && (
+                        <Button
+                          variant='outlined'
+                          size='large'
+                          onClick={onTrialMode}
+                          disabled={activationInProgress}
+                          sx={{
+                            flex: { xs: 1, sm: 'auto' },
+                            py: 2,
+                            borderRadius: 3,
+                            borderColor: 'primary.main',
+                            color: 'primary.main',
+                            '&:hover': {
+                              borderColor: 'primary.dark',
+                              backgroundColor: 'rgba(81, 63, 242, 0.05)',
+                            },
+                          }}
+                        >
+                          Start Trial
+                        </Button>
+                      )}
+                    </Box>
+                  </form>
+                </Box>
+
+                {/* Enhanced Help Section */}
+                <Box sx={{ p: 3, backgroundColor: 'rgba(248, 250, 252, 0.8)', borderRadius: 3 }}>
+                  <Typography
+                    variant='h6'
+                    gutterBottom
+                    sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold' }}
+                  >
+                    <ContactSupport sx={{ mr: 1, color: 'primary.main' }} />
+                    Need Help?
                   </Typography>
 
-                  <Controller
-                    name='licenseKey'
-                    control={form.control}
-                    render={({ field, fieldState }) => (
-                      <TextField
-                        {...field}
-                        label='Enter License Key'
-                        placeholder='FL-GQHBEQ-H1L107-NGGIO6-SNETVB'
-                        fullWidth
-                        variant='outlined'
-                        error={!!fieldState.error}
-                        helperText={fieldState.error?.message}
-                        disabled={activationInProgress}
-                        type={showLicenseKey ? 'text' : 'password'}
-                        onChange={(e) => {
-                          const formatted = formatLicenseKey(e.target.value);
-                          field.onChange(formatted);
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          p: 2,
+                          borderRadius: 2,
+                          backgroundColor: 'rgba(255, 255, 255, 0.7)',
                         }}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position='start'>
-                              <Security color='action' />
-                            </InputAdornment>
-                          ),
-                          endAdornment: (
-                            <InputAdornment position='end'>
-                              <IconButton onClick={() => setShowLicenseKey(!showLicenseKey)} edge='end'>
-                                {showLicenseKey ? <VisibilityOff /> : <Visibility />}
-                              </IconButton>
-                            </InputAdornment>
-                          ),
-                        }}
-                        sx={{ mb: 3 }}
-                      />
-                    )}
-                  />
-
-                  <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-                    <Button
-                      type='submit'
-                      variant='contained'
-                      size='large'
-                      disabled={activationInProgress || !form.formState.isValid}
-                      startIcon={<VpnKey />}
-                      sx={{
-                        flex: 1,
-                        py: 1.5,
-                        fontSize: '1.1rem',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {activationInProgress ? 'Activating...' : 'Activate License'}
-                    </Button>
-
-                    {onTrialMode && (
-                      <Button
-                        variant='outlined'
-                        size='large'
-                        onClick={onTrialMode}
-                        disabled={activationInProgress}
-                        sx={{ flex: { xs: 1, sm: 'auto' }, py: 1.5 }}
                       >
-                        Start Trial
-                      </Button>
-                    )}
-                  </Box>
-                </form>
-
-                {/* Help Section */}
-                <Divider sx={{ my: 3 }} />
-
-                <Typography variant='h6' gutterBottom>
-                  Need Help?
-                </Typography>
-
-                <List dense>
-                  <ListItem>
-                    <ListItemIcon>
-                      <Info color='primary' />
-                    </ListItemIcon>
-                    <ListItemText primary='Contact Support' secondary='Email: support@flowlytix.com' />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon>
-                      <Cloud color='primary' />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary='Online Activation'
-                      secondary='Requires internet connection for initial setup'
-                    />
-                  </ListItem>
-                </List>
+                        <Info color='primary' sx={{ mr: 2 }} />
+                        <Box>
+                          <Typography variant='subtitle2' fontWeight='bold'>
+                            Email Support
+                          </Typography>
+                          <Typography variant='body2' color='text.secondary'>
+                            support@flowlytix.com
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          p: 2,
+                          borderRadius: 2,
+                          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                        }}
+                      >
+                        <Cloud color='primary' sx={{ mr: 2 }} />
+                        <Box>
+                          <Typography variant='subtitle2' fontWeight='bold'>
+                            Online Activation
+                          </Typography>
+                          <Typography variant='body2' color='text.secondary'>
+                            Requires internet connection
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Box>
               </Grid>
 
-              {/* Device Information Panel */}
+              {/* Enhanced Device Information Panel */}
               {showDeviceInfo && (
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={5}>
                   <Paper
-                    elevation={2}
+                    elevation={3}
                     sx={{
-                      p: 3,
-                      bgcolor: 'grey.50',
+                      p: 4,
+                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                      borderRadius: 3,
                       height: 'fit-content',
+                      border: '1px solid rgba(81, 63, 242, 0.1)',
                     }}
                   >
-                    <Typography variant='h6' gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Computer sx={{ mr: 1, color: 'primary.main' }} />
+                    <Typography
+                      variant='h6'
+                      gutterBottom
+                      sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold', color: 'primary.main' }}
+                    >
+                      <Computer sx={{ mr: 2 }} />
                       Device Information
                     </Typography>
 
-                    <List dense>
-                      <ListItem>
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant='body2' color='text.secondary' gutterBottom>
+                        This device will be registered with your license
+                      </Typography>
+                    </Box>
+
+                    <List>
+                      <ListItem sx={{ px: 0 }}>
                         <ListItemIcon>
-                          <DeviceHub />
+                          <DeviceHub color='primary' />
                         </ListItemIcon>
-                        <ListItemText primary='Device ID' secondary={deviceDescription || 'Loading...'} />
+                        <ListItemText
+                          primary='Device ID'
+                          secondary={deviceDescription || 'Loading...'}
+                          primaryTypographyProps={{ fontWeight: 'bold' }}
+                        />
                       </ListItem>
-                      <ListItem>
+                      <ListItem sx={{ px: 0 }}>
                         <ListItemIcon>
-                          <Computer />
+                          <Computer color='primary' />
                         </ListItemIcon>
-                        <ListItemText primary='Platform' secondary={navigator.platform || 'Unknown'} />
+                        <ListItemText
+                          primary='Platform'
+                          secondary={navigator.platform || 'Unknown'}
+                          primaryTypographyProps={{ fontWeight: 'bold' }}
+                        />
                       </ListItem>
                     </List>
 
-                    <Divider sx={{ my: 2 }} />
+                    <Divider sx={{ my: 3 }} />
 
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      <Chip label='Secure' color='success' size='small' icon={<Security />} />
-                      <Chip label='Encrypted' color='primary' size='small' />
+                      <Chip
+                        label='Secure'
+                        color='success'
+                        size='small'
+                        icon={<Security />}
+                        sx={{ fontWeight: 'bold' }}
+                      />
+                      <Chip label='Encrypted' color='primary' size='small' sx={{ fontWeight: 'bold' }} />
+                      <Chip label='Verified' color='info' size='small' sx={{ fontWeight: 'bold' }} />
                     </Box>
                   </Paper>
                 </Grid>
@@ -358,43 +635,93 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
         </Card>
       </motion.div>
 
-      {/* Success Dialog */}
+      {/* Enhanced Success Dialog */}
       <Dialog
         open={showSuccessDialog}
         onClose={handleSuccessClose}
         maxWidth='sm'
         fullWidth
         PaperProps={{
-          sx: { borderRadius: 3 },
+          sx: {
+            borderRadius: 4,
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+          },
         }}
       >
-        <DialogTitle sx={{ textAlign: 'center', pt: 3 }}>
-          <CheckCircle color='success' sx={{ fontSize: 64, mb: 2 }} />
-          <Typography variant='h5' component='div'>
+        <DialogTitle sx={{ textAlign: 'center', pt: 4, pb: 2 }}>
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+          >
+            <CheckCircle color='success' sx={{ fontSize: 72, mb: 2 }} />
+          </motion.div>
+          <Typography variant='h4' component='div' sx={{ fontWeight: 'bold', color: 'success.main' }}>
             Activation Successful!
           </Typography>
         </DialogTitle>
 
-        <DialogContent sx={{ textAlign: 'center', pb: 1 }}>
-          <Typography variant='body1' sx={{ mb: 2 }}>
+        <DialogContent sx={{ textAlign: 'center', pb: 2 }}>
+          <Typography variant='h6' sx={{ mb: 3, color: 'text.secondary' }}>
             Your Flowlytix license has been successfully activated.
           </Typography>
 
           {activationResult && (
-            <Paper elevation={1} sx={{ p: 2, bgcolor: 'grey.50' }}>
-              <Typography variant='body2' color='textSecondary'>
-                License Key: {activationResult.licenseKey}
-              </Typography>
-              <Typography variant='body2' color='textSecondary'>
-                Device: {activationResult.deviceId}
-              </Typography>
+            <Paper
+              elevation={2}
+              sx={{
+                p: 3,
+                backgroundColor: 'rgba(76, 175, 80, 0.05)',
+                borderRadius: 3,
+                border: '1px solid rgba(76, 175, 80, 0.2)',
+              }}
+            >
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Typography variant='subtitle2' color='text.secondary' gutterBottom>
+                    License Key
+                  </Typography>
+                  <Typography variant='body1' sx={{ fontFamily: 'monospace', fontWeight: 'bold' }}>
+                    {activationResult.licenseKey}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant='subtitle2' color='text.secondary' gutterBottom>
+                    Device ID
+                  </Typography>
+                  <Typography variant='body1' sx={{ fontFamily: 'monospace', fontWeight: 'bold' }}>
+                    {activationResult.deviceId}
+                  </Typography>
+                </Grid>
+              </Grid>
             </Paper>
           )}
+
+          <Typography variant='body2' sx={{ mt: 3, color: 'text.secondary' }}>
+            You can now access all features of your Flowlytix subscription.
+          </Typography>
         </DialogContent>
 
-        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
-          <Button variant='contained' size='large' onClick={handleSuccessClose} sx={{ minWidth: 120 }}>
-            Continue
+        <DialogActions sx={{ justifyContent: 'center', pb: 4 }}>
+          <Button
+            variant='contained'
+            size='large'
+            onClick={handleSuccessClose}
+            sx={{
+              minWidth: 150,
+              py: 1.5,
+              borderRadius: 3,
+              background: 'linear-gradient(135deg, #513ff2 0%, #6b52f5 100%)',
+              boxShadow: '0 8px 32px rgba(81, 63, 242, 0.3)',
+              '&:hover': {
+                boxShadow: '0 12px 40px rgba(81, 63, 242, 0.4)',
+                transform: 'translateY(-2px)',
+              },
+              transition: 'all 0.3s ease',
+            }}
+          >
+            Continue to App
           </Button>
         </DialogActions>
       </Dialog>

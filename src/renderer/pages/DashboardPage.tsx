@@ -65,6 +65,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardLayout } from '../components/templates';
 import { DigitalClock, InventoryHealthCard } from '../components/atoms';
+import { SubscriptionWarning } from '../components/molecules';
 import { useAuthStore } from '../store/auth.store';
 import { useAgencyStore } from '../store/agency.store';
 import { useSalesAnalytics, useCustomerAnalytics, useProductAnalytics } from '../hooks/useAnalytics';
@@ -789,6 +790,9 @@ export const DashboardPage: React.FC = () => {
   return (
     <DashboardLayout>
       <Container maxWidth='xl' sx={{ py: 3 }}>
+        {/* Subscription Warning Banner */}
+        <SubscriptionWarning showOnlyIfNeeded={true} dismissible={true} showDetails={false} />
+
         <Grid container spacing={3}>
           {/* Welcome Section */}
           <Grid item xs={12} md={8}>

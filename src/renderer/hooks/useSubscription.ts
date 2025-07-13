@@ -10,6 +10,7 @@ import { useSubscriptionStore } from '../store/subscription.store';
 export interface UseSubscriptionReturn {
   // State
   isActivated: boolean;
+  subscriptionStatus: string | null;
   subscriptionTier: string | null;
   expiresAt: Date | null;
   deviceId: string | null;
@@ -59,6 +60,7 @@ export const useSubscription = (): UseSubscriptionReturn => {
   const {
     // State
     isActivated,
+    subscriptionStatus,
     subscriptionTier,
     expiresAt,
     deviceId,
@@ -116,9 +118,13 @@ export const useSubscription = (): UseSubscriptionReturn => {
 
         // Use the centralized initialization method
         await useSubscriptionStore.getState().initializeSubscription();
+
+        console.log('✅ useSubscription: Initialization completed successfully');
       } catch (error) {
         console.error('❌ useSubscription: Initialization error:', error);
-        setHasInitialized(false); // Reset on error to allow retry
+        if (mounted) {
+          setHasInitialized(false); // Reset on error to allow retry
+        }
       }
     };
 
@@ -127,7 +133,7 @@ export const useSubscription = (): UseSubscriptionReturn => {
     return () => {
       mounted = false;
     };
-  }, []); // Remove hasInitialized dependency to prevent re-initialization
+  }, []); // Empty dependency array to prevent re-initialization
 
   // Wrapped sync function with automatic rescheduling
   const performSync = useCallback(async (): Promise<boolean> => {
@@ -144,6 +150,7 @@ export const useSubscription = (): UseSubscriptionReturn => {
   return {
     // State
     isActivated,
+    subscriptionStatus,
     subscriptionTier,
     expiresAt,
     deviceId,

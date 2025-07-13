@@ -7,11 +7,17 @@
 import { safeStorage, app } from 'electron';
 import { promises as fs } from 'fs';
 import { join } from 'path';
-import { Subscription, SubscriptionData } from '../shared/subscription.types.js';
+import {
+  Subscription,
+  SubscriptionData,
+  SubscriptionStatus,
+  SubscriptionTier,
+  Platform,
+} from '../shared/subscription.types.js';
 
 export interface StoredSubscriptionData {
   subscription: SubscriptionData;
-  encryptedToken: Buffer | null;
+  encryptedToken: string | null;
   lastStoredAt: string;
 }
 
@@ -40,16 +46,35 @@ export class SecureStorage {
 
     const encryptedToken = subscription.signedToken ? this.encryptToken(subscription.signedToken) : null;
 
-    const storedData: StoredSubscriptionData = {
-      subscription: subscription.toData(),
-      encryptedToken,
+    const subscriptionData = subscription.toData();
+
+    // Convert complex objects to serializable format
+    const serializableData = {
+      ...subscriptionData,
+      status: subscriptionData.status.toString(),
+      tier: subscriptionData.tier.toString(),
+      deviceInfo: {
+        ...subscriptionData.deviceInfo,
+        platform: subscriptionData.deviceInfo.platform.toString(),
+      },
+      signedToken: null, // Remove the plain text token before storing
+    };
+
+    // Convert Buffer to base64 string for JSON storage
+    const encryptedTokenString = encryptedToken ? encryptedToken.toString('base64') : null;
+
+    const storedData = {
+      subscription: serializableData as any,
+      encryptedToken: encryptedTokenString,
       lastStoredAt: new Date().toISOString(),
     };
 
-    // Remove the plain text token before storing
-    const subscriptionData = { ...storedData.subscription };
-    subscriptionData.signedToken = null;
-    storedData.subscription = subscriptionData;
+    console.log('💾 SecureStorage: Storing subscription data:', {
+      status: serializableData.status,
+      tier: serializableData.tier,
+      deviceId: serializableData.deviceId,
+      hasEncryptedToken: !!encryptedTokenString,
+    });
 
     await fs.writeFile(this.subscriptionFile, JSON.stringify(storedData, null, 2), 'utf8');
   }
@@ -65,7 +90,9 @@ export class SecureStorage {
       // Decrypt the token if it exists
       let decryptedToken: string | null = null;
       if (storedData.encryptedToken) {
-        decryptedToken = this.decryptToken(storedData.encryptedToken);
+        // Convert base64 string back to Buffer
+        const encryptedTokenBuffer = Buffer.from(storedData.encryptedToken, 'base64');
+        decryptedToken = this.decryptToken(encryptedTokenBuffer);
       }
 
       // Restore the token to the subscription data
@@ -83,8 +110,24 @@ export class SecureStorage {
         ? new Date(subscriptionData.lastValidatedAt)
         : null;
 
+      // Reconstruct complex objects from serialized strings
+      subscriptionData.status = SubscriptionStatus.fromString(subscriptionData.status as any);
+      subscriptionData.tier = SubscriptionTier.fromString(subscriptionData.tier as any);
+      subscriptionData.deviceInfo = {
+        ...subscriptionData.deviceInfo,
+        platform: subscriptionData.deviceInfo.platform as Platform,
+        registeredAt: new Date(subscriptionData.deviceInfo.registeredAt),
+      };
+
+      console.log('🔍 SecureStorage: Retrieved subscription data:', {
+        status: subscriptionData.status?.toString(),
+        tier: subscriptionData.tier?.toString(),
+        deviceId: subscriptionData.deviceId,
+      });
+
       return Subscription.fromData(subscriptionData);
     } catch (error) {
+      console.error('❌ SecureStorage: Failed to retrieve subscription:', error);
       // File doesn't exist or is corrupted
       return null;
     }

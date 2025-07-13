@@ -5,7 +5,81 @@
  */
 
 import { apiClient } from './api';
-import { AnalyticsData, SubscriptionAnalytics, DeviceAnalytics, ApiResponse } from '@/types';
+import { AnalyticsData, SubscriptionAnalytics, DeviceAnalytics, ApiResponse, SubscriptionTier } from '@/types';
+
+/**
+ * Mock data for analytics endpoints that don't exist yet
+ */
+const mockSubscriptionAnalytics: SubscriptionAnalytics[] = [
+  {
+    period: 'Jan 2024',
+    newSubscriptions: 25,
+    renewedSubscriptions: 18,
+    cancelledSubscriptions: 5,
+    revenue: 12500,
+    averageLifetime: 8.5,
+    topTiers: [
+      { tier: SubscriptionTier.PROFESSIONAL, count: 15, revenue: 7500, percentage: 60 },
+      { tier: SubscriptionTier.BASIC, count: 8, revenue: 3200, percentage: 32 },
+      { tier: SubscriptionTier.ENTERPRISE, count: 2, revenue: 1800, percentage: 8 },
+    ],
+  },
+  {
+    period: 'Feb 2024',
+    newSubscriptions: 30,
+    renewedSubscriptions: 22,
+    cancelledSubscriptions: 3,
+    revenue: 15800,
+    averageLifetime: 9.2,
+    topTiers: [
+      { tier: SubscriptionTier.PROFESSIONAL, count: 20, revenue: 10000, percentage: 63 },
+      { tier: SubscriptionTier.BASIC, count: 9, revenue: 3600, percentage: 29 },
+      { tier: SubscriptionTier.ENTERPRISE, count: 3, revenue: 2200, percentage: 8 },
+    ],
+  },
+  {
+    period: 'Mar 2024',
+    newSubscriptions: 35,
+    renewedSubscriptions: 28,
+    cancelledSubscriptions: 8,
+    revenue: 19200,
+    averageLifetime: 8.8,
+    topTiers: [
+      { tier: SubscriptionTier.PROFESSIONAL, count: 22, revenue: 11000, percentage: 59 },
+      { tier: SubscriptionTier.BASIC, count: 11, revenue: 4400, percentage: 30 },
+      { tier: SubscriptionTier.ENTERPRISE, count: 4, revenue: 3800, percentage: 11 },
+    ],
+  },
+];
+
+const mockDeviceAnalytics: DeviceAnalytics = {
+  totalDevices: 1247,
+  activeDevices: 1089,
+  devicesByPlatform: [
+    { platform: 'Windows', count: 589, percentage: 47.2 },
+    { platform: 'macOS', count: 312, percentage: 25.0 },
+    { platform: 'Linux', count: 203, percentage: 16.3 },
+    { platform: 'iOS', count: 98, percentage: 7.9 },
+    { platform: 'Android', count: 45, percentage: 3.6 },
+  ],
+  devicesByRegion: [
+    { region: 'North America', count: 456, percentage: 36.6 },
+    { region: 'Europe', count: 398, percentage: 31.9 },
+    { region: 'Asia Pacific', count: 289, percentage: 23.2 },
+    { region: 'Latin America', count: 67, percentage: 5.4 },
+    { region: 'Middle East & Africa', count: 37, percentage: 2.9 },
+  ],
+  averageDevicesPerSubscription: 2.8,
+};
+
+const mockRevenueData = [
+  { period: '2024-01', revenue: 45000, count: 150 },
+  { period: '2024-02', revenue: 52000, count: 175 },
+  { period: '2024-03', revenue: 58500, count: 195 },
+  { period: '2024-04', revenue: 65000, count: 220 },
+  { period: '2024-05', revenue: 72000, count: 245 },
+  { period: '2024-06', revenue: 78000, count: 268 },
+];
 
 /**
  * Analytics Service Class
@@ -23,63 +97,61 @@ class AnalyticsService {
 
   /**
    * Get subscription analytics with date range
+   * Note: Using mock data as backend endpoint doesn't exist yet
    */
   async getSubscriptionAnalytics(
-    startDate?: Date,
-    endDate?: Date,
-    groupBy: 'day' | 'week' | 'month' = 'day'
+    _startDate?: Date,
+    _endDate?: Date,
+    _groupBy: 'day' | 'week' | 'month' = 'day'
   ): Promise<ApiResponse<SubscriptionAnalytics[]>> {
-    const params = new URLSearchParams();
-
-    if (startDate) {
-      params.append('start_date', startDate.toISOString());
-    }
-    if (endDate) {
-      params.append('end_date', endDate.toISOString());
-    }
-    params.append('group_by', groupBy);
-
-    const url = `${this.baseUrl}/subscriptions?${params.toString()}`;
-    return apiClient.get<SubscriptionAnalytics[]>(url);
+    // Return mock data to prevent 404 errors
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          success: true,
+          data: mockSubscriptionAnalytics,
+          message: 'Mock subscription analytics data',
+        });
+      }, 500); // Simulate network delay
+    });
   }
 
   /**
    * Get device analytics
+   * Note: Using mock data as backend endpoint doesn't exist yet
    */
-  async getDeviceAnalytics(startDate?: Date, endDate?: Date): Promise<ApiResponse<DeviceAnalytics>> {
-    const params = new URLSearchParams();
-
-    if (startDate) {
-      params.append('start_date', startDate.toISOString());
-    }
-    if (endDate) {
-      params.append('end_date', endDate.toISOString());
-    }
-
-    const url = `${this.baseUrl}/devices?${params.toString()}`;
-    return apiClient.get<DeviceAnalytics>(url);
+  async getDeviceAnalytics(_startDate?: Date, _endDate?: Date): Promise<ApiResponse<DeviceAnalytics>> {
+    // Return mock data to prevent 404 errors
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          success: true,
+          data: mockDeviceAnalytics,
+          message: 'Mock device analytics data',
+        });
+      }, 500); // Simulate network delay
+    });
   }
 
   /**
    * Get revenue analytics
+   * Note: Using mock data as backend endpoint doesn't exist yet
    */
   async getRevenueAnalytics(
-    startDate?: Date,
-    endDate?: Date,
-    groupBy: 'day' | 'week' | 'month' = 'month'
+    _startDate?: Date,
+    _endDate?: Date,
+    _groupBy: 'day' | 'week' | 'month' = 'month'
   ): Promise<ApiResponse<any[]>> {
-    const params = new URLSearchParams();
-
-    if (startDate) {
-      params.append('start_date', startDate.toISOString());
-    }
-    if (endDate) {
-      params.append('end_date', endDate.toISOString());
-    }
-    params.append('group_by', groupBy);
-
-    const url = `${this.baseUrl}/revenue?${params.toString()}`;
-    return apiClient.get<any[]>(url);
+    // Return mock data to prevent 404 errors
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          success: true,
+          data: mockRevenueData,
+          message: 'Mock revenue analytics data',
+        });
+      }, 500); // Simulate network delay
+    });
   }
 
   /**

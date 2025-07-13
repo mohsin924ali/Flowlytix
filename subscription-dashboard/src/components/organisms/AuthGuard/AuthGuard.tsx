@@ -15,7 +15,7 @@ interface AuthGuardProps {
 }
 
 // Routes that don't require authentication
-const publicRoutes = ['/auth/login', '/auth/register'];
+const publicRoutes = ['/auth/login', '/auth/register', '/subscriptions', '/', '/test-subscriptions'];
 
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -34,7 +34,12 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     }
   }, [isAuthenticated, loading, pathname, router]);
 
-  // Show loading during initialization
+  // Allow public routes to render without authentication - no loading spinner needed
+  if (publicRoutes.includes(pathname)) {
+    return <>{children}</>;
+  }
+
+  // Show loading during initialization only for protected routes
   if (loading) {
     return (
       <Box
@@ -53,11 +58,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         </Typography>
       </Box>
     );
-  }
-
-  // Allow public routes to render without authentication
-  if (publicRoutes.includes(pathname)) {
-    return <>{children}</>;
   }
 
   // Render children only if authenticated

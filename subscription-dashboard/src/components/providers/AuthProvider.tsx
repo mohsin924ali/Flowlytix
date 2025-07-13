@@ -47,6 +47,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // Check if we're in a browser environment
+        if (typeof window === 'undefined') {
+          setAuthState({
+            ...defaultAuthState,
+            loading: false,
+          });
+          return;
+        }
+
         const token = localStorage.getItem('auth_token');
         const userString = localStorage.getItem('auth_user');
 
@@ -96,9 +105,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         const token = 'mock-jwt-token';
 
-        // Store in localStorage
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('auth_user', JSON.stringify(user));
+        // Store in localStorage (only in browser environment)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('auth_token', token);
+          localStorage.setItem('auth_user', JSON.stringify(user));
+        }
 
         setAuthState({
           user,
@@ -122,8 +133,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Logout function
   const logout = (): void => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+    }
     setAuthState({
       ...defaultAuthState,
       loading: false,

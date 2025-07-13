@@ -37,6 +37,7 @@ import {
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { DashboardLayout } from '../components/templates';
+import { SubscriptionWarning } from '../components/molecules';
 import { useSalesAnalytics, useCustomerAnalytics, useProductAnalytics } from '../hooks/useAnalytics';
 
 // Animation variants
@@ -176,6 +177,9 @@ export const AnalyticsPage: React.FC = () => {
   return (
     <DashboardLayout title={t('analytics.title')}>
       <Container maxWidth='xl' sx={{ py: 3 }}>
+        {/* Subscription Warning Banner */}
+        <SubscriptionWarning showOnlyIfNeeded={true} dismissible={true} showDetails={false} />
+
         <motion.div variants={containerVariants} initial='hidden' animate='visible'>
           {/* Header */}
           <motion.div variants={itemVariants}>

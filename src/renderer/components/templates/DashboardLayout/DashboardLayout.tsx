@@ -9,7 +9,9 @@ import { Box, useTheme, useMediaQuery } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../../organisms';
 import { useNavigationStore } from '../../../store/navigation.store';
+import { useSubscription } from '../../../hooks/useSubscription';
 import { NAVIGATION_ROUTES, SYSTEM_ROUTES, NAVIGATION_CONFIG } from '../../../constants/navigation.constants';
+import type { NavigationRoute } from '../../../types/navigation.types';
 
 /**
  * Dashboard Layout Props
@@ -43,8 +45,38 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down(NAVIGATION_CONFIG.MOBILE_BREAKPOINT));
 
-  // Connect to navigation store
+  // Connect to navigation and subscription stores
   const { sidebarOpen, collapsed, activeRoute, toggleSidebar, toggleCollapsed, setActiveRoute } = useNavigationStore();
+  const { subscriptionStatus, isActivated } = useSubscription();
+
+  /**
+   * Filter navigation items based on subscription status
+   */
+  const filterNavigationBySubscription = React.useCallback(
+    (items: NavigationRoute[]): NavigationRoute[] => {
+      // If not activated, show all items (this is handled by SubscriptionGate)
+      if (!isActivated) {
+        return items;
+      }
+
+      // If subscription is suspended or cancelled, only allow Dashboard and Analytics
+      if (subscriptionStatus === 'suspended' || subscriptionStatus === 'cancelled') {
+        return items.filter((item) => item.id === 'dashboard' || item.id === 'analytics');
+      }
+
+      // For active subscriptions or other statuses, show all items
+      return items;
+    },
+    [isActivated, subscriptionStatus]
+  );
+
+  /**
+   * Combine and filter navigation and system routes based on subscription
+   */
+  const allNavigationItems = React.useMemo(() => {
+    const combinedItems = [...NAVIGATION_ROUTES, ...SYSTEM_ROUTES];
+    return filterNavigationBySubscription(combinedItems);
+  }, [filterNavigationBySubscription]);
 
   // Sync navigation store with current route
   React.useEffect(() => {
@@ -52,6 +84,31 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       setActiveRoute(location.pathname);
     }
   }, [location.pathname, activeRoute, setActiveRoute]);
+
+  // Subscription-based route protection
+  React.useEffect(() => {
+    if (!isActivated) return; // Let SubscriptionGate handle non-activated states
+
+    const isRestrictedRoute = !allNavigationItems.some((item) => {
+      // Check if current path matches any allowed navigation item
+      return (
+        location.pathname === item.path ||
+        location.pathname.startsWith(item.path + '/') ||
+        (item.children &&
+          item.children.some(
+            (child) => location.pathname === child.path || location.pathname.startsWith(child.path + '/')
+          ))
+      );
+    });
+
+    // If on a restricted route with suspended/cancelled subscription, redirect to dashboard
+    if (isRestrictedRoute && (subscriptionStatus === 'suspended' || subscriptionStatus === 'cancelled')) {
+      console.warn(
+        '🚫 DashboardLayout: Restricted route accessed with suspended subscription, redirecting to dashboard'
+      );
+      navigate('/', { replace: true });
+    }
+  }, [location.pathname, allNavigationItems, isActivated, subscriptionStatus, navigate]);
 
   // Calculate layout dimensions
   const sidebarWidth = showSidebar
@@ -69,13 +126,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     setActiveRoute(path);
     navigate(path);
   };
-
-  /**
-   * Combine navigation and system routes
-   */
-  const allNavigationItems = React.useMemo(() => {
-    return [...NAVIGATION_ROUTES, ...SYSTEM_ROUTES];
-  }, []);
 
   return (
     <Box
