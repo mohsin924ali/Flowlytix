@@ -48,16 +48,10 @@ export const SubscriptionWarning: React.FC<SubscriptionWarningProps> = ({
     return isExpired || isCompletelyExpired || isInGracePeriod;
   };
 
-  // Debug logging
-  console.log('🔍 SubscriptionWarning: Debug info', {
-    isActivated,
-    subscriptionStatus,
-    isExpired,
-    isCompletelyExpired,
-    isInGracePeriod,
-    daysRemaining,
-    shouldShow: shouldShowWarning(),
-  });
+  // Log only when showing critical warnings in production
+  if (shouldShowWarning() && (subscriptionStatus === 'suspended' || subscriptionStatus === 'cancelled')) {
+    console.log('⚠️ SubscriptionWarning: Displaying critical warning:', subscriptionStatus);
+  }
 
   // Get warning severity and message
   const getWarningInfo = () => {
@@ -67,7 +61,7 @@ export const SubscriptionWarning: React.FC<SubscriptionWarningProps> = ({
         severity: 'error' as const,
         title: 'Subscription Suspended',
         message:
-          'Your subscription has been suspended. Please contact support or reactivate to continue using all features.',
+          'Your subscription is currently inactive. Some features may be limited. Please contact support or check your subscription dashboard to reactivate.',
         icon: <Error />,
         color: theme.palette.error.main,
       };

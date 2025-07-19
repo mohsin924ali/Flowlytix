@@ -20,34 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade database schema."""
-    # Create payment_method enum if it doesn't exist
-    op.execute("""
-        DO $$ BEGIN
-            CREATE TYPE payment_method AS ENUM ('cash', 'card', 'bank_transfer', 'paypal', 'stripe', 'manual', 'other');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """)
-    
-    # Create payment_type enum if it doesn't exist
-    op.execute("""
-        DO $$ BEGIN
-            CREATE TYPE payment_type AS ENUM ('subscription', 'one_time', 'refund', 'adjustment', 'penalty', 'bonus');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """)
-    
-    # Create payment_status enum if it doesn't exist
-    op.execute("""
-        DO $$ BEGIN
-            CREATE TYPE payment_status AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled', 'refunded');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    """)
-    
-    # Create payments table
+    # Create payments table - SQLAlchemy will auto-create enum types
     op.create_table(
         'payments',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False, comment='Unique payment identifier'),

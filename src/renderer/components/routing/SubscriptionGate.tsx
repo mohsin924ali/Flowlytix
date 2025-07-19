@@ -5,10 +5,11 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Box, Alert, CircularProgress, Typography } from '@mui/material';
+import { Box, Alert, CircularProgress, Typography, Card, CardContent, Button } from '@mui/material';
 import { useSubscription } from '../../hooks/useSubscription';
 import { ActivationScreen } from '../organisms/ActivationScreen/ActivationScreen';
 import { useAuthStore } from '../../store/auth.store';
+import { ErrorOutline, Refresh } from '@mui/icons-material';
 
 interface SubscriptionGateProps {
   children: React.ReactNode;
@@ -85,6 +86,26 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ children }) 
   // Show error if there's an issue
   if (error) {
     console.log('❌ SubscriptionGate: Error state:', error);
+
+    // CRITICAL FIX: Handle license invalidation errors specially
+    // Show activation screen instead of error screen for license issues
+    if (
+      error.includes('License invalid') ||
+      error.includes('activation required') ||
+      error.includes('invalid_license')
+    ) {
+      console.log('🔑 SubscriptionGate: License invalid - showing activation screen instead of error');
+      return (
+        <ActivationScreen
+          onActivationSuccess={handleActivationSuccess}
+          onTrialMode={handleTrialMode}
+          showDeviceInfo={true}
+          isReactivation={true} // Indicate this is a re-activation
+        />
+      );
+    }
+
+    // Show friendly error screen for other errors
     return (
       <Box
         sx={{
@@ -93,14 +114,30 @@ export const SubscriptionGate: React.FC<SubscriptionGateProps> = ({ children }) 
           alignItems: 'center',
           justifyContent: 'center',
           p: 2,
+          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
         }}
       >
-        <Alert severity='error' sx={{ maxWidth: 500 }}>
-          <Typography variant='h6' gutterBottom>
-            Subscription Error
-          </Typography>
-          <Typography variant='body1'>{error}</Typography>
-        </Alert>
+        <Card sx={{ maxWidth: 500, p: 3, textAlign: 'center' }}>
+          <CardContent>
+            <ErrorOutline sx={{ fontSize: 64, color: 'error.main', mb: 2 }} />
+            <Typography variant='h5' gutterBottom color='error'>
+              Subscription Error
+            </Typography>
+            <Typography variant='body1' sx={{ mb: 3 }}>
+              {error}
+            </Typography>
+            <Button
+              variant='contained'
+              onClick={() => {
+                clearError();
+                window.location.reload();
+              }}
+              startIcon={<Refresh />}
+            >
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
       </Box>
     );
   }

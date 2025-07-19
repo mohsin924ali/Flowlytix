@@ -62,6 +62,7 @@ export interface SubscriptionStore extends SubscriptionState {
   validateOnStartup: () => Promise<boolean>;
   getCurrentState: () => Promise<void>;
   initializeSubscription: () => Promise<void>;
+  forceRefreshStatus: () => Promise<boolean>;
 
   // Step 3: Periodic Sync Actions
   performPeriodicSync: () => Promise<boolean>;
@@ -127,51 +128,87 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
         ...initialState,
 
         /**
-         * Initialize subscription system (only once per session)
+         * Initialize subscription system
+         * This is called once during app startup
          */
         initializeSubscription: async (): Promise<void> => {
-          // Return existing promise if already initializing
-          if (initializationPromise) {
-            return initializationPromise;
-          }
-
-          // Return immediately if already initialized
           if (isInitialized) {
+            console.log('🔄 Store: Already initialized, skipping');
             return;
           }
 
-          console.log('🚀 Store: Starting subscription initialization...');
+          try {
+            isInitialized = true;
 
-          // Create initialization promise
-          initializationPromise = (async () => {
-            try {
-              console.log('🔧 Store: Starting device description...');
-              // Get device description
-              await get().getDeviceDescription();
+            set((state) => {
+              state.isLoading = true;
+              state.error = null;
+            });
 
-              console.log('🔧 Store: Starting validation on startup...');
-              // Validate on startup
-              await get().validateOnStartup();
-
-              console.log('🔧 Store: Scheduling background sync...');
-              // Schedule background sync
-              get().scheduleBackgroundSync();
-
-              // Don't perform initial sync here - only sync after activation or if subscription exists
-              console.log('🔧 Store: Skipping initial sync - will sync after activation or if subscription exists');
-
-              isInitialized = true;
-              console.log('✅ Store: Subscription initialization completed');
-            } catch (error) {
-              console.error('❌ Store: Subscription initialization failed:', error);
-              // Reset so it can be retried
-              isInitialized = false;
-              initializationPromise = null;
-              throw error;
+            // Validate on startup (offline-first)
+            const success = await get().validateOnStartup();
+            if (!success) {
+              return;
             }
-          })();
 
-          return initializationPromise;
+            // Perform sync to validate with server if activated
+            if (get().isActivated) {
+              try {
+                const syncSuccess = await get().performPeriodicSync();
+                if (!syncSuccess) {
+                  return;
+                }
+              } catch (syncError) {
+                console.log('⚠️ Store: Sync failed during initialization (offline mode)');
+              }
+            }
+
+            // Load additional state
+            await get().getCurrentState();
+            await get().checkExpiryWarning();
+          } catch (error) {
+            console.error('❌ Store: Subscription initialization error:', error);
+            set((state) => {
+              state.error = error instanceof Error ? error.message : 'Initialization failed';
+              state.isLoading = false;
+            });
+          } finally {
+            set((state) => {
+              state.isLoading = false;
+            });
+          }
+        },
+
+        /**
+         * Force refresh subscription status from server
+         */
+        forceRefreshStatus: async (): Promise<boolean> => {
+          if (!get().isActivated) {
+            return false;
+          }
+
+          // Temporarily reset initialization flag to allow fresh sync
+          const wasInitialized = isInitialized;
+          isInitialized = false;
+
+          set((state) => {
+            state.syncInProgress = true;
+            state.error = null;
+          });
+
+          try {
+            const syncSuccess = await get().performPeriodicSync();
+            return syncSuccess;
+          } catch (error) {
+            console.error('❌ Store: Force refresh failed:', error);
+            set((state) => {
+              state.syncInProgress = false;
+              state.error = error instanceof Error ? error.message : 'Refresh failed';
+            });
+            return false;
+          } finally {
+            isInitialized = wasInitialized;
+          }
         },
 
         /**
@@ -280,19 +317,14 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
          * Validate subscription on app startup
          */
         validateOnStartup: async (): Promise<boolean> => {
-          console.log('🌐 Store: validateOnStartup called');
-
           // Skip if already initialized to prevent loops
           if (isInitialized) {
-            console.log('🔄 Store: Skipping validation - already initialized');
             return true;
           }
 
-          // CRITICAL FIX: Skip validation if we just completed an activation
-          // This prevents the validation from overwriting the activated state
+          // Only skip validation during active activation process
           const currentState = get();
-          if (currentState.isActivated && currentState.activationInProgress === false) {
-            console.log('🔄 Store: Skipping validation - device was just activated');
+          if (currentState.activationInProgress) {
             set((state) => {
               state.isLoading = false;
               state.error = null;
@@ -300,22 +332,12 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
             return true;
           }
 
-          console.log('🌐 Store: Starting startup validation...');
-
           set((state) => {
             state.isLoading = true;
             state.error = null;
           });
 
           try {
-            console.log('🔍 Store: Checking subscription API availability...');
-            console.log('🔍 Store: window.electronAPI exists:', !!window.electronAPI);
-            console.log('🔍 Store: window.electronAPI.subscription exists:', !!window.electronAPI?.subscription);
-            console.log('🔍 Store: window.electronAPI type:', typeof window.electronAPI);
-            if (window.electronAPI) {
-              console.log('🔍 Store: window.electronAPI keys:', Object.keys(window.electronAPI));
-            }
-
             if (!window.electronAPI?.subscription) {
               throw new Error('Subscription API not available');
             }
@@ -323,8 +345,6 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
             const response = await window.electronAPI.subscription.validateStartup();
 
             if (response.success && response.data) {
-              console.log('✅ Store: Startup validation successful');
-
               set((state) => {
                 const data = response.data;
                 state.isActivated = data.isActivated;
@@ -344,14 +364,11 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
               // Check for expiry warnings
               await get().checkExpiryWarning();
 
-              // CRITICAL: Perform sync after startup validation to get latest status from server
-              console.log('🔄 Store: Performing post-validation sync to check server status...');
+              // Perform sync after startup validation to get latest status from server
               try {
                 await get().performPeriodicSync();
-                console.log('✅ Store: Post-validation sync completed');
               } catch (syncError) {
                 console.error('❌ Store: Post-validation sync failed:', syncError);
-                // Don't fail validation if sync fails
               }
 
               return true;
@@ -382,7 +399,6 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
             const response = await window.electronAPI.subscription.getCurrentState();
 
             if (response.success && response.data) {
-              console.log('🔄 Store: getCurrentState received data:', response.data);
               set((state) => {
                 const data = response.data;
                 state.isActivated = data.isActivated;
@@ -396,7 +412,6 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
                 state.lastValidatedAt = data.lastValidatedAt ? new Date(data.lastValidatedAt) : null;
                 state.needsOnlineValidation = data.needsOnlineValidation;
               });
-              console.log('🔄 Store: State updated with current subscription status');
             }
           } catch (error) {
             console.error('❌ Store: Get current state failed:', error);
@@ -405,46 +420,98 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
 
         /**
          * STEP 3: PERIODIC SYNC (ONLINE)
-         * Sync with licensing server when internet is available
+         * Sync subscription status with licensing server when internet is available
          */
         performPeriodicSync: async (): Promise<boolean> => {
-          console.log('🔄 Store: performPeriodicSync called');
-          console.log('🔄 Store: Starting periodic sync...');
-
           set((state) => {
             state.syncInProgress = true;
+            state.error = null;
           });
 
           try {
             if (!window.electronAPI?.subscription) {
-              console.log('❌ Store: Subscription API not available for sync');
               throw new Error('Subscription API not available');
             }
 
-            console.log('🔄 Store: Calling electron API performSync...');
             const response = await window.electronAPI.subscription.performSync();
-            console.log('🔄 Store: Sync response received:', response);
 
-            if (response.success) {
-              console.log('✅ Store: Periodic sync successful');
+            if (response.success && response.data.success) {
+              // Check if subscription data was cleared due to invalid license
+              if (response.data.shouldClearData) {
+                console.log('🚨 Store: License invalidated - clearing app state');
 
-              // Refresh state after sync
-              console.log('🔄 Store: Refreshing state after successful sync...');
+                // SECURITY FIX: Immediately update UI state to block the app
+                set((state) => {
+                  state.isActivated = false;
+                  state.subscriptionStatus = null;
+                  state.subscriptionTier = null;
+                  state.expiresAt = null;
+                  state.deviceId = null;
+                  state.gracePeriodDays = 0;
+                  state.isInGracePeriod = false;
+                  state.daysRemaining = 0;
+                  state.lastValidatedAt = null;
+                  state.needsOnlineValidation = true;
+                  state.syncInProgress = false;
+                  state.error = null; // CLEAR error - let SubscriptionGate handle the activation flow
+                });
+
+                console.log('🚨 Store: App is now blocked - activation required');
+                return false; // License was invalidated
+              }
+
+              // Always refresh current state to ensure UI shows latest status
+              const statusBeforeRefresh = get().subscriptionStatus;
               await get().getCurrentState();
-              await get().checkExpiryWarning();
-              console.log('🔄 Store: State refreshed after sync');
+              const statusAfterRefresh = get().subscriptionStatus;
+
+              // Log status changes for production monitoring
+              if (statusBeforeRefresh !== statusAfterRefresh) {
+                console.log(`🔄 Store: Status changed: ${statusBeforeRefresh} → ${statusAfterRefresh}`);
+              }
+
+              // Log critical status changes
+              if (statusAfterRefresh === 'suspended' || statusAfterRefresh === 'cancelled') {
+                console.log('🚨 Store: Critical status detected:', statusAfterRefresh);
+              }
 
               set((state) => {
                 state.syncInProgress = false;
-                state.lastValidatedAt = new Date();
-                state.needsOnlineValidation = false;
               });
 
               return true;
             } else {
-              console.log('⚠️ Store: Periodic sync failed (offline?):', response.error);
+              console.log('⚠️ Store: Periodic sync failed:', response.data?.error);
+
+              // CRITICAL SECURITY CHECK: Even if sync "failed", check if it was due to invalid license
+              if (
+                response.data?.shouldClearData ||
+                response.data?.error?.includes('invalid_license') ||
+                response.data?.error?.includes('License validation failed')
+              ) {
+                console.log('🚨 Store: Sync failed due to invalid license - blocking app');
+
+                // SECURITY FIX: Block the app immediately
+                set((state) => {
+                  state.isActivated = false;
+                  state.subscriptionStatus = null;
+                  state.subscriptionTier = null;
+                  state.expiresAt = null;
+                  state.deviceId = null;
+                  state.gracePeriodDays = 0;
+                  state.isInGracePeriod = false;
+                  state.daysRemaining = 0;
+                  state.lastValidatedAt = null;
+                  state.needsOnlineValidation = true;
+                  state.syncInProgress = false;
+                  state.error = null; // CLEAR error - let SubscriptionGate handle the activation flow
+                });
+
+                return false; // License was invalidated
+              }
 
               set((state) => {
+                state.error = response.data?.error || 'Sync failed';
                 state.syncInProgress = false;
               });
 
@@ -454,6 +521,7 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
             console.error('❌ Store: Periodic sync error:', error);
 
             set((state) => {
+              state.error = error instanceof Error ? error.message : 'Sync failed';
               state.syncInProgress = false;
             });
 
@@ -638,10 +706,13 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
         partialize: (state) => ({
           // Only persist essential data, not UI state
           isActivated: state.isActivated,
+          subscriptionStatus: state.subscriptionStatus, // CRITICAL FIX: Persist subscription status
           subscriptionTier: state.subscriptionTier,
           expiresAt: state.expiresAt,
           deviceId: state.deviceId,
           gracePeriodDays: state.gracePeriodDays,
+          isInGracePeriod: state.isInGracePeriod, // CRITICAL FIX: Persist grace period state
+          daysRemaining: state.daysRemaining, // CRITICAL FIX: Persist days remaining
           lastValidatedAt: state.lastValidatedAt,
           deviceDescription: state.deviceDescription,
         }),

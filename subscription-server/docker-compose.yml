@@ -44,7 +44,7 @@ services:
       - DATABASE_URL=postgresql+asyncpg://flowlytix:flowlytix_password@db:5432/flowlytix_subscriptions
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=dev-secret-key-change-in-production
-      - ALLOWED_ORIGINS=["http://localhost:3000", "http://localhost:8080"]
+      - ALLOWED_ORIGINS=["http://localhost:3000", "http://localhost:8080", "http://127.0.0.1:3000", "http://127.0.0.1:8080", "http://192.168.65.1:3000", "http://192.168.65.1:8080", "http://host.docker.internal:3000", "http://host.docker.internal:8080"]
     volumes:
       - .:/app
       - ./keys:/app/keys

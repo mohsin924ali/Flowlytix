@@ -141,6 +141,36 @@ export const SubscriptionTestPage: React.FC = () => {
     }
   };
 
+  // Add a manual sync test
+  const handleManualSyncTest = async () => {
+    try {
+      setRealUserFlowResult('Testing manual sync...');
+
+      console.log('🔄 Manual sync test: Calling performPeriodicSync via store...');
+      const success = await useSubscriptionStore.getState().performPeriodicSync();
+
+      if (success) {
+        setRealUserFlowResult('✅ Manual sync successful! Check the app for any status changes.');
+
+        // Force a state refresh
+        setTimeout(() => {
+          const currentState = useSubscriptionStore.getState();
+          console.log('🔄 Manual sync test: Current subscription state after sync:', {
+            isActivated: currentState.isActivated,
+            subscriptionStatus: currentState.subscriptionStatus,
+            subscriptionTier: currentState.subscriptionTier,
+            error: currentState.error,
+          });
+        }, 1000);
+      } else {
+        setRealUserFlowResult('❌ Manual sync failed. Check console for details.');
+      }
+    } catch (error) {
+      console.error('❌ Manual sync test failed:', error);
+      setRealUserFlowResult(`❌ Manual sync error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   return (
     <DashboardLayout>
       <Box sx={{ p: 3 }}>
@@ -163,6 +193,16 @@ export const SubscriptionTestPage: React.FC = () => {
                 <Chip
                   label={`Activated: ${subscription.isActivated}`}
                   color={subscription.isActivated ? 'success' : 'default'}
+                />
+                <Chip
+                  label={`Status: ${subscription.subscriptionStatus || 'None'}`}
+                  color={
+                    subscription.subscriptionStatus === 'active'
+                      ? 'success'
+                      : subscription.subscriptionStatus === 'suspended'
+                        ? 'error'
+                        : 'default'
+                  }
                 />
                 <Chip
                   label={`Loading: ${subscription.isLoading}`}
@@ -222,6 +262,22 @@ export const SubscriptionTestPage: React.FC = () => {
               <Button variant='outlined' onClick={handleDebugActivationTest} disabled={isLoading} sx={{ mb: 2 }}>
                 Debug Activation Test
               </Button>
+
+              <Button
+                variant='outlined'
+                color='secondary'
+                onClick={handleManualSyncTest}
+                disabled={isLoading}
+                sx={{ mb: 2 }}
+              >
+                🔄 Manual Sync Test (Check for Suspension)
+              </Button>
+
+              {realUserFlowResult && (
+                <Alert severity={realUserFlowResult.includes('✅') ? 'success' : 'info'} sx={{ mt: 2 }}>
+                  {realUserFlowResult}
+                </Alert>
+              )}
             </CardContent>
           </Card>
 

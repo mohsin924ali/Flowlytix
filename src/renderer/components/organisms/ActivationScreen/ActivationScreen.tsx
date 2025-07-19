@@ -77,12 +77,38 @@ export interface ActivationScreenProps {
   onTrialMode?: () => void;
   /** Show device info panel */
   showDeviceInfo?: boolean;
+  isReactivation?: boolean; // NEW: Indicates this is a re-activation (not first-time)
 }
+
+/**
+ * Get appropriate messaging based on activation type
+ */
+const getActivationMessaging = (isReactivation: boolean) => {
+  if (isReactivation) {
+    return {
+      title: 'License Reactivation Required',
+      subtitle: 'Your license needs to be reactivated to continue using the application.',
+      description:
+        'Your previous license was invalidated by the server. Please enter a valid license key to restore access to all features.',
+      buttonText: 'Reactivate License',
+      helpText: 'Need help? Contact support if you believe this is an error.',
+    };
+  }
+
+  return {
+    title: 'Activate Your License',
+    subtitle: "Welcome to Flowlytix! Let's get you set up.",
+    description: 'Enter your license key to unlock all features and start managing your business efficiently.',
+    buttonText: 'Activate License',
+    helpText: "Don't have a license key? Contact our sales team to get started.",
+  };
+};
 
 export const ActivationScreen: React.FC<ActivationScreenProps> = ({
   onActivationSuccess,
   onTrialMode,
   showDeviceInfo = true,
+  isReactivation = false,
 }) => {
   const { activateDevice, deviceDescription, isLoading, error, activationInProgress, clearError } = useSubscription();
 
@@ -260,11 +286,15 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
     );
   };
 
+  const messaging = getActivationMessaging(isReactivation);
+
   return (
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: isReactivation
+          ? 'linear-gradient(135deg, #ffecb3 0%, #ff8a65 100%)' // Warmer colors for re-activation
+          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Original colors for first-time
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -303,16 +333,16 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
         transition={{ duration: 0.6 }}
         style={{ position: 'relative', zIndex: 1 }}
       >
-        <Card
-          elevation={24}
+        <Paper
+          elevation={10}
           sx={{
             maxWidth: 900,
             width: '100%',
             borderRadius: 4,
             overflow: 'hidden',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            backdropFilter: 'blur(20px)',
+            border: isReactivation ? '2px solid orange' : '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: isReactivation ? '0 20px 40px rgba(255, 152, 0, 0.3)' : '0 20px 40px rgba(0, 0, 0, 0.1)',
           }}
         >
           {/* Enhanced Header */}
@@ -337,18 +367,60 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
             }}
           >
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
             >
-              <Logo size='large' variant='text' sx={{ mb: 3 }} />
-              <Typography variant='h3' component='h1' gutterBottom fontWeight='bold' sx={{ mb: 2 }}>
-                Activate Flowlytix
-              </Typography>
-              <Typography variant='h6' sx={{ opacity: 0.9, fontWeight: 300, maxWidth: 600, mx: 'auto' }}>
-                Enter your license key to activate your professional distribution management system and start managing
-                your business operations.
-              </Typography>
+              {/* Re-activation explanation */}
+              {isReactivation && (
+                <Alert
+                  severity='warning'
+                  sx={{
+                    mb: 3,
+                    bgcolor: 'rgba(255, 152, 0, 0.1)',
+                    '& .MuiAlert-message': { width: '100%' },
+                  }}
+                  icon={<Security />}
+                >
+                  <Typography variant='subtitle2' sx={{ fontWeight: 600, mb: 1 }}>
+                    License Validation Failed
+                  </Typography>
+                  <Typography variant='body2' sx={{ mb: 1 }}>
+                    Your previous license was not found in our database or has been revoked. This could happen if:
+                  </Typography>
+                  <Box component='ul' sx={{ margin: 0, paddingLeft: 2 }}>
+                    <li>Your subscription has expired</li>
+                    <li>Your license was transferred to another device</li>
+                    <li>There was a server synchronization issue</li>
+                  </Box>
+                </Alert>
+              )}
+
+              {/* Header */}
+              <Box sx={{ textAlign: 'center', mb: 4 }}>
+                <Box
+                  sx={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: '50%',
+                    bgcolor: isReactivation ? 'orange' : 'primary.main',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mx: 'auto',
+                    mb: 3,
+                    boxShadow: 3,
+                  }}
+                >
+                  <VpnKey sx={{ fontSize: 40, color: 'white' }} />
+                </Box>
+                <Typography variant='h5' gutterBottom fontWeight='bold'>
+                  {messaging.title}
+                </Typography>
+                <Typography variant='body2' color='text.secondary'>
+                  {messaging.description}
+                </Typography>
+              </Box>
             </motion.div>
           </Box>
 
@@ -397,7 +469,7 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
                           License Key
                         </Typography>
                         <Typography variant='body2' color='text.secondary'>
-                          Enter your unique license key to activate your subscription
+                          {messaging.description}
                         </Typography>
                       </Box>
                     </Box>
@@ -477,7 +549,7 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
                           transition: 'all 0.3s ease',
                         }}
                       >
-                        {activationInProgress ? 'Activating...' : 'Activate License'}
+                        {activationInProgress ? 'Activating...' : messaging.buttonText}
                       </Button>
 
                       {onTrialMode && (
@@ -513,7 +585,7 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
                     sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold' }}
                   >
                     <ContactSupport sx={{ mr: 1, color: 'primary.main' }} />
-                    Need Help?
+                    {messaging.helpText}
                   </Typography>
 
                   <Grid container spacing={2}>
@@ -632,7 +704,7 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({
               )}
             </Grid>
           </CardContent>
-        </Card>
+        </Paper>
       </motion.div>
 
       {/* Enhanced Success Dialog */}

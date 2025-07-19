@@ -74,6 +74,16 @@ export interface SyncResponse {
   status?: string;
   error?: string;
   message?: string;
+  isNetworkError?: boolean; // CRITICAL FIX: Add network error indicator
+
+  // CRITICAL FIX: Add validation response fields from server
+  valid?: boolean; // Server returns this for license validation
+  reason?: string; // Server returns validation failure reason
+  subscription?: any; // Server returns subscription data or null
+  device?: any; // Server returns device data or null
+  in_grace_period?: boolean;
+  days_until_expiry?: number;
+  expires_at?: string; // Alternative naming from server
 }
 
 export interface ValidationRequest {

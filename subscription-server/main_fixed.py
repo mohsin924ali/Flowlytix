@@ -87,13 +87,27 @@ def create_app() -> FastAPI:
     )
     
     # Add CORS middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.allowed_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
-    )
+    # In development, be more permissive with CORS to handle Docker networks
+    if settings.environment == "development":
+        # Allow all origins in development for Docker compatibility
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # Allow all origins in development
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            allow_headers=["*"],
+        )
+        logger.info("Development CORS: Allowing all origins")
+    else:
+        # Use specific origins in production
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.allowed_origins,
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            allow_headers=["*"],
+        )
+        logger.info(f"Production CORS: Allowing origins: {settings.allowed_origins}")
     
     # Add security headers middleware for production
     @app.middleware("http")
@@ -166,6 +180,22 @@ async def root():
         "documentation": "/docs" if not settings.is_production else None,
         "health": "/health",
     }
+
+
+# Add explicit OPTIONS handler for CORS preflight requests
+@app.options("/{path:path}")
+async def handle_options(path: str):
+    """Handle CORS preflight requests."""
+    return JSONResponse(
+        status_code=200,
+        content={"message": "OK"},
+        headers={
+            "Access-Control-Allow-Origin": "*" if settings.environment == "development" else settings.allowed_origins[0] if settings.allowed_origins else "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
 
 
 # Analytics endpoints

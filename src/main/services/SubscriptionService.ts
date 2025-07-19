@@ -26,6 +26,7 @@ export interface SyncResult {
   updated: boolean;
   subscription?: Subscription;
   error?: string;
+  shouldClearData?: boolean; // Added for explicit license invalidation
 }
 
 export interface ValidationResult {
@@ -238,8 +239,7 @@ export class SubscriptionService {
    */
   async performSync(): Promise<SyncResult> {
     try {
-      console.log('🔄 SubscriptionService: Starting periodic sync...');
-      console.log('🔄 SubscriptionService: Syncing with server to get latest subscription status...');
+      console.log('🔄 SubscriptionService: Syncing with server...');
 
       const subscription = await this.secureStorage.getSubscription();
       if (!subscription) {
@@ -259,12 +259,16 @@ export class SubscriptionService {
       };
 
       // Call sync API
-      console.log('🔄 SubscriptionService: Calling API client sync with request:', syncRequest);
       const response = await this.apiClient.syncSubscription(syncRequest as any);
-      console.log('🔄 SubscriptionService: API response:', response);
 
+      // CRITICAL FIX: Handle different server response formats
+      // Server can return either:
+      // 1. Success response: { success: true, subscriptionTier, expiresAt, ... }
+      // 2. Validation response: { valid: true/false, reason, message, ... }
+
+      // Check for successful sync with updated subscription data
       if (response.success && response.subscriptionTier && response.expiresAt) {
-        console.log('✅ SubscriptionService: Sync successful');
+        console.log('✅ SubscriptionService: Sync successful - subscription updated');
 
         // Update subscription with new data
         const updatedData = subscription.toData();
@@ -273,7 +277,6 @@ export class SubscriptionService {
         updatedData.features = response.features || updatedData.features;
         updatedData.gracePeriodDays = response.gracePeriodDays || updatedData.gracePeriodDays;
 
-        // CRITICAL FIX: Update subscription status from sync response
         if (response.status) {
           console.log('🔄 SubscriptionService: Updating subscription status from server:', response.status);
           updatedData.status = SubscriptionStatus.fromString(response.status);
@@ -291,12 +294,137 @@ export class SubscriptionService {
           updated: true,
           subscription: updatedSubscription,
         };
-      } else {
-        console.log('❌ SubscriptionService: Sync failed:', response.error);
+      }
+
+      // Check for validation response format
+      else if (typeof response.valid === 'boolean') {
+        if (response.valid === true) {
+          // Check if server status differs from local status
+          const currentStatus = subscription.status.toString();
+          let serverStatus: string;
+
+          // Map server reason to our status
+          if (!response.reason || response.reason === 'active' || response.reason === null) {
+            serverStatus = 'active';
+          } else {
+            serverStatus = response.reason; // suspended, cancelled, expired, etc.
+          }
+
+          // If status changed, update local subscription
+          if (currentStatus !== serverStatus) {
+            console.log(`🔄 SubscriptionService: Status changed: ${currentStatus} → ${serverStatus}`);
+
+            const updatedData = subscription.toData();
+            updatedData.status = SubscriptionStatus.fromString(serverStatus);
+            updatedData.lastValidatedAt = new Date();
+
+            // Update other fields if provided by server response
+            if (response.expires_at) {
+              updatedData.expiresAt = new Date(response.expires_at);
+            }
+            if (response.days_until_expiry !== undefined) {
+              const newExpiryDate = new Date();
+              newExpiryDate.setDate(newExpiryDate.getDate() + response.days_until_expiry);
+              updatedData.expiresAt = newExpiryDate;
+            }
+
+            const updatedSubscription = Subscription.fromData(updatedData);
+            await this.secureStorage.storeSubscription(updatedSubscription);
+
+            console.log(`✅ SubscriptionService: Status updated to ${serverStatus}`);
+            return {
+              success: true,
+              updated: true, // CRITICAL: Mark as updated so UI refreshes
+              subscription: updatedSubscription,
+            };
+          } else {
+            // Update lastValidatedAt even if no other changes
+            const updatedData = subscription.toData();
+            updatedData.lastValidatedAt = new Date();
+            const updatedSubscription = Subscription.fromData(updatedData);
+            await this.secureStorage.storeSubscription(updatedSubscription);
+
+            return {
+              success: true,
+              updated: false,
+              subscription: updatedSubscription,
+            };
+          }
+        } else {
+          // CRITICAL FIX: Handle explicit validation failures
+          const reason = response.reason || 'unknown';
+          console.log('❌ SubscriptionService: License validation failed:', reason);
+
+          if (reason === 'invalid_license' || reason === 'license_not_found') {
+            // Server explicitly says license is invalid - clear local data
+            console.log('🗑️ SubscriptionService: Invalid license detected - clearing local subscription data');
+            await this.secureStorage.clearSubscriptionData();
+
+            return {
+              success: false,
+              updated: false,
+              error: `License validation failed: ${response.message || reason}`,
+              shouldClearData: true, // Indicate data was cleared
+            };
+          } else if (
+            reason === 'suspended' ||
+            reason === 'cancelled' ||
+            reason === 'expired' ||
+            reason === 'inactive'
+          ) {
+            // CRITICAL FIX: For suspended/cancelled/expired/inactive licenses - update status but preserve data
+            console.log(`🔄 SubscriptionService: License is ${reason} - updating local status but preserving data`);
+
+            const updatedData = subscription.toData();
+            // Map server reasons to our status enum
+            if (reason === 'inactive') {
+              updatedData.status = SubscriptionStatus.fromString('suspended'); // Treat inactive as suspended for user experience
+            } else {
+              updatedData.status = SubscriptionStatus.fromString(reason);
+            }
+
+            // Update other fields if provided by server response
+            if (response.expires_at) {
+              updatedData.expiresAt = new Date(response.expires_at);
+            }
+            if (response.days_until_expiry !== undefined) {
+              // Calculate new expiry date if days provided
+              const newExpiryDate = new Date();
+              newExpiryDate.setDate(newExpiryDate.getDate() + response.days_until_expiry);
+              updatedData.expiresAt = newExpiryDate;
+            }
+            if (response.in_grace_period !== undefined) {
+              // This will be calculated by the Subscription object based on dates
+            }
+
+            const updatedSubscription = Subscription.fromData(updatedData);
+            await this.secureStorage.storeSubscription(updatedSubscription);
+
+            console.log(`✅ SubscriptionService: Successfully updated subscription status to ${reason}`);
+            return {
+              success: true, // CRITICAL: Return success so UI updates
+              updated: true, // CRITICAL: Indicate data was updated
+              subscription: updatedSubscription,
+            };
+          } else {
+            // Other validation failures - preserve local data without updates
+            console.log('⚠️ SubscriptionService: License validation failed but preserving local data:', reason);
+            return {
+              success: false,
+              updated: false,
+              error: response.message || reason,
+            };
+          }
+        }
+      }
+
+      // Fallback for other response formats
+      else {
+        console.log('❌ SubscriptionService: Unexpected sync response format');
         return {
           success: false,
           updated: false,
-          error: response.error || 'Sync failed',
+          error: response.error || response.message || 'Sync failed',
         };
       }
     } catch (error) {
@@ -363,7 +491,7 @@ export class SubscriptionService {
       const daysRemaining = subscription.getDaysRemaining();
       const isInGracePeriod = subscription.isInGracePeriod();
 
-      return {
+      const result = {
         isActivated: true,
         subscriptionStatus: subscription.status.toString(),
         subscriptionTier: subscription.tier.toString(),
@@ -375,6 +503,13 @@ export class SubscriptionService {
         ...(subscription.lastValidatedAt && { lastValidatedAt: subscription.lastValidatedAt }),
         needsOnlineValidation: subscription.needsValidation(),
       };
+
+      // Production logging: only log status changes or errors
+      if (result.subscriptionStatus !== 'active') {
+        console.log('⚠️ SubscriptionService: Non-active subscription status:', result.subscriptionStatus);
+      }
+
+      return result;
     } catch (error) {
       console.error('❌ SubscriptionService: Get current state error:', error);
       return {

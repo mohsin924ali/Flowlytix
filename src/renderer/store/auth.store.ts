@@ -132,6 +132,14 @@ export const useAuthStore = create<AuthStore>()(
                 })
               );
 
+              // Force refresh subscription status after login
+              try {
+                const { useSubscriptionStore } = await import('./subscription.store');
+                await useSubscriptionStore.getState().forceRefreshStatus();
+              } catch (refreshError) {
+                console.log('⚠️ Auth Store: Subscription refresh failed:', refreshError);
+              }
+
               // Log successful state update
               console.log('✅ Authentication state updated:', {
                 isAuthenticated: true,
