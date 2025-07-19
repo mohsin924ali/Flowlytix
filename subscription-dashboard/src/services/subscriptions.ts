@@ -7,6 +7,7 @@
 import { apiClient } from './api';
 import {
   Subscription,
+  Customer,
   SubscriptionFilters,
   PaginatedResponse,
   CreateSubscriptionForm,
@@ -25,24 +26,39 @@ class SubscriptionService {
    * Transform backend subscription data to frontend format
    */
   private transformSubscription(item: any): Subscription {
+    // Extract customer name from customer object or fallback to old format
+    const customerName = item.customer?.name || item.customer_name || 'Unknown Customer';
+
     return {
       id: item.id,
-      customerName: item.customer_name || 'Unknown Customer',
+      customerName: customerName,
       customerId: item.customer_id,
+      customer: item.customer
+        ? {
+            id: item.customer.id,
+            name: item.customer.name,
+            email: item.customer.email,
+            phone: item.customer.phone || undefined,
+            company: item.customer.company || undefined,
+            address: item.customer.address || undefined,
+            createdAt: new Date(item.customer.created_at),
+            updatedAt: new Date(item.customer.updated_at),
+          }
+        : undefined,
       licenseKey: item.license_key,
       tier: item.tier,
       status: item.status,
       features: item.features?.enabled_features || [],
       maxDevices: item.max_devices,
       devicesConnected: item.devices?.length || 0,
-      startsAt: item.starts_at,
-      expiresAt: item.expires_at,
+      startsAt: new Date(item.starts_at),
+      expiresAt: new Date(item.expires_at),
       gracePeriodDays: item.grace_period_days || 0,
-      lastActivity: item.updated_at,
-      lastSyncAt: item.updated_at,
+      lastActivity: new Date(item.updated_at),
+      lastSyncAt: new Date(item.updated_at),
       notes: item.metadata?.notes || '',
-      createdAt: item.created_at,
-      updatedAt: item.updated_at,
+      createdAt: new Date(item.created_at),
+      updatedAt: new Date(item.updated_at),
     };
   }
 
@@ -147,17 +163,52 @@ class SubscriptionService {
    * Update an existing subscription
    */
   async updateSubscription(id: string, data: UpdateSubscriptionForm): Promise<ApiResponse<Subscription>> {
-    const response = await apiClient.patch<any>(`${this.baseUrl}/${id}`, data);
+    try {
+      // Use the general update endpoint for all updates
+      const updateData: any = {};
 
-    // Transform backend response to frontend format
-    if (response.success && response.data) {
+      // Map frontend fields to backend fields
+      if (data.tier !== undefined) updateData.tier = data.tier;
+      if (data.features !== undefined) {
+        // Convert features array to object or set to null if empty
+        if (Array.isArray(data.features) && data.features.length === 0) {
+          updateData.custom_features = {};
+        } else if (Array.isArray(data.features)) {
+          // Convert array of feature names to object with true values
+          updateData.custom_features = data.features.reduce(
+            (acc, feature) => {
+              acc[feature] = true;
+              return acc;
+            },
+            {} as Record<string, any>
+          );
+        } else {
+          updateData.custom_features = data.features;
+        }
+      }
+      if (data.maxDevices !== undefined) updateData.max_devices = data.maxDevices;
+      if (data.expiresAt !== undefined) updateData.expires_at = data.expiresAt;
+      if (data.gracePeriodDays !== undefined) updateData.grace_period_days = data.gracePeriodDays;
+      if (data.notes !== undefined) updateData.notes = data.notes;
+
+      const response = await apiClient.put<any>(`${this.baseUrl}/${id}`, updateData);
+
+      // Transform backend response to frontend format
+      if (response.success && response.data) {
+        return {
+          success: true,
+          data: this.transformSubscription(response.data),
+        };
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Update subscription error:', error);
       return {
-        success: true,
-        data: this.transformSubscription(response.data),
+        success: false,
+        error: error instanceof Error ? error.message : 'Update failed',
       };
     }
-
-    return response;
   }
 
   /**

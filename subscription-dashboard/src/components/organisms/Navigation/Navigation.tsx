@@ -20,7 +20,7 @@ import {
   Button,
   Avatar,
 } from '@mui/material';
-import { Dashboard, People, VpnKey, Assessment, BugReport, PersonAdd, Logout, Settings } from '@mui/icons-material';
+import { Dashboard, People, VpnKey, Assessment, PersonAdd, Logout, Settings } from '@mui/icons-material';
 import { useAuth } from '@/components/providers/AuthProvider';
 import Link from 'next/link';
 
@@ -57,12 +57,6 @@ const navigationItems: NavigationItem[] = [
     path: '/analytics',
     icon: <Assessment />,
     description: 'Reports and insights',
-  },
-  {
-    title: 'Testing Suite',
-    path: '/testing',
-    icon: <BugReport />,
-    description: 'End-to-end testing',
   },
 ];
 

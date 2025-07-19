@@ -28,6 +28,16 @@ export enum SubscriptionTier {
 export interface Subscription extends BaseEntity {
   customerName: string;
   customerId: string;
+  customer?: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    company?: string;
+    address?: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }; // Customer data from backend
   licenseKey: string;
   tier: SubscriptionTier;
   status: SubscriptionStatus;

@@ -92,8 +92,11 @@ export interface AmountDisplayProps extends Omit<TypographyProps, 'variant'> {
 /**
  * Formats amount with currency and proper decimal places
  */
-const formatAmount = (amount: number, currency: string = 'USD', precision: number = 2): string => {
-  const formatter = new Intl.NumberFormat('en-US', {
+const formatAmount = (amount: number, currency: string = 'PKR', precision: number = 2): string => {
+  // Use appropriate locale for PKR currency
+  const locale = currency === 'PKR' ? 'en-PK' : 'en-US';
+
+  const formatter = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: precision,
@@ -109,7 +112,7 @@ const formatAmount = (amount: number, currency: string = 'USD', precision: numbe
  */
 export const AmountDisplay: React.FC<AmountDisplayProps> = ({
   amount,
-  currency = 'USD',
+  currency = 'PKR',
   size = 'medium',
   colorVariant = 'default',
   showSign = false,
