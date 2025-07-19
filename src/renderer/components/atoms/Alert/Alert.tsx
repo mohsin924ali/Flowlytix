@@ -6,6 +6,7 @@
 
 import React, { forwardRef } from 'react';
 import { Alert as MuiAlert, type AlertProps as MuiAlertProps, AlertTitle, IconButton } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { Close } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -50,6 +51,8 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation();
+
     /**
      * Auto-hide effect
      */
@@ -69,7 +72,7 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(
     const closeAction = closable && onClose && (
       <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
         <IconButton
-          aria-label='Close alert'
+          aria-label={t('common.close_alert')}
           color='inherit'
           size='small'
           onClick={onClose}

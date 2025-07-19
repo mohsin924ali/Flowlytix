@@ -6,6 +6,7 @@
 
 import React, { forwardRef, useState } from 'react';
 import { TextField, type TextFieldProps, InputAdornment, IconButton, Box } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -43,6 +44,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation();
     const [isFocused, setIsFocused] = useState(false);
 
     /**
@@ -57,7 +59,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       <InputAdornment position='end'>
         <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
           <IconButton
-            aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+            aria-label={isPasswordVisible ? t('common.hide_password') : t('common.show_password')}
             onClick={onPasswordVisibilityToggle}
             edge='end'
             size='small'

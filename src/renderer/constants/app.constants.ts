@@ -8,9 +8,11 @@
  */
 export const APP_CONFIG = {
   NAME: 'Flowlytix',
+  COMPANY_NAME: 'Flowlytix',
+  COMPANY_BY: 'InnovWelt',
   VERSION: '1.0.0',
   DESCRIPTION: 'Goods Distribution Agency Management System',
-  COMPANY: 'Flowlytix Team',
+  COMPANY: 'InnovWelt',
 } as const;
 
 /**

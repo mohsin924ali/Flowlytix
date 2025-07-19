@@ -277,10 +277,10 @@ export function useAgencies(params: UseAgenciesParams = {}): UseAgenciesReturn {
 
   // Auto-load on mount and when filters change
   useEffect(() => {
-    if (autoLoad && user) {
+    if (autoLoad) {
       loadAgencies();
     }
-  }, [autoLoad, user, page, pageSize, search, statusFilter, loadAgencies]);
+  }, [autoLoad, page, pageSize, search, statusFilter, loadAgencies]);
 
   // Return hook interface
   return {

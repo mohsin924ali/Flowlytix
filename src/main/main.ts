@@ -1,240 +1,207 @@
-import { join } from 'node:path';
-import { isDev } from './utils/environment';
+/**
+ * Electron Main Process
+ *
+ * This file serves as the entry point for the Electron application.
+ * It manages the application lifecycle, creates browser windows, and handles system events.
+ */
 
-// Safely import Electron modules
-let app: Electron.App;
-let BrowserWindow: typeof Electron.BrowserWindow;
-let Menu: typeof Electron.Menu;
-let shell: Electron.Shell;
-let dialog: Electron.Dialog;
+import { app, BrowserWindow, protocol } from 'electron';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { registerSubscriptionIpcHandlers } from './ipc/subscription.ipc.js';
+import { BackgroundSyncService } from './services/BackgroundSyncService.js';
+import { SecureStorage } from './services/SecureStorage.js';
 
-try {
-  const electron = require('electron');
-  app = electron.app;
-  BrowserWindow = electron.BrowserWindow;
-  Menu = electron.Menu;
-  shell = electron.shell;
-  dialog = electron.dialog;
-} catch (error) {
-  console.error('Electron not available:', error);
-  process.exit(1);
-}
+// ES module equivalent of __dirname and __filename
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-class ElectronApp {
-  private mainWindow: InstanceType<typeof BrowserWindow> | null = null;
+// Register schemes before app is ready
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'file',
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+    },
+  },
+]);
+
+class Main {
+  private mainWindow: BrowserWindow | null = null;
+  private isDev = !app.isPackaged;
 
   constructor() {
-    this.initializeApp();
+    this.isDev = !app.isPackaged;
+    this.initialize();
   }
 
-  private initializeApp(): void {
-    // Ensure app is available before using it
-    if (!app) {
-      console.error('Electron app is not available');
-      return;
-    }
-
-    // Handle certificate errors
-    app.on('certificate-error', (event, _webContents, _url, _error, _certificate, callback) => {
-      if (isDev()) {
-        // In development, ignore certificate errors for localhost
-        event.preventDefault();
-        callback(true);
-      } else {
-        // In production, use default behavior
-        callback(false);
-      }
-    });
-
-    // Handle app events
-    this.setupAppEventHandlers();
-
-    // Register IPC handlers
-    this.registerIpcHandlers();
-  }
-
-  private registerIpcHandlers(): void {
-    try {
-      const { registerIpcHandlers } = require('./ipc/ipcHandlers');
-      registerIpcHandlers();
-    } catch (error) {
-      console.error('Failed to register IPC handlers:', error);
-    }
-  }
-
-  private setupAppEventHandlers(): void {
-    app.whenReady().then(() => {
-      // Set app user model ID for Windows
-      if (process.platform === 'win32') {
-        app.setAppUserModelId('com.flowlytix.distribution-system');
-      }
-
-      // Security: Disable features (done after app is ready)
-      console.log('Electron app is ready, initializing...');
-
-      this.createMainWindow();
-      this.setupApplicationMenu();
-    });
-
+  private initialize(): void {
+    // Quit when all windows are closed
     app.on('window-all-closed', () => {
       if (process.platform !== 'darwin') {
         app.quit();
       }
     });
 
-    app.on('activate', () => {
+    app.on('activate', async () => {
       if (BrowserWindow.getAllWindows().length === 0) {
-        this.createMainWindow();
+        await this.createWindow();
       }
     });
 
-    app.on('web-contents-created', (_, contents) => {
-      // Security: Prevent navigation to external URLs
-      contents.on('will-navigate', (event, navigationUrl) => {
-        const parsedUrl = new URL(navigationUrl);
-
-        if (parsedUrl.origin !== 'http://localhost:3000' && !isDev()) {
-          event.preventDefault();
-        }
-      });
-
-      // Security: Prevent opening external links
-      contents.setWindowOpenHandler(({ url }) => {
-        void shell.openExternal(url);
-        return { action: 'deny' };
-      });
+    // App ready
+    app.whenReady().then(async () => {
+      await this.createWindow();
+      this.setupSubscriptionSystem();
     });
   }
 
-  private createMainWindow(): void {
-    // Create the browser window with security settings
-    // In both dev and production, main.js is at dist/main/src/main/main.js
-    // and preload.js is at dist/main/src/preload/preload.js
-    const preloadPath = join(__dirname, '../preload/preload.js');
+  private async createWindow(): Promise<void> {
+    const preloadPath = join(__dirname, '../preload/preload.cjs');
+    console.log('🔧 Main: Preload script path:', preloadPath);
+    console.log('🔧 Main: __dirname:', __dirname);
 
-    console.log('Preload script path:', preloadPath);
-    console.log('Preload script exists:', require('fs').existsSync(preloadPath));
-
-    const windowOptions: Electron.BrowserWindowConstructorOptions = {
-      width: 1400,
-      height: 900,
-      minWidth: 1024,
-      minHeight: 768,
-      show: false,
-      titleBarStyle: 'default',
+    this.mainWindow = new BrowserWindow({
+      width: 1200,
+      height: 800,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        allowRunningInsecureContent: false,
-        webSecurity: true,
-        sandbox: false, // Required for preload script
         preload: preloadPath,
-        spellcheck: true,
-        devTools: isDev(),
+        webSecurity: true,
+        allowRunningInsecureContent: false,
+        experimentalFeatures: false,
       },
-    };
+      show: false,
+      autoHideMenuBar: !this.isDev,
+      titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    });
 
-    const iconPath = this.getAppIcon();
-    if (iconPath) {
-      windowOptions.icon = iconPath;
-    }
+    // Load the app
+    if (this.isDev) {
+      // Try common Vite dev server ports
+      const possiblePorts = [5173, 5174, 5175];
+      let rendererUrl = process.env.ELECTRON_RENDERER_URL;
 
-    this.mainWindow = new BrowserWindow(windowOptions);
+      if (!rendererUrl) {
+        // If no explicit URL set, try to detect which port Vite is using
+        for (const port of possiblePorts) {
+          try {
+            const testUrl = `http://localhost:${port}`;
+            await new Promise((resolve, reject) => {
+              const http = require('http');
+              const req = http.get(testUrl, (res: any) => {
+                req.destroy();
+                resolve(res);
+              });
+              req.on('error', reject);
+              req.setTimeout(1000, () => {
+                req.destroy();
+                reject(new Error('Timeout'));
+              });
+            });
+            rendererUrl = testUrl;
+            console.log(`🌐 Found Vite dev server at ${rendererUrl}`);
+            break;
+          } catch {
+            // Port not available, try next
+          }
+        }
 
-    // Load the renderer
-    if (isDev()) {
-      void this.mainWindow.loadURL('http://localhost:3000');
+        if (!rendererUrl) {
+          rendererUrl = 'http://localhost:5173'; // fallback
+          console.log('⚠️ Could not detect Vite dev server, using fallback');
+        }
+      }
+
+      this.mainWindow.loadURL(rendererUrl);
       this.mainWindow.webContents.openDevTools();
     } else {
-      // Fixed path - going from dist/main/src/main/ to dist/renderer/
-      const htmlPath = join(__dirname, '../../../renderer/index.html');
-      console.log('Loading HTML file from:', htmlPath);
-      console.log('HTML file exists:', require('fs').existsSync(htmlPath));
-      void this.mainWindow.loadFile(htmlPath);
+      this.mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
     }
+
+    // Add error handling for preload script
+    this.mainWindow.webContents.on('preload-error', (_event, preloadPath, error) => {
+      console.error('❌ Main: Preload script error:', { preloadPath, error });
+    });
+
+    this.mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+      console.error('❌ Main: Failed to load page:', { errorCode, errorDescription });
+    });
+
+    // Listen for console messages from renderer
+    this.mainWindow.webContents.on('console-message', (_event, level, message, _line, _sourceId) => {
+      if (message.includes('Preload:') || message.includes('🔌') || message.includes('🚀') || message.includes('🎯')) {
+        console.log(`📟 Renderer[${level}]: ${message}`);
+      }
+    });
 
     // Show window when ready
     this.mainWindow.once('ready-to-show', () => {
-      console.log('Main window is ready to show');
       this.mainWindow?.show();
 
-      if (isDev()) {
-        this.mainWindow?.webContents.openDevTools();
-      }
+      // Initialize services after window is ready
+      this.mainWindow?.webContents.once('did-finish-load', async () => {
+        console.log('🚀 Main: Window loaded, initializing services...');
+
+        // Check if electronAPI was properly exposed
+        const result = await this.mainWindow?.webContents.executeJavaScript(`
+                    console.log('🔍 Main: Checking electronAPI from main process...');
+                    console.log('🔍 Main: window.electronAPI exists:', !!window.electronAPI);
+                    if (window.electronAPI) {
+                        console.log('🔍 Main: electronAPI keys:', Object.keys(window.electronAPI));
+                        console.log('🔍 Main: subscription exists:', !!window.electronAPI.subscription);
+                    }
+                    return {
+                        electronAPIExists: !!window.electronAPI,
+                        hasSubscription: !!(window.electronAPI && window.electronAPI.subscription),
+                        keys: window.electronAPI ? Object.keys(window.electronAPI) : []
+                    };
+                `);
+
+        console.log('🔍 Main: electronAPI check result:', result);
+
+        try {
+          // Initialize subscription services
+          const syncService = BackgroundSyncService.getInstance();
+
+          // Start background sync if subscription is activated
+          const secureStorage = SecureStorage.getInstance();
+          const subscription = await secureStorage.getSubscription();
+
+          if (subscription) {
+            console.log('🔄 Main: Starting background sync service...');
+            await syncService.startSyncService();
+          }
+
+          console.log('✅ Main: Services initialized successfully');
+        } catch (error) {
+          console.error('❌ Main: Error initializing services:', error);
+        }
+      });
     });
 
-    // Handle window closed
     this.mainWindow.on('closed', () => {
       this.mainWindow = null;
     });
-
-    // Add error handling for debugging
-    this.mainWindow.webContents.on(
-      'did-fail-load',
-      (event: any, errorCode: any, errorDescription: any, validatedURL: any) => {
-        console.error('Failed to load:', validatedURL, 'Error:', errorDescription);
-      }
-    );
-
-    this.mainWindow.webContents.on('did-finish-load', () => {
-      console.log('Renderer process loaded successfully');
-    });
-
-    // Security: Handle external links
-    this.mainWindow.webContents.setWindowOpenHandler(({ url }: { url: string }) => {
-      void shell.openExternal(url);
-      return { action: 'deny' };
-    });
   }
 
-  private setupApplicationMenu(): void {
-    // Create a simple menu
-    const template: Electron.MenuItemConstructorOptions[] = [
-      {
-        label: 'File',
-        submenu: [
-          {
-            label: 'Quit',
-            accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
-            click: () => app.quit(),
-          },
-        ],
-      },
-      {
-        label: 'Help',
-        submenu: [
-          {
-            label: 'About',
-            click: () => this.showAboutDialog(),
-          },
-        ],
-      },
-    ];
+  private setupSubscriptionSystem(): void {
+    console.log('🔧 Main: Setting up subscription system...');
 
-    const menu = Menu.buildFromTemplate(template);
-    Menu.setApplicationMenu(menu);
-  }
+    try {
+      // Initialize subscription IPC handlers
+      registerSubscriptionIpcHandlers();
 
-  private getAppIcon(): string | undefined {
-    if (process.platform === 'win32') {
-      return join(__dirname, '../../assets/icon.ico');
-    } else if (process.platform === 'darwin') {
-      return join(__dirname, '../../assets/icon.icns');
-    } else {
-      return join(__dirname, '../../assets/icon.png');
+      console.log('✅ Main: Subscription system initialized');
+    } catch (error) {
+      console.error('❌ Main: Error setting up subscription system:', error);
     }
-  }
-
-  private showAboutDialog(): void {
-    void dialog.showMessageBox(this.mainWindow!, {
-      type: 'info',
-      title: 'About Flowlytix Distribution System',
-      message: 'Flowlytix Distribution System',
-      detail: `Version: ${app.getVersion()}\nElectron: ${process.versions.electron}\nNode: ${process.versions.node}`,
-      buttons: ['OK'],
-    });
   }
 }
 
-// Initialize the app
-new ElectronApp();
+// Initialize the main process
+new Main();

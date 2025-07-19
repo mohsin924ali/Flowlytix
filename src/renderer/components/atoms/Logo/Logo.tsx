@@ -83,13 +83,7 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
   ) => {
     const sizeConfig = SIZE_CONFIG[size];
 
-    // Debug logging
-    console.log(`🏷️ Logo component rendered:`);
-    console.log(`  Variant: ${variant}`);
-    console.log(`  Size: ${size}`);
-    console.log(`  Circular: ${circular}`);
-    console.log(`  Src: ${src}`);
-    console.log(`  Alt: ${alt}`);
+    // Removed debug logging for production performance
 
     /**
      * Text logo component with animation

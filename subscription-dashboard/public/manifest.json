@@ -1,0 +1,32 @@
+{
+  "name": "Flowlytix Subscription Dashboard",
+  "short_name": "Flowlytix",
+  "description": "Subscription management and analytics dashboard for Flowlytix",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["business", "productivity", "finance"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "scope": "/",
+  "id": "flowlytix-subscription-dashboard"
+}

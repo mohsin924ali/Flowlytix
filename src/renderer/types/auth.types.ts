@@ -14,6 +14,15 @@ export interface User {
   readonly role: string;
   readonly permissions: string[];
   readonly agencyId?: string; // Agency assignment for agency admins
+  readonly agency?: {
+    readonly id: string;
+    readonly name: string;
+    readonly status: string;
+    readonly contactPerson?: string;
+    readonly phone?: string;
+    readonly email?: string;
+    readonly address?: string;
+  }; // Complete agency information (when assigned)
 }
 
 /**

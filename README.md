@@ -1,301 +1,256 @@
-# 🏗️ Flowlytix Distribution System
+# 🌊 Flowlytix Frontend
 
-A modern, secure, and scalable goods distribution agency management system built with Electron, React, and TypeScript following enterprise-grade architecture principles.
+**A Modern Distribution Management System Frontend**
 
-## 🎯 **Project Overview**
-
-This application implements **Hexagonal Architecture** (Ports & Adapters), **Domain-Driven Design** (DDD), and **CQRS** patterns to create a maintainable and testable codebase for managing distribution operations including inventory, orders, customers, and reporting.
-
-### **Key Features**
-
-- 🔐 **Security-First**: Context isolation, CSP, and secure IPC communication
-- 🏗️ **Clean Architecture**: DDD, Hexagonal Architecture, CQRS implementation
-- 🎨 **Modern UI**: Material-UI with Atomic Design methodology
-- 📊 **Real-time Analytics**: Business intelligence and reporting
-- 🌐 **Offline-First**: Works without internet connectivity
-- ♿ **Accessibility**: WCAG 2.1 AA compliant
-- 🧪 **High Test Coverage**: 90%+ test coverage requirement
-- 📱 **Responsive Design**: Works on all screen sizes
-
-## 🛠️ **Technology Stack**
-
-### **Frontend**
-- **React 18** - UI library with functional components and hooks
-- **TypeScript** - Strict typing with 100% coverage
-- **Material-UI** - Component library with custom design system
-- **Zustand** - State management
-- **React Hook Form + Zod** - Form handling and validation
-- **React Query** - Server state management
-- **Framer Motion** - Animations
-
-### **Backend/Desktop**
-- **Electron** - Cross-platform desktop application
-- **Node.js** - JavaScript runtime
-- **SQLite** - Local database
-- **IPC** - Secure inter-process communication
-
-### **Development Tools**
-- **Vite** - Build tool and development server
-- **ESLint** - Code linting with Airbnb TypeScript config
-- **Prettier** - Code formatting
-- **Jest** - Unit testing
-- **Playwright** - E2E testing
-- **Storybook** - Component development
-- **Husky** - Git hooks
-
-## 🏗️ **Architecture Overview**
-
-```
-src/
-├── main/                    # Electron main process
-│   ├── main.ts             # Application entry point
-│   ├── utils/              # Utility functions
-│   ├── security/           # Security policies
-│   ├── ipc/                # IPC handlers
-│   └── windows/            # Window management
-├── preload/                # Secure preload scripts
-├── renderer/               # React application
-├── domain/                 # Business logic (DDD)
-│   ├── entities/           # Domain entities
-│   ├── value-objects/      # Value objects
-│   ├── repositories/       # Repository interfaces
-│   ├── services/           # Domain services
-│   └── events/             # Domain events
-├── application/            # Application layer (CQRS)
-│   ├── commands/           # Command handlers
-│   ├── queries/            # Query handlers
-│   ├── handlers/           # Business logic handlers
-│   └── services/           # Application services
-├── infrastructure/         # Infrastructure layer
-│   ├── repositories/       # Repository implementations
-│   ├── services/           # External services
-│   └── adapters/           # External adapters
-├── presentation/           # UI layer
-│   ├── layouts/            # Page layouts
-│   ├── pages/              # Application pages
-│   └── components/         # Shared components
-└── components/             # Atomic Design components
-    ├── atoms/              # Basic building blocks
-    ├── molecules/          # Simple combinations
-    ├── organisms/          # Complex components
-    ├── templates/          # Page templates
-    └── pages/              # Page components
-```
-
-## 🚀 **Getting Started**
-
-### **Prerequisites**
-
-- **Node.js** >= 18.0.0
-- **npm** >= 8.0.0
-- **Git** for version control
-
-### **Installation**
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd flowlytix-distribution-system
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Setup environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-4. **Initialize the database**
-   ```bash
-   npm run db:migrate
-   npm run db:seed
-   ```
-
-### **Development**
-
-Start the development environment:
-
-```bash
-# Start both renderer and main processes
-npm run dev
-
-# Or start them separately
-npm run dev:renderer    # React development server
-npm run dev:main        # Electron main process
-```
-
-### **Building**
-
-```bash
-# Build for development
-npm run build
-
-# Build for production
-npm run build:prod
-
-# Create distribution packages
-npm run dist            # All platforms
-npm run dist:win        # Windows
-npm run dist:mac        # macOS
-npm run dist:linux      # Linux
-```
-
-## 🧪 **Testing**
-
-### **Unit Tests**
-```bash
-npm run test              # Run all tests
-npm run test:watch        # Watch mode
-npm run test:coverage     # Generate coverage report
-```
-
-### **E2E Tests**
-```bash
-npm run test:e2e          # Run E2E tests
-npm run test:e2e:headed   # Run with browser GUI
-```
-
-### **Component Testing**
-```bash
-npm run storybook         # Start Storybook
-npm run build-storybook   # Build static Storybook
-```
-
-## 🔧 **Code Quality**
-
-### **Linting and Formatting**
-```bash
-npm run lint              # Check for linting errors
-npm run lint:fix          # Fix linting errors
-npm run format            # Format code with Prettier
-npm run type-check        # TypeScript type checking
-```
-
-### **Code Quality Metrics**
-- **Test Coverage**: 90%+ required
-- **Cyclomatic Complexity**: Maximum 10
-- **Code Duplication**: Maximum 3%
-- **Technical Debt**: Grade A required
-
-## 📊 **Business Domains**
-
-### **Inventory Management**
-- Product catalog management
-- Stock level tracking
-- Category management
-- Supplier relationships
-
-### **Order Management**
-- Order processing workflow
-- Order status tracking
-- Payment processing
-- Shipping integration
-
-### **Customer Management**
-- Customer profiles
-- Contact management
-- Order history
-- Customer analytics
-
-### **Reporting & Analytics**
-- Sales reports
-- Inventory reports
-- Customer analytics
-- Financial reporting
-
-## 🔐 **Security Features**
-
-- **Context Isolation**: Secure renderer process isolation
-- **CSP Implementation**: Content Security Policy protection
-- **Input Validation**: All inputs validated with Zod schemas
-- **SQL Injection Prevention**: Parameterized queries only
-- **File System Security**: Sandboxed file operations
-- **Auto-updates**: Secure application updates
-
-## ♿ **Accessibility**
-
-- **WCAG 2.1 AA Compliance**: Full accessibility support
-- **Keyboard Navigation**: Complete keyboard accessibility
-- **Screen Reader Support**: ARIA labels and semantic HTML
-- **High Contrast Mode**: Support for vision impairments
-- **Focus Management**: Proper focus handling
-
-## 🌍 **Internationalization**
-
-- **Multi-language Support**: React-i18next integration
-- **RTL Support**: Right-to-left language support
-- **Locale-specific Formatting**: Dates, numbers, currency
-- **Translation Management**: Organized translation keys
-
-## 📱 **Platform Support**
-
-- **Windows**: Windows 10+ (x64, ARM64)
-- **macOS**: macOS 10.15+ (Intel, Apple Silicon)
-- **Linux**: Ubuntu 18.04+, Fedora 32+, openSUSE 15.2+
-
-## 🤝 **Contributing**
-
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Follow the coding standards** (see `.eslintrc.json` and `.prettierrc.json`)
-4. **Write tests** for new functionality
-5. **Ensure all tests pass** (`npm run test`)
-6. **Commit with conventional commits** (`npm run commit`)
-7. **Push to the branch** (`git push origin feature/amazing-feature`)
-8. **Open a Pull Request**
-
-### **Commit Message Format**
-```
-type(scope): description
-
-[optional body]
-
-[optional footer]
-```
-
-**Types**: feat, fix, docs, style, refactor, perf, test, chore
-
-## 📄 **License**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 **Support**
-
-- **Documentation**: [Wiki](wiki-url)
-- **Issues**: [GitHub Issues](issues-url)
-- **Discussions**: [GitHub Discussions](discussions-url)
-- **Email**: support@flowlytix.com
-
-## 🎯 **Roadmap**
-
-### **Phase 1: Core Architecture** ✅
-- [x] Project setup and configuration
-- [x] Electron security implementation
-- [x] Domain-driven design structure
-- [x] Basic UI components
-
-### **Phase 2: Business Logic** 🚧
-- [ ] Inventory management module
-- [ ] Order management module
-- [ ] Customer management module
-- [ ] Database integration
-
-### **Phase 3: Advanced Features** 📋
-- [ ] Reporting and analytics
-- [ ] Real-time notifications
-- [ ] Advanced search and filtering
-- [ ] Export/import functionality
-
-### **Phase 4: Polish & Optimization** 📋
-- [ ] Performance optimization
-- [ ] Advanced testing
-- [ ] Documentation completion
-- [ ] Deployment automation
+> Clean, scalable, and ready for backend integration
 
 ---
 
-**Built with ❤️ by the Flowlytix Team** 
+## 🚀 **Project Overview**
+
+Flowlytix Frontend is a comprehensive React-based frontend application for goods distribution and agency management. This is a **frontend-only** project that uses mock data services and is designed for easy integration with any backend API.
+
+### ✨ **Key Features**
+
+- 🎯 **Modern React Architecture** - Built with React 18, TypeScript, and Vite
+- 🎨 **Material-UI Design System** - Beautiful, responsive, and accessible UI
+- 📱 **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
+- 🔐 **Authentication System** - Complete login/logout with role-based access
+- 📊 **Dashboard & Analytics** - Interactive charts and business insights
+- 👥 **User Management** - User creation, editing, and administration
+- 🏢 **Agency Management** - Multi-agency support with switching capabilities
+- 📦 **Product Management** - Inventory tracking and product administration
+- 📋 **Order Management** - Order processing and tracking
+
+- 👤 **Employee Management** - Staff administration and role management
+- 🗺️ **Area Management** - Geographic area management with hierarchical structure
+
+## 🏗️ **Architecture**
+
+```
+src/renderer/
+├── components/          # Reusable UI components
+│   ├── atoms/          # Basic building blocks (Button, Input, etc.)
+│   ├── molecules/      # Component combinations (Forms, Modals, etc.)
+│   ├── organisms/      # Complex components (Header, Sidebar, etc.)
+│   └── templates/      # Page layouts
+├── pages/              # Application pages
+├── hooks/              # Custom React hooks
+├── services/           # API service interfaces
+├── mocks/              # Mock data and services
+│   ├── data/          # Mock datasets
+│   ├── services/      # Mock service implementations
+│   └── providers/     # Mock data providers
+├── store/              # State management (Zustand)
+├── types/              # TypeScript type definitions
+├── utils/              # Utility functions
+└── constants/          # Application constants
+```
+
+## 🛠️ **Technology Stack**
+
+### **Core Technologies**
+
+- **React 18** - Modern React with hooks and concurrent features
+- **TypeScript** - Type-safe development
+- **Vite** - Fast build tool and dev server
+- **Material-UI** - Component library and design system
+
+### **State Management**
+
+- **Zustand** - Lightweight state management
+- **React Hook Form** - Form handling and validation
+
+### **UI & Styling**
+
+- **@mui/material** - UI components
+- **@mui/icons-material** - Icon library
+- **@emotion/react** - CSS-in-JS styling
+- **Framer Motion** - Animations and transitions
+
+### **Development Tools**
+
+- **ESLint** - Code linting
+- **Prettier** - Code formatting
+- **TypeScript** - Static type checking
+
+## 📦 **Getting Started**
+
+### **Prerequisites**
+
+- Node.js >= 18.0.0
+- npm >= 8.0.0
+
+### **Installation**
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd flowlytix-frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+### **Available Scripts**
+
+```bash
+# Development
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+
+# Code Quality
+npm run lint         # Run ESLint
+npm run format       # Format code with Prettier
+npm run type-check   # Run TypeScript checks
+
+# Testing
+npm run test         # Run tests (when configured)
+
+# Utilities
+npm run clean        # Clean build artifacts
+npm run deps:check   # Check for dependency updates
+```
+
+## 🎯 **Current Status**
+
+### **✅ Implemented Features**
+
+- Complete frontend application with all modules
+- Mock data services for all features
+- User authentication and authorization
+- Agency management and switching
+- User management (CRUD operations)
+- Area management with hierarchical structure
+- Dashboard with analytics
+- Responsive design and navigation
+- Form validation and error handling
+
+### **🔌 Ready for Backend Integration**
+
+The application is designed with clean service interfaces that can be easily swapped from mock implementations to real API calls:
+
+```typescript
+// Example: Switch from mock to real service
+// Before (Mock)
+import { MockUserService } from '@/mocks/services/MockUsersService';
+
+// After (Real API)
+import { UserService } from '@/services/UserService';
+```
+
+## 🔧 **Backend Integration Guide**
+
+To integrate with a real backend:
+
+1. **Replace Mock Services**: Implement real API services in `src/renderer/services/`
+2. **Update Service Calls**: Replace mock service imports with real ones
+3. **Configure API Base URL**: Add environment variables for API endpoints
+4. **Handle Authentication**: Implement real JWT/session handling
+5. **Error Handling**: Add proper API error handling and retry logic
+
+### **Service Interface Example**
+
+```typescript
+// UserService interface (already defined)
+interface IUserService {
+  getUsers(): Promise<User[]>;
+  createUser(user: CreateUserRequest): Promise<User>;
+  updateUser(id: string, user: UpdateUserRequest): Promise<User>;
+  deleteUser(id: string): Promise<void>;
+}
+
+// Implementation can be mock or real API
+class RealUserService implements IUserService {
+  async getUsers(): Promise<User[]> {
+    const response = await fetch('/api/users');
+    return response.json();
+  }
+  // ... other methods
+}
+```
+
+## 📁 **Mock Data Structure**
+
+The application includes comprehensive mock data:
+
+- **10 Users** with various roles and statuses
+- **10 Agencies** with different configurations
+- **10 Areas** with hierarchical structure
+- **Sample Analytics** data for charts and reports
+- **Product Catalog** with categories and inventory
+- **Order History** with various statuses
+- **Employee Records** with roles and permissions
+
+## 🎨 **UI/UX Features**
+
+- **Responsive Design** - Works on all screen sizes
+- **Dark/Light Theme** Support (ready for implementation)
+- **Accessibility** - WCAG compliant components
+- **Loading States** - Proper loading indicators
+- **Error Boundaries** - Graceful error handling
+- **Toast Notifications** - User feedback system
+- **Modal Dialogs** - For forms and confirmations
+- **Data Tables** - Sortable, filterable, paginated tables
+
+## 🚀 **Production Deployment**
+
+```bash
+# Build for production
+npm run build
+
+# The built files will be in the 'dist' directory
+# Serve with any static file server
+```
+
+### **Deployment Options**
+
+- **Static Hosting**: Netlify, Vercel, GitHub Pages
+- **CDN**: AWS CloudFront, Cloudflare
+- **Traditional Hosting**: Apache, Nginx
+- **Docker**: Containerized deployment
+
+## 📝 **Development Guidelines**
+
+### **Code Organization**
+
+- Use TypeScript for all new code
+- Follow atomic design principles for components
+- Keep components small and focused
+- Use custom hooks for business logic
+- Implement proper error boundaries
+
+### **Naming Conventions**
+
+- **Components**: PascalCase (e.g., `UserEditModal`)
+- **Files**: PascalCase for components, camelCase for utilities
+- **Directories**: PascalCase for component folders
+- **Variables**: camelCase
+- **Constants**: UPPER_SNAKE_CASE
+
+### **Git Workflow**
+
+- Use feature branches for development
+- Follow conventional commits
+- Run linting before commits
+- Test thoroughly before merging
+
+## 🤝 **Contributing**
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
+
+## 📄 **License**
+
+MIT License - see LICENSE file for details
+
+---
+
+**Ready to connect to your backend? This frontend is designed to make integration smooth and straightforward!** 🚀

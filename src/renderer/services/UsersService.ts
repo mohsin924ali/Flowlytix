@@ -32,6 +32,49 @@ export interface UserListItem {
   readonly lastLoginAt?: Date;
   readonly isAccountLocked: boolean;
   readonly loginAttempts: number;
+  readonly agencyId?: string;
+  readonly agencyName?: string;
+}
+
+/**
+ * Interface for user details for editing
+ */
+export interface UserDetails {
+  readonly id: string;
+  readonly email: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly role: string;
+  readonly status: string;
+  readonly agencyId?: string;
+  readonly agencyName?: string;
+  readonly createdAt: Date;
+  readonly lastLoginAt?: Date | undefined;
+  readonly isAccountLocked: boolean;
+  readonly loginAttempts: number;
+}
+
+/**
+ * Parameters for updating a user
+ */
+export interface UpdateUserParams {
+  readonly userId: string;
+  readonly requestedBy: string;
+  readonly firstName?: string;
+  readonly lastName?: string;
+  readonly email?: string;
+  readonly role?: string;
+  readonly status?: string;
+  readonly agencyId?: string;
+}
+
+/**
+ * Result of update user operation
+ */
+export interface UpdateUserResult {
+  readonly success: boolean;
+  readonly message?: string;
+  readonly error?: string;
 }
 
 /**
@@ -49,6 +92,7 @@ export interface ListUsersParams {
   readonly createdAfter?: string;
   readonly createdBefore?: string;
   readonly isLocked?: boolean;
+  readonly agencyId?: string;
 }
 
 /**
@@ -86,6 +130,7 @@ export class UsersService {
           role: params.role,
           status: params.status,
           search: params.search,
+          agencyId: params.agencyId,
         },
       });
 
@@ -114,6 +159,7 @@ export class UsersService {
         createdAfter: params.createdAfter,
         createdBefore: params.createdBefore,
         isLocked: params.isLocked,
+        agencyId: params.agencyId,
       });
 
       console.log('📡 IPC Response received:', result);
@@ -135,6 +181,8 @@ export class UsersService {
           lastLoginAt: user.lastLoginAt ? new Date(user.lastLoginAt) : undefined,
           isAccountLocked: user.isAccountLocked,
           loginAttempts: user.loginAttempts,
+          agencyId: user.agencyId,
+          agencyName: user.agencyName,
         }));
 
         return {
@@ -172,6 +220,98 @@ export class UsersService {
   }
 
   /**
+   * Get user details by ID
+   * @param userId - User ID to fetch
+   * @param requestedBy - ID of user making the request
+   * @returns Promise<UserDetails | null> - User details or null if not found
+   */
+  static async getUserById(userId: string, requestedBy: string): Promise<UserDetails | null> {
+    try {
+      console.log('👤 UsersService.getUserById called:', { userId, requestedBy });
+
+      // Check if electron API is available
+      if (!window.electronAPI) {
+        throw new Error('Electron API not available');
+      }
+
+      // Validate required parameters
+      if (!userId || !requestedBy) {
+        throw new Error('userId and requestedBy parameters are required');
+      }
+
+      const result = await (window.electronAPI.auth as any).getUserById({
+        userId,
+        requestedBy,
+      });
+
+      if (result.success && result.data) {
+        const user = result.data;
+        return {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          status: user.status,
+          agencyId: user.agencyId,
+          agencyName: user.agencyName,
+          createdAt: new Date(user.createdAt),
+          lastLoginAt: user.lastLoginAt ? new Date(user.lastLoginAt) : undefined,
+          isAccountLocked: user.isAccountLocked,
+          loginAttempts: user.loginAttempts,
+        };
+      } else {
+        console.log('❌ Get user failed:', result.error);
+        return null;
+      }
+    } catch (error) {
+      console.error('💥 Get user error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update user information
+   * @param params - Update user parameters
+   * @returns Promise<UpdateUserResult> - Update result
+   */
+  static async updateUser(params: UpdateUserParams): Promise<UpdateUserResult> {
+    try {
+      console.log('👤 UsersService.updateUser called:', params);
+
+      // Check if electron API is available
+      if (!window.electronAPI) {
+        throw new Error('Electron API not available');
+      }
+
+      // Validate required parameters
+      if (!params.userId || !params.requestedBy) {
+        throw new Error('userId and requestedBy parameters are required');
+      }
+
+      const result = await (window.electronAPI.auth as any).updateUser(params);
+
+      if (result.success) {
+        return {
+          success: true,
+          message: result.message || 'User updated successfully',
+        };
+      } else {
+        return {
+          success: false,
+          error: result.error || 'Failed to update user',
+        };
+      }
+    } catch (error) {
+      console.error('💥 Update user error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update user',
+      };
+    }
+  }
+
+  /**
    * Validates list users parameters
    * @param params - Parameters to validate
    * @throws Error when validation fails
@@ -197,10 +337,6 @@ export class UsersService {
     const validSortOrders = ['asc', 'desc'];
     if (params.sortOrder !== undefined && !validSortOrders.includes(params.sortOrder)) {
       throw new Error('SortOrder must be either "asc" or "desc"');
-    }
-
-    if (params.search !== undefined && (typeof params.search !== 'string' || params.search.length > 255)) {
-      throw new Error('Search term must be a string with maximum 255 characters');
     }
   }
 }

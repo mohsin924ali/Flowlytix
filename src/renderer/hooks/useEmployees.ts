@@ -89,7 +89,6 @@ export function useEmployees(autoLoad: boolean = true, initialParams?: ListEmplo
       try {
         updateState({ loading: true, error: null });
 
-        console.log('🔄 Loading employees via useEmployees hook...');
         const result = await EmployeeService.listEmployees(params);
 
         updateState({
@@ -97,10 +96,8 @@ export function useEmployees(autoLoad: boolean = true, initialParams?: ListEmplo
           totalCount: result.totalCount,
           loading: false,
         });
-
-        console.log('✅ Employees loaded successfully:', result.employees.length, 'employees');
       } catch (error) {
-        console.error('❌ Failed to load employees:', error);
+        console.error('Failed to load employees:', error);
         updateState({
           loading: false,
           error: error instanceof Error ? error.message : 'Failed to load employees',
@@ -285,7 +282,6 @@ export function useEmployees(autoLoad: boolean = true, initialParams?: ListEmplo
   // Auto-load employees on mount if requested
   useEffect(() => {
     if (autoLoad) {
-      console.log('🚀 useEmployees hook mounted, auto-loading employees...');
       loadEmployees(initialParams);
     }
   }, [autoLoad, loadEmployees, initialParams]);

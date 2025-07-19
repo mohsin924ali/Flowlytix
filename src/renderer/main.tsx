@@ -1,11 +1,12 @@
 /**
  * Main Entry Point for React Application
- * Initializes React app with proper error boundaries
+ * Initializes React app with proper error boundaries and i18n
  */
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import './i18n/config';
 
 // Get the root element
 const container = document.getElementById('root');

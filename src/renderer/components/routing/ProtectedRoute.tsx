@@ -20,18 +20,40 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { isAuthenticated, isLoading, user } = useAuthStore();
   const location = useLocation();
+  const [forceNoLoading, setForceNoLoading] = React.useState(false);
 
-  // Debug logging
+  // Failsafe: if loading state persists too long, force it to false
+  React.useEffect(() => {
+    if (isLoading) {
+      const timeoutId = setTimeout(() => {
+        console.log('⚠️ ProtectedRoute: Loading state timeout, forcing no loading');
+        setForceNoLoading(true);
+      }, 5000); // 5 second timeout
+
+      return () => clearTimeout(timeoutId);
+    } else {
+      setForceNoLoading(false);
+    }
+  }, [isLoading]);
+
+  // Debug logging with explicit boolean values
   console.log('🛡️ ProtectedRoute check:', {
     path: location.pathname,
-    isAuthenticated,
-    isLoading,
+    isAuthenticated: Boolean(isAuthenticated),
+    isLoading: Boolean(isLoading),
     hasUser: !!user,
     userEmail: user?.email,
   });
 
-  // Show loading state while checking authentication
-  if (isLoading) {
+  console.log('🛡️ ProtectedRoute raw values:', {
+    isAuthenticated,
+    isLoading,
+    user,
+  });
+
+  // Show loading state while checking authentication (with failsafe)
+  if (isLoading && !forceNoLoading) {
+    console.log('🔄 ProtectedRoute: Showing loading screen because isLoading =', isLoading);
     return (
       <div
         style={{
@@ -58,6 +80,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
+    console.log('🔀 ProtectedRoute: Redirecting to login because user is not authenticated');
     return <Navigate to='/login' state={{ from: location }} replace />;
   }
 
