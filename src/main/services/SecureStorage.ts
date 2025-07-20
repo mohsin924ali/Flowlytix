@@ -127,7 +127,12 @@ export class SecureStorage {
 
       return Subscription.fromData(subscriptionData);
     } catch (error) {
-      console.error('❌ SecureStorage: Failed to retrieve subscription:', error);
+      // Handle missing file case gracefully (expected when not activated)
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        console.log('🔍 SecureStorage: No subscription file found (device not activated)');
+      } else {
+        console.error('❌ SecureStorage: Failed to retrieve subscription:', error);
+      }
       // File doesn't exist or is corrupted
       return null;
     }

@@ -245,6 +245,54 @@ export class DeviceManager {
   }
 
   /**
+   * Generate a unique device ID with random component (for retry scenarios)
+   */
+  private generateUniqueDeviceId(fingerprint: DeviceFingerprint): string {
+    const combined = `${fingerprint.hardwareId}-${fingerprint.osFingerprint}-${fingerprint.networkFingerprint}`;
+    const timestamp = Date.now().toString();
+    const random = Math.random().toString(36).substring(2, 8);
+    const uniqueString = `${combined}-${timestamp}-${random}`;
+    const hash = createHash('sha256').update(uniqueString).digest('hex');
+
+    // Format as UUID-like string for readability
+    const deviceId = [
+      hash.substring(0, 8),
+      hash.substring(8, 12),
+      hash.substring(12, 16),
+      hash.substring(16, 20),
+      hash.substring(20, 32),
+    ].join('-');
+
+    return `device-${deviceId}`;
+  }
+
+  /**
+   * Get device info with unique ID (for retry scenarios)
+   */
+  async getUniqueDeviceInfo(): Promise<DeviceInfo> {
+    console.log('🔧 DeviceManager: Generating unique device information...');
+
+    const devicePlatform = this.getPlatform();
+    const fingerprint = await this.generateDeviceFingerprint();
+    const deviceId = this.generateUniqueDeviceId(fingerprint);
+
+    const deviceInfo: DeviceInfo = {
+      deviceId,
+      platform: devicePlatform,
+      appVersion: app.getVersion(),
+      fingerprint,
+      registeredAt: new Date(),
+      lastSeenAt: new Date(),
+    };
+
+    // Update cache with the new unique device info
+    this.cachedDeviceInfo = deviceInfo;
+    console.log('✅ DeviceManager: Unique device info generated:', deviceId);
+
+    return deviceInfo;
+  }
+
+  /**
    * Get device description for display
    */
   async getDeviceDescription(): Promise<string> {

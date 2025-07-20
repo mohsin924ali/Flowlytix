@@ -1,5 +1,0 @@
-# Include base requirements
--r base.txt
-
-# Production optimizations
-gunicorn>=21.2.0 

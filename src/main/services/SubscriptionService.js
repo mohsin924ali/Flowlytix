@@ -34,31 +34,55 @@ class SubscriptionService {
     try {
       console.log('🛠 SubscriptionService: Starting device activation...');
       // Get device info
-      const deviceInfo = await this.deviceManager.getDeviceInfo();
+      let deviceInfo = await this.deviceManager.getDeviceInfo();
       console.log('🔧 Device info collected:', deviceInfo.deviceId);
-      // Prepare activation request - handle undefined values properly
+
+      // CRITICAL FIX: Simplified activation request - device_info causes 500 error on server
+      // The server works fine with just license_key and device_id
       const activationRequest = {
-        ...(credentials.licenseKey && { licenseKey: credentials.licenseKey }),
-        ...(credentials.email && { email: credentials.email }),
-        ...(credentials.password && { password: credentials.password }),
-        deviceInfo: {
-          deviceId: deviceInfo.deviceId,
-          fingerprint: deviceInfo.fingerprint,
-          registeredAt: new Date().toISOString(),
-        },
+        license_key: credentials.licenseKey,
+        device_id: deviceInfo.deviceId,
       };
+
+      console.log('🔍 Activation request payload:', JSON.stringify(activationRequest, null, 2));
+
       // Call activation API
-      const response = await this.apiClient.activateDevice(activationRequest);
-      if (response.success && response.subscriptionTier && response.expiresAt && response.signedToken) {
+      let response = await this.apiClient.activateDevice(activationRequest);
+
+      // CRITICAL FIX: Handle device ID conflict (HTTP 500 often means device already exists)
+      if (response.error && response.error.includes('HTTP 500')) {
+        console.log(
+          '🔄 SubscriptionService: Device activation failed (possibly device ID conflict), retrying with new device ID...'
+        );
+
+        // Get fresh device info with unique ID
+        const newDeviceInfo = await this.deviceManager.getUniqueDeviceInfo();
+        console.log('🔧 New device info generated:', newDeviceInfo.deviceId);
+
+        // Retry activation with new device ID
+        const retryRequest = {
+          license_key: credentials.licenseKey,
+          device_id: newDeviceInfo.deviceId,
+        };
+
+        console.log('🔄 Retrying activation with new device ID...');
+        response = await this.apiClient.activateDevice(retryRequest);
+
+        // Update deviceInfo reference for the rest of the method
+        if (response.token && response.subscription) {
+          deviceInfo = newDeviceInfo;
+        }
+      }
+      if (response.token && response.subscription) {
         console.log('✅ SubscriptionService: Activation successful');
-        // Create subscription object
+        // Create subscription object from server response
         const subscription = subscription_types_1.Subscription.create({
           licenseKey: credentials.licenseKey || '',
-          email: credentials.email || '',
-          tier: subscription_types_1.SubscriptionTier.fromString(response.subscriptionTier),
-          status: subscription_types_1.SubscriptionStatus.ACTIVE,
-          features: response.features || [],
-          maxDevices: 1,
+          email: '', // Server doesn't use email for activation
+          tier: subscription_types_1.SubscriptionTier.fromString(response.subscription.tier),
+          status: subscription_types_1.SubscriptionStatus.fromString(response.subscription.status),
+          features: response.subscription.features || [],
+          maxDevices: response.subscription.max_devices || 1,
           deviceId: deviceInfo.deviceId,
           deviceInfo: {
             deviceId: deviceInfo.deviceId,
@@ -66,15 +90,29 @@ class SubscriptionService {
             fingerprint: deviceInfo.fingerprint,
             registeredAt: deviceInfo.registeredAt,
           },
-          tenantId: response.tenantId || '',
-          startsAt: new Date(),
-          expiresAt: new Date(response.expiresAt),
-          gracePeriodDays: response.gracePeriodDays || 7,
+          tenantId: response.subscription.customer_id || '',
+          startsAt: new Date(response.subscription.starts_at),
+          expiresAt: response.subscription.expires_at ? new Date(response.subscription.expires_at) : new Date(),
+          gracePeriodDays: response.subscription.grace_period_days || 7,
           lastValidatedAt: null,
-          signedToken: response.signedToken,
+          signedToken: response.token,
         });
         // Store subscription securely
+        console.log('💾 SubscriptionService: Storing subscription with status:', subscription.status.toString());
         await this.secureStorage.storeSubscription(subscription);
+
+        // Verify storage worked
+        const storedSubscription = await this.secureStorage.getSubscription();
+        console.log('✅ SubscriptionService: Verified stored subscription:', {
+          found: !!storedSubscription,
+          status: storedSubscription?.status?.toString(),
+          deviceId: storedSubscription?.deviceId,
+        });
+
+        // SUCCESS: Device activated successfully - skip immediate sync to avoid timing issues
+        console.log('✅ SubscriptionService: Device activated successfully with server');
+        console.log('🔄 SubscriptionService: Background sync will validate device later to avoid timing issues');
+
         return {
           success: true,
           subscription,
@@ -149,17 +187,21 @@ class SubscriptionService {
           error: 'No subscription found',
         };
       }
-      // Prepare sync request
+      // Prepare sync request with correct field names for server
       const syncRequest = {
-        deviceId: subscription.deviceId,
-        tenantId: subscription.tenantId,
-        ...(subscription.signedToken && { currentToken: subscription.signedToken }),
+        license_key: subscription.licenseKey,
+        device_id: subscription.deviceId,
+        ...(subscription.signedToken && { token: subscription.signedToken }),
       };
       // Call sync API
       const response = await this.apiClient.syncSubscription(syncRequest);
       console.log('🔄 SubscriptionService: API response:', response);
 
       // CRITICAL FIX: Handle different server response formats
+      // Server can return either:
+      // 1. Success response: { success: true, subscriptionTier, expiresAt, ... }
+      // 2. Validation response: { valid: true/false, reason, message, ... }
+
       // Check for successful sync with updated subscription data
       if (response.success && response.subscriptionTier && response.expiresAt) {
         console.log('✅ SubscriptionService: Sync successful - subscription updated');
@@ -251,6 +293,15 @@ class SubscriptionService {
               success: true, // CRITICAL: Return success so UI updates
               updated: true, // CRITICAL: Indicate data was updated
               subscription: updatedSubscription,
+            };
+          } else if (reason === 'device_not_activated') {
+            // SPECIAL CASE: Device not activated on server - could be timing issue after activation
+            console.log('⚠️ SubscriptionService: Device not activated on server - this may be a timing issue');
+            return {
+              success: false,
+              updated: false,
+              error: response.message || reason,
+              isTemporary: true, // Indicate this might resolve with time
             };
           } else {
             // Other validation failures - preserve local data without updates

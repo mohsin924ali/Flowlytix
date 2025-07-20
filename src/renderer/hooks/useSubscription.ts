@@ -128,7 +128,13 @@ export const useSubscription = (): UseSubscriptionReturn => {
       }
     };
 
-    initializeSubscription();
+    // Fix: Handle the promise rejection properly
+    initializeSubscription().catch((error) => {
+      console.error('❌ useSubscription: Unhandled initialization error:', error);
+      if (mounted) {
+        setHasInitialized(false);
+      }
+    });
 
     return () => {
       mounted = false;

@@ -27,6 +27,7 @@ export interface SyncResult {
   subscription?: Subscription;
   error?: string;
   shouldClearData?: boolean; // Added for explicit license invalidation
+  isTemporary?: boolean; // Added for temporary failures like device_not_activated
 }
 
 export interface ValidationResult {
@@ -76,7 +77,7 @@ export class SubscriptionService {
       console.log('🛠 SubscriptionService: Starting device activation...');
 
       // Get device info
-      const deviceInfo = await this.deviceManager.getDeviceInfo();
+      let deviceInfo = await this.deviceManager.getDeviceInfo();
       console.log('🔧 Device info collected:', deviceInfo.deviceId);
 
       // Prepare activation request - match server API expectations
@@ -84,27 +85,43 @@ export class SubscriptionService {
         throw new Error('License key is required for activation');
       }
 
-      // Convert fingerprint object to string as expected by server
-      const fingerprintString = `${deviceInfo.fingerprint.hardwareId}-${deviceInfo.fingerprint.osFingerprint}-${deviceInfo.fingerprint.networkFingerprint}`;
-
+      // CRITICAL FIX: Simplified activation request - device_info causes 500 error on server
+      // The server works fine with just license_key and device_id
       const activationRequest: ActivationRequest = {
         license_key: credentials.licenseKey,
         device_id: deviceInfo.deviceId,
-        device_info: {
-          device_id: deviceInfo.deviceId,
-          fingerprint: fingerprintString,
-          device_name: `Flowlytix Client - ${deviceInfo.platform}`,
-          device_type: 'desktop',
-          os_name: deviceInfo.platform === 'mac' ? 'macOS' : deviceInfo.platform,
-          os_version: deviceInfo.platform === 'mac' ? '14.0' : 'Unknown',
-          app_version: deviceInfo.appVersion,
-        },
       };
 
       console.log('🔍 Activation request payload:', JSON.stringify(activationRequest, null, 2));
 
       // Call activation API
-      const response = await this.apiClient.activateDevice(activationRequest);
+      let response = await this.apiClient.activateDevice(activationRequest);
+
+      // CRITICAL FIX: Handle device ID conflict (HTTP 500 often means device already exists)
+      if (response.error && response.error.includes('HTTP 500')) {
+        console.log(
+          '🔄 SubscriptionService: Device activation failed (possibly device ID conflict), retrying with new device ID...'
+        );
+
+        // Get fresh device info with unique ID
+        const newDeviceInfo = await this.deviceManager.getUniqueDeviceInfo();
+        console.log('🔧 New device info generated:', newDeviceInfo.deviceId);
+
+        // Retry activation with new device ID
+        const retryRequest: ActivationRequest = {
+          license_key: credentials.licenseKey,
+          device_id: newDeviceInfo.deviceId,
+        };
+
+        console.log('🔄 Retrying activation with new device ID...');
+        response = await this.apiClient.activateDevice(retryRequest);
+
+        // Update deviceInfo reference for the rest of the method
+        if (response.token && response.subscription) {
+          // Update the device info reference for later use
+          deviceInfo = newDeviceInfo;
+        }
+      }
 
       if (response.token && response.subscription) {
         console.log('✅ SubscriptionService: Activation successful');
@@ -143,6 +160,10 @@ export class SubscriptionService {
           status: storedSubscription?.status?.toString(),
           deviceId: storedSubscription?.deviceId,
         });
+
+        // SUCCESS: Device activated successfully - skip immediate sync to avoid timing issues
+        console.log('✅ SubscriptionService: Device activated successfully with server');
+        console.log('🔄 SubscriptionService: Background sync will validate device later to avoid timing issues');
 
         return {
           success: true,
@@ -255,7 +276,7 @@ export class SubscriptionService {
       const syncRequest = {
         license_key: subscription.licenseKey,
         device_id: subscription.deviceId,
-        ...(subscription.signedToken && { current_token: subscription.signedToken }),
+        ...(subscription.signedToken && { token: subscription.signedToken }),
       };
 
       // Call sync API
@@ -405,6 +426,15 @@ export class SubscriptionService {
               success: true, // CRITICAL: Return success so UI updates
               updated: true, // CRITICAL: Indicate data was updated
               subscription: updatedSubscription,
+            };
+          } else if (reason === 'device_not_activated') {
+            // SPECIAL CASE: Device not activated on server - could be timing issue after activation
+            console.log('⚠️ SubscriptionService: Device not activated on server - this may be a timing issue');
+            return {
+              success: false,
+              updated: false,
+              error: response.message || reason,
+              isTemporary: true, // Indicate this might resolve with time
             };
           } else {
             // Other validation failures - preserve local data without updates

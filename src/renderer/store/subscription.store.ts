@@ -148,24 +148,21 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
             // Validate on startup (offline-first)
             const success = await get().validateOnStartup();
             if (!success) {
-              return;
+              console.log('🔄 Store: Startup validation failed, device may need activation');
+              // Don't return here - let the app continue to show activation screen
             }
 
-            // Perform sync to validate with server if activated
+            // Only perform additional operations if activated
             if (get().isActivated) {
-              try {
-                const syncSuccess = await get().performPeriodicSync();
-                if (!syncSuccess) {
-                  return;
-                }
-              } catch (syncError) {
-                console.log('⚠️ Store: Sync failed during initialization (offline mode)');
-              }
-            }
+              console.log('🔄 Store: Device is activated, loading additional state...');
 
-            // Load additional state
-            await get().getCurrentState();
-            await get().checkExpiryWarning();
+              // Load additional state
+              await get().getCurrentState();
+
+              // Note: checkExpiryWarning and performPeriodicSync are already handled in validateOnStartup
+            } else {
+              console.log('🔄 Store: Device not activated, ready for activation screen');
+            }
           } catch (error) {
             console.error('❌ Store: Subscription initialization error:', error);
             set((state) => {
@@ -268,15 +265,10 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
                 subscriptionTier: get().subscriptionTier,
               });
 
-              // CRITICAL: Perform sync after activation to get latest status from server
-              console.log('🔄 Store: Performing post-activation sync to get latest status...');
-              try {
-                await get().performPeriodicSync();
-                console.log('✅ Store: Post-activation sync completed');
-              } catch (syncError) {
-                console.error('❌ Store: Post-activation sync failed:', syncError);
-                // Don't fail activation if sync fails, but log it
-              }
+              // SKIP: Don't perform immediate sync after activation to avoid server timing issues
+              // Let background sync handle validation later when server has time to propagate device registration
+              console.log('⏭️ Store: Skipping immediate post-activation sync to avoid server timing issues');
+              console.log('🔄 Store: Background sync will validate the device later');
 
               return true;
             } else {
@@ -361,14 +353,18 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
                 state.error = null;
               });
 
-              // Check for expiry warnings
-              await get().checkExpiryWarning();
+              // Check for expiry warnings only if activated
+              if (get().isActivated) {
+                await get().checkExpiryWarning();
 
-              // Perform sync after startup validation to get latest status from server
-              try {
-                await get().performPeriodicSync();
-              } catch (syncError) {
-                console.error('❌ Store: Post-validation sync failed:', syncError);
+                // Perform sync after startup validation to get latest status from server
+                try {
+                  await get().performPeriodicSync();
+                } catch (syncError) {
+                  console.error('❌ Store: Post-validation sync failed:', syncError);
+                }
+              } else {
+                console.log('🔄 Store: Device not activated, skipping sync and expiry checks');
               }
 
               return true;

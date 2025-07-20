@@ -7,7 +7,8 @@
 import { net, app } from 'electron';
 
 // API Configuration
-const SUBSCRIPTION_API_BASE_URL = process.env.SUBSCRIPTION_API_URL || 'http://localhost:8000';
+const SUBSCRIPTION_API_BASE_URL =
+  process.env.SUBSCRIPTION_API_URL || 'https://flowlytix-subscription-backend-production.up.railway.app';
 const API_TIMEOUT = 30000; // 30 seconds
 
 // API Request/Response Types
