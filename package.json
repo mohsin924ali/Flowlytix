@@ -141,6 +141,20 @@
           "arch": [
             "x64"
           ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker",
+      "signAndEditExecutable": false,
+      "extraResources": [
+        {
+          "from": "public",
+          "to": "public"
         }
       ]
     },
@@ -156,7 +170,13 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Flowlytix",
+      "uninstallDisplayName": "Flowlytix Distribution System",
+      "deleteAppDataOnUninstall": false,
+      "differentialPackage": false
     }
   }
 }

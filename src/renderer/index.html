@@ -22,11 +22,11 @@
     <!-- Material Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
 
-    <!-- CSP Meta Tag -->
-    <meta
+    <!-- CSP disabled for debugging -->
+    <!-- <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'none';"
-    />
+      content="default-src 'self' file:; script-src 'self' 'unsafe-inline' 'unsafe-eval' file: https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' file: https://fonts.googleapis.com; font-src 'self' file: https://fonts.gstatic.com; img-src 'self' data: file: https:; connect-src 'self' file: https:; frame-src 'none';"
+    /> -->
 
     <style>
       /* Loading styles */
@@ -69,13 +69,77 @@
         font-size: 18px;
         font-weight: 500;
       }
+
+      .error-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #ff4444;
+        color: white;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        z-index: 10000;
+        font-family: 'Inter', sans-serif;
+        padding: 20px;
+        text-align: center;
+      }
     </style>
+
+    <script>
+      // Error handling
+      window.addEventListener('error', function (event) {
+        console.error('Global error:', event.error);
+        showError('JavaScript Error: ' + event.error.message);
+      });
+
+      window.addEventListener('unhandledrejection', function (event) {
+        console.error('Unhandled promise rejection:', event.reason);
+        showError('Promise Rejection: ' + event.reason);
+      });
+
+      function showError(message) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error-container').style.display = 'flex';
+        document.getElementById('error-message').textContent = message;
+      }
+
+      // Timeout fallback
+      setTimeout(function () {
+        if (document.getElementById('loading').style.display !== 'none') {
+          showError('App failed to load within 30 seconds. Check console for details.');
+        }
+      }, 30000);
+    </script>
   </head>
   <body>
     <div id="loading">
       <div class="spinner"></div>
       <div class="loading-text">Loading Flowlytix...</div>
     </div>
+
+    <div id="error-container" class="error-container">
+      <h1>⚠️ Application Error</h1>
+      <p id="error-message">Something went wrong</p>
+      <button
+        onclick="location.reload()"
+        style="
+          padding: 10px 20px;
+          margin: 10px;
+          background: white;
+          color: #ff4444;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+        "
+      >
+        Reload
+      </button>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="./main.tsx"></script>
   </body>

@@ -35,6 +35,13 @@ class Main {
 
   constructor() {
     this.isDev = !app.isPackaged;
+
+    // Disable hardware acceleration on Windows if needed
+    if (process.platform === 'win32') {
+      console.log('🔧 Main: Windows detected - disabling hardware acceleration for compatibility');
+      app.disableHardwareAcceleration();
+    }
+
     this.initialize();
   }
 
@@ -60,25 +67,53 @@ class Main {
   }
 
   private async createWindow(): Promise<void> {
-    const preloadPath = join(__dirname, '../preload/preload.cjs');
-    console.log('🔧 Main: Preload script path:', preloadPath);
-    console.log('🔧 Main: __dirname:', __dirname);
+    try {
+      const preloadPath = join(__dirname, '../preload/preload.cjs');
+      console.log('🔧 Main: Preload script path:', preloadPath);
+      console.log('🔧 Main: __dirname:', __dirname);
+      console.log('🔧 Main: Platform:', process.platform);
 
-    this.mainWindow = new BrowserWindow({
-      width: 1200,
-      height: 800,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        preload: preloadPath,
-        webSecurity: true,
-        allowRunningInsecureContent: false,
-        experimentalFeatures: false,
-      },
-      show: false,
-      autoHideMenuBar: !this.isDev,
-      titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
-    });
+      // Simplified window options for better compatibility
+      const windowOptions = {
+        width: 1200,
+        height: 800,
+        x: 100,
+        y: 100,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          preload: preloadPath,
+          webSecurity: false,
+          allowRunningInsecureContent: true,
+          sandbox: false,
+        },
+        show: false, // Start hidden, then force show
+        center: true,
+        backgroundColor: '#667eea',
+        autoHideMenuBar: true,
+        frame: true,
+        ...(process.platform === 'win32' && {
+          // Windows-specific options
+          skipTaskbar: false,
+          minimizable: true,
+          maximizable: true,
+          resizable: true,
+        }),
+      };
+
+      console.log('🔧 Main: Creating window with options:', JSON.stringify(windowOptions, null, 2));
+
+      this.mainWindow = new BrowserWindow(windowOptions);
+
+      console.log('🔧 Main: Window created successfully');
+      console.log('🔧 Main: Window bounds:', this.mainWindow.getBounds());
+      console.log('🔧 Main: Window visible:', this.mainWindow.isVisible());
+      console.log('🔧 Main: Window minimized:', this.mainWindow.isMinimized());
+      console.log('🔧 Main: Window maximized:', this.mainWindow.isMaximized());
+    } catch (error) {
+      console.error('❌ Main: Error creating window:', error);
+      throw error;
+    }
 
     // Load the app
     if (this.isDev) {
@@ -120,16 +155,62 @@ class Main {
       this.mainWindow.loadURL(rendererUrl);
       this.mainWindow.webContents.openDevTools();
     } else {
-      this.mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+      const htmlPath = join(__dirname, '../index.html');
+      console.log('🔧 Main: Loading HTML file from:', htmlPath);
+      console.log('🔧 Main: __dirname is:', __dirname);
+      console.log('🔧 Main: Checking if HTML file exists...');
+
+      // Add file existence check
+      const fs = require('fs');
+      const path = require('path');
+
+      if (fs.existsSync(htmlPath)) {
+        console.log('✅ Main: HTML file exists at:', htmlPath);
+        console.log('🔧 Main: File size:', fs.statSync(htmlPath).size, 'bytes');
+      } else {
+        console.error('❌ Main: HTML file NOT found at:', htmlPath);
+        console.log('🔧 Main: Available files in parent dir:', fs.readdirSync(path.dirname(htmlPath)));
+      }
+
+      this.mainWindow.loadFile(htmlPath).catch((error) => {
+        console.error('❌ Main: Failed to load HTML file:', error);
+        // Create a simple fallback HTML
+        this.createFallbackContent();
+      });
     }
 
-    // Add error handling for preload script
+    // Add comprehensive error handling
     this.mainWindow.webContents.on('preload-error', (_event, preloadPath, error) => {
       console.error('❌ Main: Preload script error:', { preloadPath, error });
     });
 
-    this.mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
-      console.error('❌ Main: Failed to load page:', { errorCode, errorDescription });
+    this.mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+      console.error('❌ Main: Failed to load page:', { errorCode, errorDescription, validatedURL });
+      this.createFallbackContent();
+    });
+
+    this.mainWindow.webContents.on('render-process-gone', (_event, details) => {
+      console.error('❌ Main: Renderer process gone:', details);
+    });
+
+    this.mainWindow.on('unresponsive', () => {
+      console.error('❌ Main: Window became unresponsive');
+    });
+
+    this.mainWindow.webContents.on('dom-ready', () => {
+      console.log('✅ Main: DOM is ready');
+    });
+
+    this.mainWindow.webContents.on('did-finish-load', () => {
+      console.log('✅ Main: Page finished loading');
+    });
+
+    this.mainWindow.webContents.on('did-start-loading', () => {
+      console.log('🔄 Main: Page started loading');
+    });
+
+    this.mainWindow.webContents.on('did-stop-loading', () => {
+      console.log('🔄 Main: Page stopped loading');
     });
 
     // Listen for console messages from renderer
@@ -139,9 +220,33 @@ class Main {
       }
     });
 
+    // Force window to show immediately and set up fallbacks
+    this.mainWindow.show();
+    this.mainWindow.focus();
+    this.mainWindow.moveTop();
+
+    console.log('🔧 Main: Forced window to show and focus');
+
+    // Additional fallback - show window after 2 seconds regardless
+    setTimeout(() => {
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        console.log('🔧 Main: 2-second fallback - forcing window visible');
+        this.mainWindow.show();
+        this.mainWindow.focus();
+        this.mainWindow.center();
+        console.log('🔧 Main: Window state after fallback:', {
+          visible: this.mainWindow.isVisible(),
+          minimized: this.mainWindow.isMinimized(),
+          bounds: this.mainWindow.getBounds(),
+        });
+      }
+    }, 2000);
+
     // Show window when ready
     this.mainWindow.once('ready-to-show', () => {
+      console.log('🔧 Main: ready-to-show event fired');
       this.mainWindow?.show();
+      this.mainWindow?.focus();
 
       // Initialize services after window is ready
       this.mainWindow?.webContents.once('did-finish-load', async () => {
@@ -200,6 +305,70 @@ class Main {
     } catch (error) {
       console.error('❌ Main: Error setting up subscription system:', error);
     }
+  }
+
+  private createFallbackContent(): void {
+    if (!this.mainWindow) return;
+
+    console.log('🔧 Main: Creating fallback content');
+    const fallbackHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Flowlytix - Loading Issue</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+          }
+          .container {
+            text-align: center;
+            max-width: 600px;
+          }
+          h1 { font-size: 2em; margin-bottom: 20px; }
+          p { font-size: 1.2em; line-height: 1.6; margin: 10px 0; }
+          .error { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 20px 0; }
+          button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            margin: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Flowlytix Distribution System</h1>
+          <div class="error">
+            <p><strong>Loading Issue Detected</strong></p>
+            <p>The application encountered an issue loading the main interface.</p>
+            <p>This is typically a temporary issue that can be resolved by:</p>
+            <ul style="text-align: left;">
+              <li>Restarting the application</li>
+              <li>Running as administrator (if on Windows)</li>
+              <li>Checking firewall/antivirus settings</li>
+            </ul>
+          </div>
+          <button onclick="location.reload()">Reload Application</button>
+          <button onclick="require('electron').remote.app.quit()">Exit</button>
+        </div>
+      </body>
+      </html>
+    `;
+
+    this.mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(fallbackHTML)}`);
   }
 }
 
