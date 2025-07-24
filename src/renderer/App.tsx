@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { theme } from './utils/theme';
 import { MockDataProvider } from './mocks';
 import { useAuthStore } from './store/auth.store';
+import { useSubscriptionStore } from './store/subscription.store';
 import { AppRouter } from './components/routing';
 import { LanguageProvider } from './contexts/LanguageContext';
 
@@ -55,6 +56,7 @@ LoadingScreen.displayName = 'LoadingScreen';
  */
 export const App: React.FC = () => {
   const { checkSession } = useAuthStore();
+  const { initializeSubscription } = useSubscriptionStore();
   const [initComplete, setInitComplete] = React.useState(false);
 
   // SIMPLE initialization - no complex timeouts or Promise.race
@@ -73,8 +75,12 @@ export const App: React.FC = () => {
         console.log('🔍 Starting session check...');
         await checkSession();
         console.log('✅ Session check completed');
+
+        console.log('🔍 Starting subscription initialization...');
+        await initializeSubscription();
+        console.log('✅ Subscription initialization completed');
       } catch (error) {
-        console.log('⚠️ Session check failed (continuing anyway):', error);
+        console.log('⚠️ Initialization failed (continuing anyway):', error);
       } finally {
         // Always complete initialization
         setInitComplete(true);
@@ -95,7 +101,7 @@ export const App: React.FC = () => {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [checkSession]);
+  }, [checkSession, initializeSubscription]);
 
   // Show simple loading only briefly during initialization
   if (!initComplete) {

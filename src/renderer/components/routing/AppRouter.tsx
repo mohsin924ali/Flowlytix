@@ -23,6 +23,8 @@ import { AnalyticsPage } from '../../pages/AnalyticsPage';
 import { SalesAnalyticsPage } from '../../pages/SalesAnalyticsPage';
 import { CustomerAnalyticsPage } from '../../pages/CustomerAnalyticsPage';
 import { ProductAnalyticsPage } from '../../pages/ProductAnalyticsPage';
+import { ReportsPage } from '../../pages/ReportsPage';
+import { GenerateReportsPage } from '../../pages/GenerateReportsPage';
 import { ProfilePage } from '../../pages/ProfilePage';
 import { SettingsPage } from '../../pages/SettingsPage';
 import { DashboardLayout } from '../templates';
@@ -350,6 +352,46 @@ export const AppRouter: React.FC = () => {
           element={
             <ProtectedRoute>
               <ProductAnalyticsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Reports Routes */}
+        <Route
+          path='/reports'
+          element={
+            <ProtectedRoute>
+              <ReportsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/reports/generate'
+          element={
+            <ProtectedRoute>
+              <GenerateReportsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/reports/scheduled'
+          element={
+            <ProtectedRoute>
+              <PlaceholderPage
+                title='Scheduled Reports'
+                description='Manage automated report generation and scheduling configurations.'
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/reports/history'
+          element={
+            <ProtectedRoute>
+              <PlaceholderPage
+                title='Reports History'
+                description='Browse and download previously generated reports.'
+              />
             </ProtectedRoute>
           }
         />

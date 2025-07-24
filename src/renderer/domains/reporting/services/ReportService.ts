@@ -447,10 +447,24 @@ export class ReportService implements IReportService {
       const templateContext: TemplateContext = {
         agencyId: request.context.agencyId,
         userId: request.context.userId,
-        parameters: request.parameters,
+        parameters: {
+          ...request.parameters,
+          // Include required parameters that templates expect
+          dateRange: this.extractDateRange(request.parameters),
+          agencyId: request.context.agencyId,
+        },
         filters: request.filters || {},
         dateRange: this.extractDateRange(request.parameters),
       };
+
+      console.log(`🔍 ReportService: Template context created:`, {
+        agencyId: templateContext.agencyId,
+        userId: templateContext.userId,
+        parametersKeys: Object.keys(templateContext.parameters),
+        hasDateRangeInParams: 'dateRange' in templateContext.parameters,
+        hasAgencyIdInParams: 'agencyId' in templateContext.parameters,
+        dateRange: templateContext.dateRange,
+      });
 
       const dataResult = await ReportTemplateService.generateReportData(template, templateContext);
       if (!dataResult.success || !dataResult.data) {
@@ -563,15 +577,25 @@ export class ReportService implements IReportService {
     const requiredPermissions = typeValue.getRequiredPermissions();
     const userPermissions = request.context.permissions;
 
-    const missingPermissions = requiredPermissions.filter((permission) => !userPermissions.includes(permission));
+    console.log(`🔐 ReportService: Permission validation for ${request.reportType}`, {
+      requiredPermissions,
+      userPermissions,
+      userId: request.context.userId,
+      userRole: request.context.userRole,
+    });
 
+    const missingPermissions = requiredPermissions.filter((permission) => !userPermissions.includes(permission));
     const grantedPermissions = requiredPermissions.filter((permission) => userPermissions.includes(permission));
 
-    return {
+    const result = {
       hasAccess: missingPermissions.length === 0,
       missingPermissions,
       grantedPermissions,
     };
+
+    console.log(`🔐 ReportService: Permission validation result:`, result);
+
+    return result;
   }
 
   /**

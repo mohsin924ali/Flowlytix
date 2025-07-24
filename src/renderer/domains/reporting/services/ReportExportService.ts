@@ -110,7 +110,7 @@ export class ReportExportService implements IReportExportService {
 
       // Check format capabilities
       const capabilities = await this.getExportCapabilities(format);
-      this.validateBasicCapabilities(reportData, format, options);
+      this.validateCapabilitiesFromRecord(reportData, capabilities, format, options);
 
       // Perform export based on format
       const result = await this.performExport(reportData, format, options, context);
@@ -158,13 +158,8 @@ export class ReportExportService implements IReportExportService {
       supportsFormulas: features.supportsFormulas,
       supportsFormatting: features.supportsFormatting,
       supportsPagination: features.supportsPagination,
-      supportsLargeDatasets: features.supportsLargeDatasets,
-      preservesStructure: features.preservesStructure,
-      isHumanReadable: features.isHumanReadable,
-      compressionSupported: metadata.compressionSupported,
-      encryptionSupported: metadata.encryptionSupported,
-      browserCompatible: metadata.browserCompatible,
-      mobileSupported: metadata.mobileSupported,
+      supportsCompression: metadata.compressionSupported,
+      supportsEncryption: metadata.encryptionSupported,
     };
   }
 
@@ -211,9 +206,7 @@ export class ReportExportService implements IReportExportService {
     }
 
     const formatValue = ReportFormatValue.from(format);
-    if (!formatValue.supportsFormat(format)) {
-      throw new ExportError(ReportErrorCodes.INVALID_FORMAT, `Unsupported export format: ${format}`);
-    }
+    // Format validation is handled by ReportFormatValue.from() - it will throw if format is invalid
 
     // Validate record count limits
     const recordCount = reportData.metadata.recordCount;
@@ -235,16 +228,23 @@ export class ReportExportService implements IReportExportService {
   }
 
   /**
-   * Validate capabilities against requirements
+   * Validate capabilities against requirements using record format
    */
-  private validateCapabilities(reportData: ReportData, capabilities: ExportCapabilities, options: ExportOptions): void {
+  private validateCapabilitiesFromRecord(
+    reportData: ReportData,
+    capabilities: Record<string, boolean>,
+    format: ReportFormat,
+    options: ExportOptions
+  ): void {
+    const formatValue = ReportFormatValue.from(format);
     const recordCount = reportData.metadata.recordCount;
 
-    // Check record count limits
-    if (recordCount > capabilities.maxRecords) {
+    // Check record count limits using format value
+    const maxRecords = formatValue.getMaxRecords();
+    if (recordCount > maxRecords) {
       throw new ExportError(
         ReportErrorCodes.FILE_SIZE_LIMIT_EXCEEDED,
-        `Record count ${recordCount} exceeds format limit of ${capabilities.maxRecords}`
+        `Record count ${recordCount} exceeds format limit of ${maxRecords}`
       );
     }
 
@@ -310,11 +310,8 @@ export class ReportExportService implements IReportExportService {
     console.log('📄 Export Service: Generating PDF');
 
     try {
-      // In a real implementation, this would use a PDF generation library like jsPDF or Puppeteer
-      const htmlContent = await this.generateHTMLContent(reportData, options, true);
-
-      // Mock PDF generation - in reality would use proper PDF library
-      const pdfData = await this.convertHTMLToPDF(htmlContent, options);
+      // Generate PDF directly using jsPDF programmatically instead of HTML conversion
+      const pdfData = await this.generatePDFDirectly(reportData, options);
 
       return new Blob([pdfData], { type: 'application/pdf' });
     } catch (error) {
@@ -755,10 +752,13 @@ export class ReportExportService implements IReportExportService {
   /**
    * Generate metrics HTML
    */
-  private generateMetricsHTML(metrics: any[]): string {
+  private generateMetricsHTML(metrics: any): string {
     let html = '<div class="metrics-grid">';
 
-    metrics.forEach((metric) => {
+    // Handle both array and object formats
+    const metricsArray = Array.isArray(metrics) ? metrics : metrics?.metrics || [];
+
+    metricsArray.forEach((metric: any) => {
       html += '<div class="metric-card">';
       html += `<div class="metric-value">${this.escapeHtml(String(metric.value))}</div>`;
       html += `<div class="metric-label">${this.escapeHtml(metric.label)}</div>`;
@@ -836,10 +836,13 @@ export class ReportExportService implements IReportExportService {
   /**
    * Generate metrics CSV
    */
-  private generateMetricsCSV(metrics: any[]): string {
+  private generateMetricsCSV(metrics: any): string {
     let csv = 'Metric,Value\n';
 
-    metrics.forEach((metric) => {
+    // Handle both array and object formats
+    const metricsArray = Array.isArray(metrics) ? metrics : metrics?.metrics || [];
+
+    metricsArray.forEach((metric: any) => {
       csv += `${this.escapeCSV(metric.label)},${this.escapeCSV(String(metric.value))}\n`;
     });
 
@@ -925,10 +928,13 @@ export class ReportExportService implements IReportExportService {
   /**
    * Generate metrics XML
    */
-  private generateMetricsXML(metrics: any[]): string {
+  private generateMetricsXML(metrics: any): string {
     let xml = '      <metrics>\n';
 
-    metrics.forEach((metric) => {
+    // Handle both array and object formats
+    const metricsArray = Array.isArray(metrics) ? metrics : metrics?.metrics || [];
+
+    metricsArray.forEach((metric: any) => {
       xml += `        <metric label="${this.escapeXml(metric.label)}" value="${this.escapeXml(String(metric.value))}" format="${this.escapeXml(metric.format || 'text')}" />\n`;
     });
 
@@ -937,15 +943,353 @@ export class ReportExportService implements IReportExportService {
   }
 
   /**
-   * Convert HTML to PDF (mock implementation)
+   * Generate PDF directly using jsPDF programmatically
    */
-  private async convertHTMLToPDF(htmlContent: string, options: ExportOptions): Promise<ArrayBuffer> {
-    // In a real implementation, this would use Puppeteer, jsPDF, or similar
-    console.log('📄 Converting HTML to PDF (mock implementation)');
+  private async generatePDFDirectly(reportData: ReportData, options: ExportOptions): Promise<ArrayBuffer> {
+    console.log('📄 Generating PDF directly using jsPDF');
 
-    // Mock PDF generation
-    const mockPdfData = new ArrayBuffer(2048);
-    return mockPdfData;
+    try {
+      // Dynamically import jsPDF to avoid bundle issues
+      const { jsPDF } = await import('jspdf');
+
+      // Create new PDF document with proper configuration
+      const pdf = new jsPDF({
+        orientation: (options.orientation as 'portrait' | 'landscape') || 'portrait',
+        unit: 'mm',
+        format: (options.pageSize?.toLowerCase() as 'a4' | 'a3' | 'letter' | 'legal') || 'a4',
+        putOnlyUsedFonts: true,
+        floatPrecision: 16,
+      });
+
+      // Set PDF metadata
+      pdf.setProperties({
+        title: reportData.title || 'Flowlytix Report',
+        subject: 'Business Report',
+        author: 'Flowlytix System',
+        creator: 'Flowlytix Distribution System',
+        keywords: 'report, business, flowlytix',
+      });
+
+      // Build PDF content programmatically
+      this.buildPDFContent(pdf, reportData, options);
+
+      // Generate PDF as ArrayBuffer
+      const pdfOutput = pdf.output('arraybuffer');
+
+      console.log('✅ PDF generated successfully', {
+        size: pdfOutput.byteLength,
+        format: 'arraybuffer',
+      });
+
+      return pdfOutput;
+    } catch (error) {
+      console.error('❌ PDF generation failed:', error);
+      throw new ExportError(
+        ReportErrorCodes.GENERATION_FAILED,
+        `PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again or contact support.`,
+        { originalError: error instanceof Error ? error.message : 'Unknown error' }
+      );
+    }
+  }
+
+  /**
+   * Extract clean text content from HTML
+   */
+  private extractTextFromHTML(htmlContent: string): string {
+    return htmlContent
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/\n\s+/g, '\n')
+      .trim();
+  }
+
+  /**
+   * Build PDF content programmatically
+   */
+  private buildPDFContent(pdf: any, reportData: ReportData, options: ExportOptions): void {
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
+    const lineHeight = 6;
+    const maxLineWidth = pageWidth - 2 * margin;
+    let yPosition = 30;
+
+    // Helper function to check for new page
+    const checkNewPage = (requiredSpace: number = 15): void => {
+      if (yPosition + requiredSpace > pageHeight - 30) {
+        pdf.addPage();
+        yPosition = 30;
+      }
+    };
+
+    // ==================== HEADER ====================
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 122, 204);
+    pdf.text(reportData.title || 'Business Report', margin, yPosition);
+    yPosition += 12;
+
+    // Subtitle if present
+    if (reportData.subtitle) {
+      pdf.setFontSize(14);
+      pdf.setTextColor(102, 102, 102);
+      pdf.text(reportData.subtitle, margin, yPosition);
+      yPosition += 10;
+    }
+
+    // Reset color and add separator
+    pdf.setTextColor(0, 0, 0);
+    pdf.setLineWidth(0.5);
+    pdf.setDrawColor(0, 122, 204);
+    pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 15;
+
+    // ==================== METADATA ====================
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(102, 102, 102);
+
+    const generatedAt = reportData.footer?.generatedAt?.toLocaleString() || new Date().toLocaleString();
+    const generatedBy = reportData.footer?.generatedBy || 'System';
+
+    pdf.text(`Generated: ${generatedAt}`, margin, yPosition);
+    pdf.text(`By: ${generatedBy}`, margin, yPosition + 5);
+    pdf.text(`Records: ${reportData.metadata.recordCount.toLocaleString()}`, margin, yPosition + 10);
+    yPosition += 20;
+
+    // Reset color
+    pdf.setTextColor(0, 0, 0);
+
+    // ==================== SUMMARY ====================
+    if (reportData.summary) {
+      checkNewPage(30);
+
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 122, 204);
+      pdf.text('Summary', margin, yPosition);
+      yPosition += 10;
+
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(0, 0, 0);
+
+      // Key findings
+      if (reportData.summary.keyFindings?.length > 0) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Key Findings:', margin, yPosition);
+        yPosition += 7;
+
+        pdf.setFont('helvetica', 'normal');
+        reportData.summary.keyFindings.forEach((finding: string) => {
+          checkNewPage();
+          const lines = pdf.splitTextToSize(`• ${finding}`, maxLineWidth - 10);
+          lines.forEach((line: string) => {
+            checkNewPage();
+            pdf.text(line, margin + 5, yPosition);
+            yPosition += lineHeight;
+          });
+        });
+        yPosition += 5;
+      }
+
+      // Recommendations
+      if (reportData.summary.recommendations && reportData.summary.recommendations.length > 0) {
+        checkNewPage(15);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Recommendations:', margin, yPosition);
+        yPosition += 7;
+
+        pdf.setFont('helvetica', 'normal');
+        reportData.summary.recommendations.forEach((rec: string) => {
+          checkNewPage();
+          const lines = pdf.splitTextToSize(`• ${rec}`, maxLineWidth - 10);
+          lines.forEach((line: string) => {
+            checkNewPage();
+            pdf.text(line, margin + 5, yPosition);
+            yPosition += lineHeight;
+          });
+        });
+        yPosition += 10;
+      }
+    }
+
+    // ==================== SECTIONS ====================
+    reportData.sections.forEach((section: any) => {
+      checkNewPage(20);
+
+      // Section title
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 122, 204);
+      pdf.text(section.title, margin, yPosition);
+      yPosition += 10;
+
+      // Section separator line
+      pdf.setLineWidth(0.3);
+      pdf.setDrawColor(221, 221, 221);
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 8;
+
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(11);
+
+      // Handle different section types
+      switch (section.type) {
+        case 'table':
+          yPosition = this.addTableToPDF(pdf, section.content, margin, yPosition, pageWidth, pageHeight, checkNewPage);
+          break;
+
+        case 'metrics':
+          yPosition = this.addMetricsToPDF(pdf, section.content, margin, yPosition, maxLineWidth, checkNewPage);
+          break;
+
+        case 'text':
+          const lines = pdf.splitTextToSize(section.content, maxLineWidth);
+          lines.forEach((line: string) => {
+            checkNewPage();
+            pdf.text(line, margin, yPosition);
+            yPosition += lineHeight;
+          });
+          break;
+
+        case 'chart':
+          checkNewPage();
+          pdf.setTextColor(102, 102, 102);
+          pdf.text('[Chart: Chart visualization not available in PDF export]', margin, yPosition);
+          pdf.setTextColor(0, 0, 0);
+          yPosition += 10;
+          break;
+
+        default:
+          checkNewPage();
+          pdf.text(`[${section.type}: Content type not supported in PDF export]`, margin, yPosition);
+          yPosition += 10;
+      }
+
+      yPosition += 10; // Space between sections
+    });
+
+    // ==================== FOOTER ====================
+    const pageCount = pdf.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      pdf.setPage(i);
+
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(128, 128, 128);
+
+      // Page number
+      pdf.text(`Page ${i} of ${pageCount}`, pageWidth - 30, pageHeight - 15);
+
+      // Footer text
+      pdf.text('Generated by Flowlytix Distribution System', margin, pageHeight - 15);
+
+      // Current date/time on each page
+      pdf.text(new Date().toLocaleString(), margin, pageHeight - 8);
+    }
+  }
+
+  /**
+   * Add table to PDF
+   */
+  private addTableToPDF(
+    pdf: any,
+    tableData: any,
+    margin: number,
+    startY: number,
+    pageWidth: number,
+    pageHeight: number,
+    checkNewPage: (space?: number) => void
+  ): number {
+    if (!tableData.columns || !tableData.rows) {
+      pdf.text('Invalid table data', margin, startY);
+      return startY + 10;
+    }
+
+    let yPosition = startY;
+    const colWidth = (pageWidth - 2 * margin) / tableData.columns.length;
+    const rowHeight = 8;
+
+    // Table header
+    checkNewPage(rowHeight * 3);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFillColor(245, 245, 245);
+
+    tableData.columns.forEach((col: any, index: number) => {
+      const x = margin + index * colWidth;
+      pdf.rect(x, yPosition, colWidth, rowHeight, 'F');
+      pdf.rect(x, yPosition, colWidth, rowHeight);
+      pdf.text(col.label.substring(0, 15), x + 2, yPosition + 5);
+    });
+    yPosition += rowHeight;
+
+    // Table rows
+    pdf.setFont('helvetica', 'normal');
+    tableData.rows.slice(0, 50).forEach((row: any) => {
+      // Limit to 50 rows
+      checkNewPage(rowHeight);
+
+      tableData.columns.forEach((col: any, index: number) => {
+        const x = margin + index * colWidth;
+        const value = String(row[col.key] || '').substring(0, 20);
+        pdf.rect(x, yPosition, colWidth, rowHeight);
+        pdf.text(value, x + 2, yPosition + 5);
+      });
+      yPosition += rowHeight;
+    });
+
+    if (tableData.rows.length > 50) {
+      yPosition += 5;
+      pdf.setTextColor(102, 102, 102);
+      pdf.text(`... and ${tableData.rows.length - 50} more rows`, margin, yPosition);
+      pdf.setTextColor(0, 0, 0);
+      yPosition += 8;
+    }
+
+    return yPosition + 10;
+  }
+
+  /**
+   * Add metrics to PDF
+   */
+  private addMetricsToPDF(
+    pdf: any,
+    metrics: any,
+    margin: number,
+    startY: number,
+    maxLineWidth: number,
+    checkNewPage: (space?: number) => void
+  ): number {
+    const metricsArray = Array.isArray(metrics) ? metrics : metrics?.metrics || [];
+    let yPosition = startY;
+
+    metricsArray.forEach((metric: any) => {
+      checkNewPage(12);
+
+      // Metric value (larger, bold)
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(14);
+      pdf.setTextColor(0, 122, 204);
+      pdf.text(String(metric.value), margin, yPosition);
+
+      // Metric label (smaller, normal)
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.setTextColor(102, 102, 102);
+      pdf.text(metric.label, margin, yPosition + 8);
+
+      yPosition += 15;
+    });
+
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(11);
+    return yPosition + 5;
   }
 
   /**
@@ -1005,6 +1349,34 @@ export class ReportExportService implements IReportExportService {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&apos;');
   }
+
+  /**
+   * Wrap text to specified line length
+   */
+  private wrapText(text: string, maxLength: number): string[] {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    for (const word of words) {
+      if (currentLine.length + word.length + 1 > maxLength) {
+        if (currentLine) {
+          lines.push(currentLine);
+          currentLine = word;
+        } else {
+          lines.push(word.substring(0, maxLength));
+        }
+      } else {
+        currentLine += (currentLine ? ' ' : '') + word;
+      }
+    }
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+
+    return lines.slice(0, 40); // Limit to 40 lines to fit on page
+  }
 }
 
 /**
@@ -1040,12 +1412,20 @@ export class ExportServiceFactory {
     agencyId: string,
     clientInfo?: { userAgent: string; deviceType: 'desktop' | 'mobile' | 'tablet' }
   ): ExportContext {
-    return {
-      userId,
-      agencyId,
-      timestamp: new Date(),
-      clientInfo,
-    };
+    if (clientInfo) {
+      return {
+        userId,
+        agencyId,
+        timestamp: new Date(),
+        clientInfo,
+      };
+    } else {
+      return {
+        userId,
+        agencyId,
+        timestamp: new Date(),
+      };
+    }
   }
 }
 

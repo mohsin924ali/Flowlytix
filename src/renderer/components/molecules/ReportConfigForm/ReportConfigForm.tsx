@@ -11,9 +11,35 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
+import {
+  Box,
+  Grid,
+  Typography,
+  TextField,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  FormControlLabel,
+  Checkbox,
+  Button,
+  Collapse,
+  Divider,
+  Paper,
+  Alert,
+  Card,
+  CardContent,
+  FormHelperText,
+  IconButton,
+} from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { ExpandMore, ExpandLess } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../../../store/auth.store';
+import { useAgencyStore } from '../../../store/agency.store';
 import { ReportTypeSelector, ReportFormatSelector } from '../../atoms';
-import { Input } from '../../atoms/Input/Input';
-import { Button } from '../../atoms/Button/Button';
 import {
   ReportType,
   ReportFormat,
@@ -45,8 +71,8 @@ export interface FormData {
   description: string;
   parameters: Record<string, unknown>;
   dateRange: {
-    startDate: string;
-    endDate: string;
+    startDate: Date | null;
+    endDate: Date | null;
   };
   includeCharts: boolean;
   includeImages: boolean;
@@ -80,6 +106,10 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
   className = '',
   'data-testid': dataTestId = 'report-config-form',
 }) => {
+  const { t } = useTranslation();
+  const { user } = useAuthStore();
+  const { currentAgency } = useAgencyStore();
+
   // ==================== STATE ====================
 
   const [formData, setFormData] = useState<FormData>(() => ({
@@ -89,8 +119,8 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
     description: '',
     parameters: {},
     dateRange: {
-      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
-      endDate: new Date().toISOString().split('T')[0], // today
+      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+      endDate: new Date(), // today
     },
     includeCharts: true,
     includeImages: true,
@@ -164,7 +194,7 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
 
     if (!formData.dateRange.startDate || !formData.dateRange.endDate) {
       newErrors.dateRange = 'Date range is required';
-    } else if (new Date(formData.dateRange.startDate) > new Date(formData.dateRange.endDate)) {
+    } else if (formData.dateRange.startDate > formData.dateRange.endDate) {
       newErrors.dateRange = 'Start date must be before end date';
     }
 
@@ -221,7 +251,7 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
     }));
   }, []);
 
-  const handleDateRangeChange = useCallback((field: 'startDate' | 'endDate', value: string): void => {
+  const handleDateRangeChange = useCallback((field: 'startDate' | 'endDate', value: Date | null): void => {
     setFormData((prev) => ({
       ...prev,
       dateRange: {
@@ -249,8 +279,13 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
         return;
       }
 
-      if (!formData.reportType || !formData.format) {
+      if (!formData.reportType || !formData.format || !formData.dateRange.startDate || !formData.dateRange.endDate) {
         return;
+      }
+
+      // Debug current user and permissions if needed
+      if (!user?.permissions || user.permissions.length === 0) {
+        console.log('🔍 ReportConfigForm: Using fallback permissions for user:', user?.email);
       }
 
       const request: ReportExecutionRequest = {
@@ -259,25 +294,50 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
         parameters: {
           title: formData.title,
           description: formData.description,
-          startDate: formData.dateRange.startDate,
-          endDate: formData.dateRange.endDate,
+          startDate: formData.dateRange.startDate.toISOString().split('T')[0],
+          endDate: formData.dateRange.endDate.toISOString().split('T')[0],
           includeCharts: formData.includeCharts,
           includeImages: formData.includeImages,
           compressOutput: formData.compressOutput,
           ...formData.parameters,
         },
         context: {
-          userId: 'current-user', // TODO: Get from auth context
-          agencyId: 'current-agency', // TODO: Get from agency context
+          userId: user?.id || 'user-1',
+          agencyId: currentAgency?.id || 'agency-1',
           timestamp: new Date(),
-          userRole: 'user', // TODO: Get from auth context
-          permissions: ['REPORT_GENERATE'], // TODO: Get from auth context
+          userRole: user?.role || 'user',
+          permissions:
+            user?.permissions && user.permissions.length > 0
+              ? user.permissions
+              : [
+                  'SUPER_ADMIN',
+                  'DATA_ADMIN',
+                  'AUDIT_VIEW',
+                  'TRANSACTION_ADMIN',
+                  'COMPLIANCE_VIEW',
+                  'CUSTOM_REPORT_CREATE',
+                  'ANALYTICS_ADMIN',
+                  'EXECUTIVE_VIEW',
+                  'ANALYTICS_VIEW',
+                  'CREDIT_VIEW',
+                  'AGING_REPORT_VIEW',
+                  'CREDIT_ADMIN',
+                  'REPORT_GENERATE',
+                ],
         },
       };
 
+      console.log('📊 ReportConfigForm: Submitting report request:', {
+        reportType: request.reportType,
+        agencyId: request.context.agencyId,
+        userId: request.context.userId,
+        currentAgencyId: currentAgency?.id,
+        currentAgencyName: currentAgency?.name,
+      });
+
       onSubmit(request);
     },
-    [formData, validateForm, onSubmit]
+    [formData, validateForm, onSubmit, user, currentAgency]
   );
 
   // ==================== RENDER HELPERS ====================
@@ -286,257 +346,293 @@ export const ReportConfigForm: React.FC<ReportConfigFormProps> = ({
     if (!requiredParameters.length) return null;
 
     return (
-      <div className='space-y-4'>
-        <h4 className='text-sm font-medium text-gray-900'>Report Parameters</h4>
+      <Box sx={{ mt: 3 }}>
+        <Typography variant='h6' sx={{ mb: 2, fontWeight: 600 }}>
+          Report Parameters
+        </Typography>
 
-        {requiredParameters.map((param: ReportParameter) => (
-          <div key={param.name}>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              {param.displayName || param.name}
-              {param.required && <span className='text-red-500 ml-1'>*</span>}
-            </label>
-
-            {param.type === 'string' && (
-              <Input
-                value={(formData.parameters[param.name] as string) || ''}
-                onChange={(value) => handleParameterChange(param.name, value)}
-                placeholder={param.description}
-                required={param.required}
-                disabled={disabled}
-              />
-            )}
-
-            {param.type === 'number' && (
-              <Input
-                type='number'
-                value={(formData.parameters[param.name] as number) || ''}
-                onChange={(value) => handleParameterChange(param.name, Number(value))}
-                placeholder={param.description}
-                required={param.required}
-                disabled={disabled}
-              />
-            )}
-
-            {param.type === 'boolean' && (
-              <label className='flex items-center'>
-                <input
-                  type='checkbox'
-                  checked={(formData.parameters[param.name] as boolean) || false}
-                  onChange={(e) => handleParameterChange(param.name, e.target.checked)}
+        <Grid container spacing={2}>
+          {(requiredParameters as ReportParameter[]).map((param: ReportParameter) => (
+            <Grid item xs={12} md={6} key={param.name}>
+              {param.type === 'string' && (
+                <TextField
+                  fullWidth
+                  label={param.displayName || param.name}
+                  value={(formData.parameters[param.name] as string) || ''}
+                  onChange={(e) => handleParameterChange(param.name, e.target.value)}
+                  placeholder={param.description || ''}
+                  required={param.required}
                   disabled={disabled}
-                  className='h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
+                  error={!!errors.parameters?.[param.name]}
+                  helperText={errors.parameters?.[param.name]}
+                  variant='outlined'
                 />
-                <span className='ml-2 text-sm text-gray-600'>{param.description}</span>
-              </label>
-            )}
+              )}
 
-            {errors.parameters?.[param.name] && (
-              <p className='mt-1 text-sm text-red-600'>{errors.parameters[param.name]}</p>
-            )}
-          </div>
-        ))}
-      </div>
+              {param.type === 'number' && (
+                <TextField
+                  fullWidth
+                  type='number'
+                  label={param.displayName || param.name}
+                  value={(formData.parameters[param.name] as number) || ''}
+                  onChange={(e) => handleParameterChange(param.name, Number(e.target.value))}
+                  placeholder={param.description || ''}
+                  required={param.required}
+                  disabled={disabled}
+                  error={!!errors.parameters?.[param.name]}
+                  helperText={errors.parameters?.[param.name]}
+                  variant='outlined'
+                />
+              )}
+
+              {param.type === 'boolean' && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={(formData.parameters[param.name] as boolean) || false}
+                      onChange={(e) => handleParameterChange(param.name, e.target.checked)}
+                      disabled={disabled}
+                    />
+                  }
+                  label={param.displayName || param.name}
+                />
+              )}
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
     );
   };
 
   const renderAdvancedOptions = (): React.ReactNode => {
-    if (!showAdvancedOptions) return null;
+    if (!formData.format) return null;
+
+    const features = ReportFormatValue.from(formData.format).getFeatures();
 
     return (
-      <div className='space-y-4 p-4 bg-gray-50 rounded-lg'>
-        <h4 className='text-sm font-medium text-gray-900'>Advanced Options</h4>
+      <Collapse in={showAdvancedOptions}>
+        <Card sx={{ mt: 3, bgcolor: 'grey.50' }}>
+          <CardContent>
+            <Typography variant='h6' sx={{ mb: 2, fontWeight: 600 }}>
+              Advanced Options
+            </Typography>
 
-        {/* Format Features */}
-        {formatMetadata && (
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            <label className='flex items-center'>
-              <input
-                type='checkbox'
-                checked={formData.includeCharts}
-                onChange={(e) => handleFieldChange('includeCharts', e.target.checked)}
-                disabled={disabled || !ReportFormatValue.from(formData.format!).getFeatures().supportsCharts}
-                className='h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
-              />
-              <span className='ml-2 text-sm text-gray-700'>Include charts</span>
-            </label>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={4}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.includeCharts}
+                      onChange={(e) => handleFieldChange('includeCharts', e.target.checked)}
+                      disabled={disabled || !features.supportsCharts}
+                    />
+                  }
+                  label='Include charts'
+                />
+              </Grid>
 
-            <label className='flex items-center'>
-              <input
-                type='checkbox'
-                checked={formData.includeImages}
-                onChange={(e) => handleFieldChange('includeImages', e.target.checked)}
-                disabled={disabled || !ReportFormatValue.from(formData.format!).getFeatures().supportsImages}
-                className='h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
-              />
-              <span className='ml-2 text-sm text-gray-700'>Include images</span>
-            </label>
+              <Grid item xs={12} md={4}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.includeImages}
+                      onChange={(e) => handleFieldChange('includeImages', e.target.checked)}
+                      disabled={disabled || !features.supportsImages}
+                    />
+                  }
+                  label='Include images'
+                />
+              </Grid>
 
-            <label className='flex items-center'>
-              <input
-                type='checkbox'
-                checked={formData.compressOutput}
-                onChange={(e) => handleFieldChange('compressOutput', e.target.checked)}
-                disabled={disabled}
-                className='h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
-              />
-              <span className='ml-2 text-sm text-gray-700'>Compress output</span>
-            </label>
-          </div>
-        )}
-      </div>
+              <Grid item xs={12} md={4}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.compressOutput}
+                      onChange={(e) => handleFieldChange('compressOutput', e.target.checked)}
+                      disabled={disabled}
+                    />
+                  }
+                  label='Compress output'
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      </Collapse>
     );
   };
 
   // ==================== RENDER ====================
 
   return (
-    <form onSubmit={handleSubmit} className={`space-y-6 ${className}`} data-testid={dataTestId}>
-      {/* Report Type Selection */}
-      <div>
-        <label className='block text-sm font-medium text-gray-700 mb-2'>
-          Report Type <span className='text-red-500'>*</span>
-        </label>
-        <ReportTypeSelector
-          value={formData.reportType || undefined}
-          onChange={(reportType) => handleFieldChange('reportType', reportType)}
-          disabled={disabled}
-          error={errors.reportType}
-          showDescription={true}
-          showEstimatedTime={true}
-        />
-        {reportTypeMetadata && (
-          <p className='mt-2 text-sm text-gray-600'>
-            {reportTypeMetadata.description}
-            {estimatedTime && <span className='ml-2 text-gray-500'>• Est. {estimatedTime} minutes</span>}
-          </p>
-        )}
-      </div>
-
-      {/* Format Selection */}
-      {formData.reportType && (
-        <div>
-          <label className='block text-sm font-medium text-gray-700 mb-2'>
-            Export Format <span className='text-red-500'>*</span>
-          </label>
-          <ReportFormatSelector
-            value={formData.format || undefined}
-            onChange={(format) => handleFieldChange('format', format)}
-            supportedFormats={supportedFormats}
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Box component='form' onSubmit={handleSubmit} className={className} data-testid={dataTestId}>
+        {/* Report Type Selection */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant='body1' sx={{ mb: 2, fontWeight: 600 }}>
+            Report Type <span style={{ color: 'red' }}>*</span>
+          </Typography>
+          <ReportTypeSelector
+            {...(formData.reportType && { value: formData.reportType })}
+            onChange={(reportType) => handleFieldChange('reportType', reportType)}
             disabled={disabled}
-            error={errors.format}
-            layout='list'
-            showFeatures={true}
+            {...(errors.reportType && { error: errors.reportType })}
             showDescription={true}
+            showEstimatedTime={true}
           />
-        </div>
-      )}
-
-      {/* Basic Configuration */}
-      {formData.format && (
-        <>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            <div>
-              <label className='block text-sm font-medium text-gray-700 mb-1'>
-                Report Title <span className='text-red-500'>*</span>
-              </label>
-              <Input
-                value={formData.title}
-                onChange={(value) => handleFieldChange('title', value)}
-                placeholder='Enter report title...'
-                disabled={disabled}
-                error={errors.title}
-                maxLength={200}
-              />
-            </div>
-
-            <div>
-              <label className='block text-sm font-medium text-gray-700 mb-1'>Description</label>
-              <Input
-                value={formData.description}
-                onChange={(value) => handleFieldChange('description', value)}
-                placeholder='Optional description...'
-                disabled={disabled}
-              />
-            </div>
-          </div>
-
-          {/* Date Range */}
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>
-              Date Range <span className='text-red-500'>*</span>
-            </label>
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-              <div>
-                <label className='block text-xs text-gray-500 mb-1'>Start Date</label>
-                <input
-                  type='date'
-                  value={formData.dateRange.startDate}
-                  onChange={(e) => handleDateRangeChange('startDate', e.target.value)}
-                  disabled={disabled}
-                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-                />
-              </div>
-              <div>
-                <label className='block text-xs text-gray-500 mb-1'>End Date</label>
-                <input
-                  type='date'
-                  value={formData.dateRange.endDate}
-                  onChange={(e) => handleDateRangeChange('endDate', e.target.value)}
-                  disabled={disabled}
-                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-                />
-              </div>
-            </div>
-            {errors.dateRange && <p className='mt-1 text-sm text-red-600'>{errors.dateRange}</p>}
-          </div>
-
-          {/* Parameters */}
-          {renderParameterFields()}
-
-          {/* Advanced Options Toggle */}
-          <div>
-            <button
-              type='button'
-              onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-              className='flex items-center text-sm text-blue-600 hover:text-blue-800'
-            >
-              <svg
-                className={`w-4 h-4 mr-1 transition-transform ${showAdvancedOptions ? 'rotate-90' : ''}`}
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 5l7 7-7 7' />
-              </svg>
-              Advanced Options
-            </button>
-          </div>
-
-          {/* Advanced Options */}
-          {renderAdvancedOptions()}
-
-          {/* General Error */}
-          {errors.general && (
-            <div className='p-4 bg-red-50 border border-red-200 rounded-md'>
-              <p className='text-sm text-red-600'>{errors.general}</p>
-            </div>
+          {reportTypeMetadata && (
+            <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
+              {reportTypeMetadata.description}
+              {estimatedTime && <span style={{ marginLeft: 8, color: 'grey' }}>• Est. {estimatedTime} minutes</span>}
+            </Typography>
           )}
+        </Box>
 
-          {/* Actions */}
-          <div className='flex items-center justify-end space-x-4 pt-4 border-t border-gray-200'>
-            {onCancel && (
-              <Button type='button' variant='outlined' onClick={onCancel} disabled={loading}>
-                Cancel
+        {/* Format Selection */}
+        {formData.reportType && (
+          <Box sx={{ mb: 3 }}>
+            <Typography variant='body1' sx={{ mb: 2, fontWeight: 600 }}>
+              Export Format <span style={{ color: 'red' }}>*</span>
+            </Typography>
+            <ReportFormatSelector
+              {...(formData.format && { value: formData.format })}
+              onChange={(format) => handleFieldChange('format', format)}
+              supportedFormats={supportedFormats || []}
+              disabled={disabled}
+              {...(errors.format && { error: errors.format })}
+              layout='list'
+              showFeatures={true}
+              showDescription={true}
+            />
+          </Box>
+        )}
+
+        {/* Basic Configuration */}
+        {formData.format && (
+          <>
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label='Report Title'
+                  value={formData.title}
+                  onChange={(e) => handleFieldChange('title', e.target.value)}
+                  placeholder='Enter report title...'
+                  disabled={disabled}
+                  error={!!errors.title}
+                  helperText={errors.title}
+                  required
+                  variant='outlined'
+                  inputProps={{ maxLength: 200 }}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label='Description'
+                  value={formData.description}
+                  onChange={(e) => handleFieldChange('description', e.target.value)}
+                  placeholder='Optional description...'
+                  disabled={disabled}
+                  variant='outlined'
+                />
+              </Grid>
+            </Grid>
+
+            {/* Date Range */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant='body1' sx={{ mb: 2, fontWeight: 600 }}>
+                Date Range <span style={{ color: 'red' }}>*</span>
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <DatePicker
+                    label='Start Date'
+                    value={formData.dateRange.startDate}
+                    onChange={(date) => handleDateRangeChange('startDate', date)}
+                    disabled={disabled}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        variant: 'outlined',
+                        error: !!errors.dateRange,
+                      },
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <DatePicker
+                    label='End Date'
+                    value={formData.dateRange.endDate}
+                    onChange={(date) => handleDateRangeChange('endDate', date)}
+                    disabled={disabled}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        variant: 'outlined',
+                        error: !!errors.dateRange,
+                      },
+                    }}
+                  />
+                </Grid>
+              </Grid>
+              {errors.dateRange && (
+                <FormHelperText error sx={{ mt: 1 }}>
+                  {errors.dateRange}
+                </FormHelperText>
+              )}
+            </Box>
+
+            {/* Parameters */}
+            {renderParameterFields()}
+
+            {/* Advanced Options Toggle */}
+            <Box sx={{ mb: 3 }}>
+              <Button
+                type='button'
+                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                endIcon={showAdvancedOptions ? <ExpandLess /> : <ExpandMore />}
+                variant='text'
+                color='primary'
+              >
+                Advanced Options
               </Button>
+            </Box>
+
+            {/* Advanced Options */}
+            {renderAdvancedOptions()}
+
+            {/* General Error */}
+            {errors.general && (
+              <Alert severity='error' sx={{ mb: 3 }}>
+                {errors.general}
+              </Alert>
             )}
 
-            <Button type='submit' disabled={!isFormValid || loading || disabled}>
-              {loading ? 'Generating Report...' : 'Generate Report'}
-            </Button>
-          </div>
-        </>
-      )}
-    </form>
+            {/* Actions */}
+            <Divider sx={{ my: 3 }} />
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+              {onCancel && (
+                <Button variant='outlined' onClick={onCancel} disabled={loading}>
+                  Cancel
+                </Button>
+              )}
+
+              <Button
+                type='submit'
+                variant='contained'
+                disabled={!isFormValid || loading || disabled}
+                sx={{ minWidth: 160 }}
+              >
+                {loading ? 'Generating Report...' : 'Generate Report'}
+              </Button>
+            </Box>
+          </>
+        )}
+      </Box>
+    </LocalizationProvider>
   );
 };
 

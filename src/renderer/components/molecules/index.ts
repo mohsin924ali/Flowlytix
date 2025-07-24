@@ -28,3 +28,6 @@ export { CreditAssessmentCard } from './CreditAssessmentCard';
 
 // Subscription Management Components
 export { SubscriptionWarning, type SubscriptionWarningProps } from './SubscriptionWarning';
+
+// Report Management Components
+export { ReportConfigForm, type ReportConfigFormProps, type FormData, type ValidationErrors } from './ReportConfigForm';

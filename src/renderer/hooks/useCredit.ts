@@ -356,9 +356,10 @@ export const useCredit = (): UseCreditReturn => {
   // Auto-load pending approvals on mount if agency is available
   useEffect(() => {
     if (currentAgency?.id && state.pendingApprovals.length === 0 && !state.loading) {
-      actions.loadPendingApprovals(currentAgency.id);
+      // Use store method directly to avoid dependency issues
+      useCreditStore.getState().loadPendingApprovals(currentAgency.id);
     }
-  }, [currentAgency, state.pendingApprovals.length, state.loading, actions]);
+  }, [currentAgency?.id, state.pendingApprovals.length, state.loading]); // Removed actions from deps
 
   return {
     // Core credit data

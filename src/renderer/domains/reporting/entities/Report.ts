@@ -593,7 +593,7 @@ export class Report {
    * Check if error is recoverable
    */
   private static isRecoverableError(errorCode: ReportErrorCode): boolean {
-    const recoverableErrors = [
+    const recoverableErrors: ReportErrorCode[] = [
       ReportErrorCodes.EXECUTION_TIMEOUT,
       ReportErrorCodes.DATA_SOURCE_UNAVAILABLE,
       ReportErrorCodes.SERVICE_UNAVAILABLE,

@@ -8,9 +8,11 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
-// Global initialization guard
+// Global initialization guard - SINGLETON PATTERN
 let isInitialized = false;
 let initializationPromise: Promise<void> | null = null;
+let initializationAttempts = 0;
+const MAX_INITIALIZATION_ATTEMPTS = 3;
 
 // Subscription types and interfaces
 export interface SubscriptionState {
@@ -128,52 +130,79 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
         ...initialState,
 
         /**
-         * Initialize subscription system
-         * This is called once during app startup
+         * Initialize subscription system - SINGLETON PATTERN
+         * This is called once during app startup and prevents multiple simultaneous calls
          */
         initializeSubscription: async (): Promise<void> => {
+          // Return existing promise if initialization is already in progress
+          if (initializationPromise) {
+            console.log('🔄 Store: Initialization already in progress, waiting...');
+            return initializationPromise;
+          }
+
+          // Skip if already initialized successfully
           if (isInitialized) {
-            console.log('🔄 Store: Already initialized, skipping');
+            console.log('🔄 Store: Already initialized successfully, skipping');
             return;
           }
 
-          try {
-            isInitialized = true;
-
-            set((state) => {
-              state.isLoading = true;
-              state.error = null;
-            });
-
-            // Validate on startup (offline-first)
-            const success = await get().validateOnStartup();
-            if (!success) {
-              console.log('🔄 Store: Startup validation failed, device may need activation');
-              // Don't return here - let the app continue to show activation screen
-            }
-
-            // Only perform additional operations if activated
-            if (get().isActivated) {
-              console.log('🔄 Store: Device is activated, loading additional state...');
-
-              // Load additional state
-              await get().getCurrentState();
-
-              // Note: checkExpiryWarning and performPeriodicSync are already handled in validateOnStartup
-            } else {
-              console.log('🔄 Store: Device not activated, ready for activation screen');
-            }
-          } catch (error) {
-            console.error('❌ Store: Subscription initialization error:', error);
-            set((state) => {
-              state.error = error instanceof Error ? error.message : 'Initialization failed';
-              state.isLoading = false;
-            });
-          } finally {
-            set((state) => {
-              state.isLoading = false;
-            });
+          // Check attempt limit
+          if (initializationAttempts >= MAX_INITIALIZATION_ATTEMPTS) {
+            console.log(`🚫 Store: Maximum initialization attempts (${MAX_INITIALIZATION_ATTEMPTS}) reached, skipping`);
+            return;
           }
+
+          // Create singleton initialization promise
+          initializationPromise = (async () => {
+            try {
+              initializationAttempts++;
+              console.log(
+                `🚀 Store: Starting initialization attempt ${initializationAttempts}/${MAX_INITIALIZATION_ATTEMPTS}`
+              );
+
+              set((state) => {
+                state.isLoading = true;
+                state.error = null;
+              });
+
+              // Validate on startup (offline-first)
+              const success = await get().validateOnStartup();
+              if (!success) {
+                console.log('🔄 Store: Startup validation failed, device may need activation');
+                // Don't return here - let the app continue to show activation screen
+              }
+
+              // Only perform additional operations if activated
+              if (get().isActivated) {
+                console.log('🔄 Store: Device is activated, loading additional state...');
+
+                // Load additional state
+                await get().getCurrentState();
+
+                // Note: checkExpiryWarning and performPeriodicSync are already handled in validateOnStartup
+              } else {
+                console.log('🔄 Store: Device not activated, ready for activation screen');
+              }
+
+              // Mark as successfully initialized
+              isInitialized = true;
+              console.log('✅ Store: Subscription initialization completed successfully');
+            } catch (error) {
+              console.error(`❌ Store: Subscription initialization error (attempt ${initializationAttempts}):`, error);
+              set((state) => {
+                state.error = error instanceof Error ? error.message : 'Initialization failed';
+              });
+              // Don't mark as initialized on error to allow retry
+            } finally {
+              set((state) => {
+                state.isLoading = false;
+              });
+              // Clear the promise to allow future attempts if needed
+              initializationPromise = null;
+            }
+          })();
+
+          return initializationPromise;
         },
 
         /**

@@ -210,7 +210,7 @@ export class ReportTemplateService {
           code: error instanceof TemplateError ? error.code : ReportErrorCodes.GENERATION_FAILED,
           message: error instanceof Error ? error.message : 'Unknown error occurred',
           details: error instanceof TemplateError ? error.details : { template: template.type },
-        },
+        } as any,
         metadata: {
           generationTime,
           recordCount: 0,
@@ -548,22 +548,20 @@ export class ReportTemplateService {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const mockData = await ReportTemplateService.generateMockData(template.type, context);
+    const reportContent = ReportTemplateService.generateReportSpecificContent(template.type, context, mockData);
 
     return {
       reportType: template.type,
-      title: template.name,
-      subtitle: `Generated for Agency ${context.agencyId}`,
-      description: template.description,
-      summary: {
-        keyFindings: ['Sample key finding 1', 'Sample key finding 2', 'Sample key finding 3'],
-        recommendations: ['Sample recommendation 1', 'Sample recommendation 2'],
-      },
+      title: reportContent.title,
+      subtitle: reportContent.subtitle,
+      description: reportContent.description,
+      summary: reportContent.summary,
       sections: mockData.sections,
       footer: {
         generatedAt: new Date(),
         generatedBy: context.userId,
         dataSource: template.dataSource.connection,
-        disclaimer: 'This is a mock report for development purposes',
+        disclaimer: reportContent.disclaimer,
       },
       metadata: {
         parameters: context.parameters,
@@ -591,6 +589,25 @@ export class ReportTemplateService {
 
       case ReportType.INVENTORY_STOCK_LEVELS:
         return ReportTemplateService.generateInventoryReportData(context);
+
+      case ReportType.DAILY_CASH_FLOW:
+        return ReportTemplateService.generateCashFlowReportData(context);
+
+      case ReportType.CUSTOMER_ACTIVITY:
+        return ReportTemplateService.generateCustomerActivityReportData(context);
+
+      case ReportType.PRODUCT_PERFORMANCE:
+        return ReportTemplateService.generateProductPerformanceReportData(context);
+
+      case ReportType.CREDIT_RISK_ASSESSMENT:
+      case ReportType.PAYMENT_COLLECTION_REPORT:
+        return ReportTemplateService.generateAgingReportData(context); // Reuse aging data for credit reports
+
+      case ReportType.EXECUTIVE_SUMMARY:
+        return ReportTemplateService.generateExecutiveSummaryReportData(context);
+
+      case ReportType.TRANSACTION_AUDIT_TRAIL:
+        return ReportTemplateService.generateAuditTrailReportData(context);
 
       default:
         return ReportTemplateService.generateGenericReportData(context);
@@ -820,6 +837,570 @@ export class ReportTemplateService {
       ],
       recordCount: 1000,
     };
+  }
+
+  /**
+   * Generate cash flow report mock data
+   */
+  private static generateCashFlowReportData(context: TemplateContext): {
+    sections: ReportSection[];
+    recordCount: number;
+  } {
+    const metricsData: MetricData[] = [
+      {
+        label: 'Total Inflows',
+        value: '$123,450',
+        format: 'currency',
+        change: { value: 8.2, type: 'increase', period: 'vs last month' },
+      },
+      {
+        label: 'Total Outflows',
+        value: '$98,200',
+        format: 'currency',
+        change: { value: 4.1, type: 'increase', period: 'vs last month' },
+      },
+      {
+        label: 'Net Cash Flow',
+        value: '$25,250',
+        format: 'currency',
+        change: { value: 15.7, type: 'increase', period: 'vs last month' },
+      },
+      {
+        label: 'Positive Flow Days',
+        value: '23/30',
+        format: 'text',
+        change: { value: 2, type: 'increase', period: 'vs last month' },
+      },
+    ];
+
+    const cashFlowTable: TableData = {
+      title: 'Daily Cash Flow Details',
+      columns: [
+        { key: 'date', label: 'Date', type: 'date', sortable: true },
+        { key: 'inflows', label: 'Inflows', type: 'currency', sortable: true },
+        { key: 'outflows', label: 'Outflows', type: 'currency', sortable: true },
+        { key: 'netFlow', label: 'Net Flow', type: 'currency', sortable: true },
+        { key: 'balance', label: 'Running Balance', type: 'currency', sortable: true },
+      ],
+      rows: [
+        { date: '2024-01-01', inflows: 15420, outflows: 8900, netFlow: 6520, balance: 156520 },
+        { date: '2024-01-02', inflows: 12800, outflows: 11200, netFlow: 1600, balance: 158120 },
+        { date: '2024-01-03', inflows: 18900, outflows: 9500, netFlow: 9400, balance: 167520 },
+      ],
+      summary: {
+        totalRows: 30,
+        aggregations: {
+          inflows: 123450,
+          outflows: 98200,
+          netFlow: 25250,
+        },
+      },
+    };
+
+    return {
+      sections: [
+        {
+          id: 'cash_flow_metrics',
+          title: 'Cash Flow Summary',
+          type: 'metrics',
+          content: metricsData,
+          layout: { columns: 4, order: 1 },
+        },
+        {
+          id: 'cash_flow_table',
+          title: 'Daily Cash Flow Details',
+          type: 'table',
+          content: cashFlowTable,
+          layout: { columns: 1, order: 2 },
+        },
+      ],
+      recordCount: 30,
+    };
+  }
+
+  /**
+   * Generate customer activity report mock data
+   */
+  private static generateCustomerActivityReportData(context: TemplateContext): {
+    sections: ReportSection[];
+    recordCount: number;
+  } {
+    const metricsData: MetricData[] = [
+      {
+        label: 'Active Customers',
+        value: '1,247',
+        format: 'number',
+        change: { value: 8.5, type: 'increase', period: 'vs last month' },
+      },
+      {
+        label: 'New Customers',
+        value: '89',
+        format: 'number',
+        change: { value: 12.3, type: 'increase', period: 'vs last month' },
+      },
+      {
+        label: 'Avg Orders/Customer',
+        value: '3.2',
+        format: 'number',
+        change: { value: 0.4, type: 'increase', period: 'vs last month' },
+      },
+      {
+        label: 'Customer Retention',
+        value: '94.2%',
+        format: 'percentage',
+        change: { value: 1.1, type: 'increase', period: 'vs last month' },
+      },
+    ];
+
+    return {
+      sections: [
+        {
+          id: 'customer_metrics',
+          title: 'Customer Activity Overview',
+          type: 'metrics',
+          content: metricsData,
+          layout: { columns: 4, order: 1 },
+        },
+      ],
+      recordCount: 1247,
+    };
+  }
+
+  /**
+   * Generate product performance report mock data
+   */
+  private static generateProductPerformanceReportData(context: TemplateContext): {
+    sections: ReportSection[];
+    recordCount: number;
+  } {
+    const metricsData: MetricData[] = [
+      {
+        label: 'Total Products',
+        value: '2,156',
+        format: 'number',
+      },
+      {
+        label: 'Best Performers',
+        value: '45',
+        format: 'number',
+        color: '#4caf50',
+      },
+      {
+        label: 'Declining Products',
+        value: '12',
+        format: 'number',
+        color: '#ff9800',
+      },
+      {
+        label: 'Revenue Impact',
+        value: '$89,600',
+        format: 'currency',
+        change: { value: 15.2, type: 'increase', period: 'vs last month' },
+      },
+    ];
+
+    return {
+      sections: [
+        {
+          id: 'product_metrics',
+          title: 'Product Performance Overview',
+          type: 'metrics',
+          content: metricsData,
+          layout: { columns: 4, order: 1 },
+        },
+      ],
+      recordCount: 2156,
+    };
+  }
+
+  /**
+   * Generate executive summary report mock data
+   */
+  private static generateExecutiveSummaryReportData(context: TemplateContext): {
+    sections: ReportSection[];
+    recordCount: number;
+  } {
+    const metricsData: MetricData[] = [
+      {
+        label: 'Revenue Growth',
+        value: '15.7%',
+        format: 'percentage',
+        change: { value: 3.2, type: 'increase', period: 'vs target' },
+      },
+      {
+        label: 'Operating Margin',
+        value: '18.5%',
+        format: 'percentage',
+        change: { value: 2.1, type: 'increase', period: 'vs last quarter' },
+      },
+      {
+        label: 'Customer Satisfaction',
+        value: '4.7/5.0',
+        format: 'text',
+        change: { value: 0.2, type: 'increase', period: 'vs last period' },
+      },
+      {
+        label: 'Target Achievement',
+        value: '112.3%',
+        format: 'percentage',
+        change: { value: 12.3, type: 'increase', period: 'vs target' },
+      },
+    ];
+
+    return {
+      sections: [
+        {
+          id: 'executive_metrics',
+          title: 'Key Performance Indicators',
+          type: 'metrics',
+          content: metricsData,
+          layout: { columns: 4, order: 1 },
+        },
+      ],
+      recordCount: 4,
+    };
+  }
+
+  /**
+   * Generate audit trail report mock data
+   */
+  private static generateAuditTrailReportData(context: TemplateContext): {
+    sections: ReportSection[];
+    recordCount: number;
+  } {
+    const metricsData: MetricData[] = [
+      {
+        label: 'Total Transactions',
+        value: '15,642',
+        format: 'number',
+      },
+      {
+        label: 'Compliance Rate',
+        value: '100%',
+        format: 'percentage',
+        color: '#4caf50',
+      },
+      {
+        label: 'Avg Process Time',
+        value: '2.3s',
+        format: 'duration',
+      },
+      {
+        label: 'Security Incidents',
+        value: '0',
+        format: 'number',
+        color: '#4caf50',
+      },
+    ];
+
+    const auditTable: TableData = {
+      title: 'Recent Transaction Log',
+      columns: [
+        { key: 'timestamp', label: 'Timestamp', type: 'date', sortable: true },
+        { key: 'user', label: 'User', type: 'string', sortable: true },
+        { key: 'action', label: 'Action', type: 'string', sortable: true },
+        { key: 'amount', label: 'Amount', type: 'currency', sortable: true },
+        { key: 'status', label: 'Status', type: 'string', sortable: true },
+      ],
+      rows: [
+        {
+          timestamp: '2024-01-15 09:15:23',
+          user: 'user001',
+          action: 'Payment Received',
+          amount: 1520,
+          status: 'Completed',
+        },
+        {
+          timestamp: '2024-01-15 09:18:45',
+          user: 'user002',
+          action: 'Order Created',
+          amount: 2350,
+          status: 'Completed',
+        },
+        {
+          timestamp: '2024-01-15 09:22:12',
+          user: 'user001',
+          action: 'Refund Processed',
+          amount: 450,
+          status: 'Completed',
+        },
+      ],
+      summary: {
+        totalRows: 15642,
+        aggregations: {
+          amount: 2456780,
+        },
+      },
+    };
+
+    return {
+      sections: [
+        {
+          id: 'audit_metrics',
+          title: 'Audit Summary',
+          type: 'metrics',
+          content: metricsData,
+          layout: { columns: 4, order: 1 },
+        },
+        {
+          id: 'audit_table',
+          title: 'Transaction Audit Trail',
+          type: 'table',
+          content: auditTable,
+          layout: { columns: 1, order: 2 },
+        },
+      ],
+      recordCount: 15642,
+    };
+  }
+
+  /**
+   * Generate report-specific content (title, summary, etc.)
+   */
+  private static generateReportSpecificContent(
+    reportType: ReportType,
+    context: TemplateContext,
+    mockData: { sections: ReportSection[]; recordCount: number }
+  ): {
+    title: string;
+    subtitle: string;
+    description: string;
+    summary: { keyFindings: string[]; recommendations: string[] };
+    disclaimer: string;
+  } {
+    const dateRange = `${context.dateRange.startDate.toLocaleDateString()} - ${context.dateRange.endDate.toLocaleDateString()}`;
+
+    switch (reportType) {
+      case ReportType.ACCOUNTS_RECEIVABLE_AGING:
+        return {
+          title: `Accounts Receivable Aging Report`,
+          subtitle: `Agency ${context.agencyId} • ${dateRange} • ${mockData.recordCount} customers`,
+          description: `Detailed analysis of outstanding customer balances grouped by aging periods`,
+          summary: {
+            keyFindings: [
+              'Total outstanding receivables: $245,680 (-5.2% vs last month)',
+              'Current accounts (0-30 days) represent 63.7% of total outstanding',
+              '8 customers have balances over 90 days old totaling $89,260',
+              'Average days outstanding improved by 2 days to 34 days',
+            ],
+            recommendations: [
+              'Focus collection efforts on accounts over 60 days old',
+              'Implement stricter credit terms for customers with recurring late payments',
+              'Consider offering early payment discounts to improve cash flow',
+            ],
+          },
+          disclaimer: 'Aging calculations based on invoice dates and current outstanding balances',
+        };
+
+      case ReportType.SALES_SUMMARY:
+        return {
+          title: `Sales Performance Summary`,
+          subtitle: `Agency ${context.agencyId} • ${dateRange} • ${mockData.recordCount} orders`,
+          description: `Comprehensive overview of sales performance, trends, and key metrics`,
+          summary: {
+            keyFindings: [
+              'Total sales revenue: $182,450 (+8.3% vs last month)',
+              'Order volume increased by 12.1% with 456 orders processed',
+              'Average order value decreased slightly to $400.11 (-2.8%)',
+              'Customer conversion rate improved to 3.2% (+0.4 points)',
+            ],
+            recommendations: [
+              'Investigate factors causing decrease in average order value',
+              'Capitalize on increased order volume with targeted upselling',
+              'Continue strategies that improved conversion rate',
+            ],
+          },
+          disclaimer: 'Sales figures include all completed orders within the selected date range',
+        };
+
+      case ReportType.INVENTORY_STOCK_LEVELS:
+        return {
+          title: `Inventory Stock Levels Report`,
+          subtitle: `Agency ${context.agencyId} • ${dateRange} • ${mockData.recordCount} products`,
+          description: `Current inventory status, stock levels, and product availability analysis`,
+          summary: {
+            keyFindings: [
+              'Total inventory value: $485,600 across 1,247 products',
+              '42 products are currently below minimum stock levels',
+              '8 products are completely out of stock',
+              'Inventory turnover rate is within acceptable parameters',
+            ],
+            recommendations: [
+              'Reorder immediately for out-of-stock items to prevent lost sales',
+              'Review minimum stock levels for frequently low-stock products',
+              'Consider reducing order quantities for slow-moving inventory',
+            ],
+          },
+          disclaimer: 'Stock levels reflect real-time inventory as of report generation time',
+        };
+
+      case ReportType.CREDIT_RISK_ASSESSMENT:
+        return {
+          title: `Credit Risk Assessment Report`,
+          subtitle: `Agency ${context.agencyId} • ${dateRange} • Risk Analysis`,
+          description: `Customer credit risk evaluation and payment behavior analysis`,
+          summary: {
+            keyFindings: [
+              'Overall portfolio credit risk remains at moderate levels',
+              '15% of customers show elevated risk indicators',
+              'Payment delays have increased by 3% over the period',
+              'New customer onboarding shows improved credit screening results',
+            ],
+            recommendations: [
+              'Implement enhanced monitoring for high-risk accounts',
+              'Review and update credit limits for customers showing deteriorating payment patterns',
+              'Consider requiring deposits or shorter payment terms for elevated risk customers',
+            ],
+          },
+          disclaimer: 'Risk assessments based on payment history, credit scores, and industry factors',
+        };
+
+      case ReportType.PAYMENT_COLLECTION_REPORT:
+        return {
+          title: `Payment Collection Performance Report`,
+          subtitle: `Agency ${context.agencyId} • ${dateRange} • Collections Analysis`,
+          description: `Analysis of payment collection efficiency and outstanding balances recovery`,
+          summary: {
+            keyFindings: [
+              'Collection rate improved to 94.2% (+2.1% vs previous period)',
+              'Average collection time reduced to 28 days',
+              'Successful recovery of $67,500 in previously written-off accounts',
+              'Customer payment plan compliance rate: 87%',
+            ],
+            recommendations: [
+              'Expand successful collection strategies to other customer segments',
+              'Implement automated reminder systems for better efficiency',
+              'Negotiate payment plans proactively to prevent escalations',
+            ],
+          },
+          disclaimer: 'Collection metrics include all payment activities within the reporting period',
+        };
+
+      case ReportType.DAILY_CASH_FLOW:
+        return {
+          title: `Daily Cash Flow Report`,
+          subtitle: `Agency ${context.agencyId} • ${dateRange} • Cash Flow Analysis`,
+          description: `Daily cash inflows and outflows with liquidity analysis and forecasting`,
+          summary: {
+            keyFindings: [
+              'Average daily cash inflow: $12,350 across the reporting period',
+              'Peak collection day generated $28,900 in receivables',
+              'Operating expenses averaged $8,200 per day',
+              'Net positive cash flow achieved on 23 out of 30 days',
+            ],
+            recommendations: [
+              'Optimize collection timing to improve daily cash consistency',
+              'Consider expense timing adjustments for negative flow days',
+              'Implement daily cash flow forecasting for better planning',
+            ],
+          },
+          disclaimer: 'Cash flow figures include all monetary transactions within the specified period',
+        };
+
+      case ReportType.CUSTOMER_ACTIVITY:
+        return {
+          title: `Customer Activity Report`,
+          subtitle: `Agency ${context.agencyId} • ${dateRange} • ${mockData.recordCount} customers`,
+          description: `Customer engagement, transaction patterns, and behavior analysis`,
+          summary: {
+            keyFindings: [
+              'Active customers increased by 8.5% with 1,247 total active accounts',
+              'Average transaction frequency: 3.2 orders per customer per month',
+              'Top 20% of customers contribute 67% of total revenue',
+              'Customer retention rate improved to 94.2%',
+            ],
+            recommendations: [
+              'Develop loyalty programs for high-value customer segments',
+              'Implement targeted campaigns for lower-frequency customers',
+              'Focus on maintaining strong relationships with top revenue contributors',
+            ],
+          },
+          disclaimer: 'Customer activity based on transaction history and engagement metrics',
+        };
+
+      case ReportType.PRODUCT_PERFORMANCE:
+        return {
+          title: `Product Performance Analysis`,
+          subtitle: `Agency ${context.agencyId} • ${dateRange} • ${mockData.recordCount} products`,
+          description: `Product sales performance, profitability, and market demand analysis`,
+          summary: {
+            keyFindings: [
+              'Top 10 products account for 42% of total sales revenue',
+              'Fast-moving consumer goods category leads with 35% market share',
+              'New product introductions generated $45,600 in sales',
+              '12 products show declining sales trends requiring attention',
+            ],
+            recommendations: [
+              'Increase marketing focus on high-performing product categories',
+              'Review pricing strategy for declining products',
+              'Consider discontinuing or repositioning underperforming items',
+            ],
+          },
+          disclaimer: 'Performance metrics based on sales data, inventory turnover, and profitability analysis',
+        };
+
+      case ReportType.EXECUTIVE_SUMMARY:
+        return {
+          title: `Executive Summary Dashboard`,
+          subtitle: `Agency ${context.agencyId} • ${dateRange} • Strategic Overview`,
+          description: `High-level business performance summary for executive decision making`,
+          summary: {
+            keyFindings: [
+              'Overall business performance exceeded targets by 12.3%',
+              'Revenue growth of 15.7% compared to previous period',
+              'Operating margin improved to 18.5% through cost optimization',
+              'Customer satisfaction scores maintained at 4.7/5.0',
+            ],
+            recommendations: [
+              'Continue aggressive growth strategy in high-performing segments',
+              'Allocate additional resources to emerging market opportunities',
+              'Maintain focus on operational excellence and cost management',
+            ],
+          },
+          disclaimer: 'Executive summary consolidates key business metrics and strategic indicators',
+        };
+
+      case ReportType.TRANSACTION_AUDIT_TRAIL:
+        return {
+          title: `Transaction Audit Trail Report`,
+          subtitle: `Agency ${context.agencyId} • ${dateRange} • ${mockData.recordCount} transactions`,
+          description: `Comprehensive audit trail of all financial transactions for compliance and security`,
+          summary: {
+            keyFindings: [
+              `${mockData.recordCount} transactions processed with full audit trail`,
+              'All transactions comply with regulatory requirements',
+              'No unauthorized access or suspicious activity detected',
+              'Average transaction processing time: 2.3 seconds',
+            ],
+            recommendations: [
+              'Continue monitoring for any unusual transaction patterns',
+              'Regular review of access controls and user permissions',
+              'Maintain current security protocols and audit procedures',
+            ],
+          },
+          disclaimer: 'Audit trail includes all transaction metadata, user actions, and system events',
+        };
+
+      default:
+        return {
+          title: `Business Intelligence Report`,
+          subtitle: `Agency ${context.agencyId} • ${dateRange} • ${mockData.recordCount} records`,
+          description: `Comprehensive business analysis and performance metrics`,
+          summary: {
+            keyFindings: [
+              `Analysis completed for ${mockData.recordCount} records`,
+              'Data patterns and trends identified within the selected period',
+              'Key performance indicators calculated and benchmarked',
+            ],
+            recommendations: [
+              'Review detailed findings in the sections below',
+              'Consider setting up automated monitoring for key metrics',
+              'Use insights to inform strategic business decisions',
+            ],
+          },
+          disclaimer: 'This report contains aggregated business intelligence data for the specified period',
+        };
+    }
   }
 
   /**

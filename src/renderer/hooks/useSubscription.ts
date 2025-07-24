@@ -100,46 +100,8 @@ export const useSubscription = (): UseSubscriptionReturn => {
   const isCompletelyExpired = isExpired && !isInGracePeriod;
   const shouldShowWarning = expiryWarning?.shouldShow || false;
 
-  // Initialize subscription on mount (only once)
-  const [hasInitialized, setHasInitialized] = useState(false);
-
-  useEffect(() => {
-    if (hasInitialized) return;
-
-    let mounted = true;
-
-    const initializeSubscription = async () => {
-      if (!mounted || hasInitialized) return;
-
-      console.log('🚀 useSubscription: Initializing subscription...');
-
-      try {
-        setHasInitialized(true);
-
-        // Use the centralized initialization method
-        await useSubscriptionStore.getState().initializeSubscription();
-
-        console.log('✅ useSubscription: Initialization completed successfully');
-      } catch (error) {
-        console.error('❌ useSubscription: Initialization error:', error);
-        if (mounted) {
-          setHasInitialized(false); // Reset on error to allow retry
-        }
-      }
-    };
-
-    // Fix: Handle the promise rejection properly
-    initializeSubscription().catch((error) => {
-      console.error('❌ useSubscription: Unhandled initialization error:', error);
-      if (mounted) {
-        setHasInitialized(false);
-      }
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, []); // Empty dependency array to prevent re-initialization
+  // NO INITIALIZATION IN HOOK - This should happen at the app level only
+  // Each hook instance just reads from the store without triggering initialization
 
   // Wrapped sync function with automatic rescheduling
   const performSync = useCallback(async (): Promise<boolean> => {

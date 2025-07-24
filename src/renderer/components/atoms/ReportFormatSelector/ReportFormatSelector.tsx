@@ -11,6 +11,22 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import {
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText,
+  Chip,
+  Box,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+} from '@mui/material';
 import { ReportFormat, ReportFormatValue, ReportFormatUtils } from '../../../domains/reporting';
 
 // ==================== INTERFACES ====================
@@ -73,10 +89,6 @@ export const ReportFormatSelector: React.FC<ReportFormatSelectorProps> = ({
   className = '',
   'data-testid': dataTestId = 'report-format-selector',
 }) => {
-  // ==================== STATE ====================
-
-  const [isOpen, setIsOpen] = useState(false);
-
   // ==================== COMPUTED ====================
 
   const formatOptions = useMemo((): FormatOption[] => {
@@ -133,13 +145,6 @@ export const ReportFormatSelector: React.FC<ReportFormatSelectorProps> = ({
 
   const handleFormatSelect = (format: ReportFormat): void => {
     onChange(format);
-    setIsOpen(false);
-  };
-
-  const handleToggleOpen = (): void => {
-    if (!disabled && layout === 'dropdown') {
-      setIsOpen(!isOpen);
-    }
   };
 
   // ==================== RENDER HELPERS ====================
@@ -152,210 +157,192 @@ export const ReportFormatSelector: React.FC<ReportFormatSelectorProps> = ({
     if (enabledFeatures.length === 0) return null;
 
     return (
-      <div className='flex flex-wrap gap-1 mt-2'>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
         {enabledFeatures.slice(0, 3).map((feature) => (
-          <span
+          <Chip
             key={feature}
-            className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800'
-          >
-            {feature.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}
-          </span>
+            label={feature.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}
+            size='small'
+            variant='outlined'
+            color='success'
+            sx={{ fontSize: '0.6rem', height: 18 }}
+          />
         ))}
         {enabledFeatures.length > 3 && (
-          <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700'>
-            +{enabledFeatures.length - 3} more
-          </span>
+          <Chip
+            label={`+${enabledFeatures.length - 3} more`}
+            size='small'
+            variant='outlined'
+            sx={{ fontSize: '0.6rem', height: 18 }}
+          />
         )}
-      </div>
+      </Box>
     );
   };
 
   const renderLimitations = (limitations: FormatOption['limitations']): React.ReactNode => (
-    <div className='flex items-center space-x-4 mt-2 text-xs text-gray-500'>
-      <span>Max: {limitations.maxFileSize}MB</span>
-      <span>Records: {limitations.maxRecords.toLocaleString()}</span>
-    </div>
+    <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+      <Typography variant='caption' color='text.secondary'>
+        Max: {limitations.maxFileSize}MB
+      </Typography>
+      <Typography variant='caption' color='text.secondary'>
+        Records: {limitations.maxRecords.toLocaleString()}
+      </Typography>
+    </Box>
   );
 
   const renderFormatOption = (option: FormatOption, isSelected = false): React.ReactNode => (
-    <div className='flex items-start space-x-3 p-3'>
-      <div className='flex-shrink-0'>
-        <div className='flex items-center space-x-2'>
-          <span className='text-xl' role='img' aria-label={option.label}>
-            {option.icon}
-          </span>
-          <span className='text-xs font-mono text-gray-500 uppercase'>{option.fileExtension}</span>
-        </div>
-      </div>
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, p: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 80 }}>
+        <Typography component='span' sx={{ fontSize: '1.2em' }}>
+          {option.icon}
+        </Typography>
+        <Chip
+          label={option.fileExtension}
+          size='small'
+          variant='outlined'
+          sx={{ fontSize: '0.6rem', height: 18, fontFamily: 'monospace' }}
+        />
+      </Box>
 
-      <div className='flex-1 min-w-0'>
-        <div className='flex items-center space-x-2'>
-          <h4 className='text-sm font-medium text-gray-900 truncate'>{option.label}</h4>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+          <Typography variant='body2' sx={{ fontWeight: 600 }}>
+            {option.label}
+          </Typography>
 
           {option.isDefault && (
-            <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800'>
-              Default
-            </span>
+            <Chip label='Default' size='small' color='primary' sx={{ fontSize: '0.6rem', height: 18 }} />
           )}
 
           {option.isRecommended && !option.isDefault && (
-            <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800'>
-              Recommended
-            </span>
+            <Chip label='Recommended' size='small' color='warning' sx={{ fontSize: '0.6rem', height: 18 }} />
           )}
-        </div>
+        </Box>
 
-        {showDescription && <p className='text-sm text-gray-500 mt-1 line-clamp-2'>{option.description}</p>}
+        {showDescription && (
+          <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mb: 1 }}>
+            {option.description}
+          </Typography>
+        )}
 
         {showFeatures && renderFeatureBadges(option.features)}
 
         {showLimitations && renderLimitations(option.limitations)}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
-
-  const renderSelectedDisplay = (): React.ReactNode => {
-    if (!selectedOption) {
-      return <span className='text-gray-400 truncate'>{placeholder}</span>;
-    }
-
-    return (
-      <div className='flex items-center space-x-2 truncate'>
-        <span className='text-lg' role='img' aria-label={selectedOption.label}>
-          {selectedOption.icon}
-        </span>
-        <span className='text-gray-900 truncate'>{selectedOption.label}</span>
-        <span className='text-xs font-mono text-gray-500 uppercase'>{selectedOption.fileExtension}</span>
-        {selectedOption.isDefault && (
-          <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800'>
-            Default
-          </span>
-        )}
-      </div>
-    );
-  };
 
   // ==================== RENDER LAYOUTS ====================
 
   const renderDropdownLayout = (): React.ReactNode => (
-    <div className={`relative ${className}`} data-testid={dataTestId}>
-      {/* Selector Button */}
-      <button
-        type='button'
-        onClick={handleToggleOpen}
-        disabled={disabled}
-        className={`
-          w-full px-3 py-2 text-left bg-white border rounded-lg shadow-sm
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-          transition-colors duration-200
-          ${
-            disabled
-              ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200'
-              : 'hover:border-gray-400 border-gray-300'
-          }
-          ${error ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''}
-          ${isOpen ? 'ring-2 ring-blue-500 border-blue-500' : ''}
-        `}
-        aria-expanded={isOpen}
-        aria-haspopup='listbox'
-        aria-required={required}
-        aria-invalid={!!error}
+    <FormControl fullWidth error={!!error} disabled={disabled} className={className} data-testid={dataTestId}>
+      <InputLabel required={required}>{placeholder}</InputLabel>
+      <Select
+        value={value || ''}
+        onChange={(e) => handleFormatSelect(e.target.value as ReportFormat)}
+        label={placeholder}
+        MenuProps={{
+          PaperProps: {
+            style: {
+              maxHeight: 400,
+              width: 400,
+            },
+          },
+        }}
       >
-        <div className='flex items-center justify-between'>
-          <div className='flex-1 min-w-0'>{renderSelectedDisplay()}</div>
-
-          <div className='flex-shrink-0 ml-2'>
-            <svg
-              className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
-                isOpen ? 'transform rotate-180' : ''
-              }`}
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
-            </svg>
-          </div>
-        </div>
-      </button>
-
-      {/* Dropdown Panel */}
-      {isOpen && (
-        <div className='absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-hidden'>
-          <div className='max-h-80 overflow-y-auto'>
-            {formatOptions.map((option) => (
-              <button
-                key={option.value}
-                type='button'
-                onClick={() => handleFormatSelect(option.value)}
-                className={`
-                  w-full text-left hover:bg-gray-50 focus:outline-none focus:bg-gray-50
-                  transition-colors duration-150 border-b border-gray-50 last:border-b-0
-                  ${selectedOption?.value === option.value ? 'bg-blue-50 hover:bg-blue-100' : ''}
-                `}
-              >
-                {renderFormatOption(option, selectedOption?.value === option.value)}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Click Outside Handler */}
-      {isOpen && <div className='fixed inset-0 z-40' onClick={() => setIsOpen(false)} aria-hidden='true' />}
-    </div>
+        {formatOptions.map((option) => (
+          <MenuItem
+            key={option.value}
+            value={option.value}
+            sx={{
+              whiteSpace: 'normal',
+              minHeight: showDescription ? 80 : 48,
+              alignItems: 'flex-start',
+            }}
+          >
+            {renderFormatOption(option, selectedOption?.value === option.value)}
+          </MenuItem>
+        ))}
+      </Select>
+      {error && <FormHelperText>{error}</FormHelperText>}
+    </FormControl>
   );
 
   const renderGridLayout = (): React.ReactNode => (
-    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 ${className}`} data-testid={dataTestId}>
-      {formatOptions.map((option) => (
-        <button
-          key={option.value}
-          type='button'
-          onClick={() => handleFormatSelect(option.value)}
-          disabled={disabled}
-          className={`
-            p-4 text-left bg-white border rounded-lg shadow-sm
-            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-            transition-colors duration-200
-            ${
-              disabled
-                ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200'
-                : 'hover:border-gray-400 hover:shadow-md border-gray-300'
-            }
-            ${selectedOption?.value === option.value ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50' : ''}
-          `}
-        >
-          {renderFormatOption(option, selectedOption?.value === option.value)}
-        </button>
-      ))}
-    </div>
+    <Box className={className} data-testid={dataTestId}>
+      <Grid container spacing={2}>
+        {formatOptions.map((option) => (
+          <Grid item xs={12} md={6} lg={4} key={option.value}>
+            <Card
+              variant={selectedOption?.value === option.value ? 'outlined' : 'elevation'}
+              sx={{
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                border: selectedOption?.value === option.value ? 2 : 1,
+                borderColor: selectedOption?.value === option.value ? 'primary.main' : 'divider',
+                '&:hover': disabled
+                  ? {}
+                  : {
+                      boxShadow: 2,
+                    },
+              }}
+              onClick={() => !disabled && handleFormatSelect(option.value)}
+            >
+              <CardContent sx={{ p: 2 }}>
+                {renderFormatOption(option, selectedOption?.value === option.value)}
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+      {error && (
+        <Typography variant='caption' color='error' sx={{ mt: 1, display: 'block' }}>
+          {error}
+        </Typography>
+      )}
+    </Box>
   );
 
   const renderListLayout = (): React.ReactNode => (
-    <div className={`space-y-2 ${className}`} data-testid={dataTestId}>
-      {formatOptions.map((option) => (
-        <button
-          key={option.value}
-          type='button'
-          onClick={() => handleFormatSelect(option.value)}
-          disabled={disabled}
-          className={`
-            w-full p-3 text-left bg-white border rounded-lg shadow-sm
-            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-            transition-colors duration-200
-            ${
-              disabled
-                ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200'
-                : 'hover:border-gray-400 hover:shadow-md border-gray-300'
-            }
-            ${selectedOption?.value === option.value ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50' : ''}
-          `}
-        >
-          {renderFormatOption(option, selectedOption?.value === option.value)}
-        </button>
-      ))}
-    </div>
+    <Box className={className} data-testid={dataTestId}>
+      <RadioGroup value={value || ''} onChange={(e) => handleFormatSelect(e.target.value as ReportFormat)}>
+        {formatOptions.map((option) => (
+          <Card
+            key={option.value}
+            variant='outlined'
+            sx={{
+              mb: 1,
+              border: selectedOption?.value === option.value ? 2 : 1,
+              borderColor: selectedOption?.value === option.value ? 'primary.main' : 'divider',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              '&:hover': disabled
+                ? {}
+                : {
+                    boxShadow: 1,
+                  },
+            }}
+            onClick={() => !disabled && handleFormatSelect(option.value)}
+          >
+            <CardContent sx={{ p: 2 }}>
+              <FormControlLabel
+                value={option.value}
+                control={<Radio disabled={disabled} />}
+                label={
+                  <Box sx={{ width: '100%' }}>{renderFormatOption(option, selectedOption?.value === option.value)}</Box>
+                }
+                sx={{ margin: 0, width: '100%' }}
+                disabled={disabled}
+              />
+            </CardContent>
+          </Card>
+        ))}
+      </RadioGroup>
+      {error && (
+        <Typography variant='caption' color='error' sx={{ mt: 1, display: 'block' }}>
+          {error}
+        </Typography>
+      )}
+    </Box>
   );
 
   // ==================== RENDER ====================
@@ -372,18 +359,7 @@ export const ReportFormatSelector: React.FC<ReportFormatSelectorProps> = ({
     }
   };
 
-  return (
-    <div>
-      {renderContent()}
-
-      {/* Error Message */}
-      {error && (
-        <p className='mt-2 text-sm text-red-600' role='alert'>
-          {error}
-        </p>
-      )}
-    </div>
-  );
+  return renderContent();
 };
 
 // ==================== DISPLAY NAME ====================

@@ -11,6 +11,50 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import {
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText,
+  Chip,
+  Box,
+  Typography,
+  ListSubheader,
+  TextField,
+  InputAdornment,
+  Icon,
+} from '@mui/material';
+import {
+  Search,
+  Schedule,
+  Security,
+  Payment,
+  CreditCard,
+  AccountBalance,
+  TrendingUp,
+  People,
+  Assessment,
+  LocalShipping,
+  Timeline,
+  Star,
+  Inventory,
+  SwapHoriz,
+  ShoppingCart,
+  Compare,
+  Business,
+  Dashboard,
+  ShowChart,
+  CompareArrows,
+  Speed,
+  Analytics,
+  PersonSearch,
+  Receipt,
+  Gavel,
+  VerifiedUser,
+  Build,
+  Description,
+} from '@mui/icons-material';
 import { ReportType, ReportCategory, ReportTypeValue, ReportTypeUtils } from '../../../domains/reporting';
 
 // ==================== INTERFACES ====================
@@ -42,6 +86,42 @@ export interface ReportTypeOption {
   complexity: string;
 }
 
+// ==================== ICON MAPPING ====================
+
+const getIconComponent = (iconName: string): React.ReactElement => {
+  const iconMap: Record<string, React.ReactElement> = {
+    schedule: <Schedule />,
+    security: <Security />,
+    payment: <Payment />,
+    credit_card: <CreditCard />,
+    account_balance: <AccountBalance />,
+    trending_up: <TrendingUp />,
+    people: <People />,
+    assessment: <Assessment />,
+    local_shipping: <LocalShipping />,
+    timeline: <Timeline />,
+    star: <Star />,
+    inventory: <Inventory />,
+    swap_horiz: <SwapHoriz />,
+    shopping_cart: <ShoppingCart />,
+    compare: <Compare />,
+    business: <Business />,
+    dashboard: <Dashboard />,
+    show_chart: <ShowChart />,
+    compare_arrows: <CompareArrows />,
+    speed: <Speed />,
+    analytics: <Analytics />,
+    person_search: <PersonSearch />,
+    receipt: <Receipt />,
+    gavel: <Gavel />,
+    verified_user: <VerifiedUser />,
+    build: <Build />,
+    description: <Description />,
+  };
+
+  return iconMap[iconName] || <Description />;
+};
+
 // ==================== COMPONENT ====================
 
 export const ReportTypeSelector: React.FC<ReportTypeSelectorProps> = ({
@@ -61,7 +141,6 @@ export const ReportTypeSelector: React.FC<ReportTypeSelectorProps> = ({
 }) => {
   // ==================== STATE ====================
 
-  const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   // ==================== COMPUTED ====================
@@ -138,201 +217,136 @@ export const ReportTypeSelector: React.FC<ReportTypeSelectorProps> = ({
 
   const handleOptionSelect = (reportType: ReportType): void => {
     onChange(reportType);
-    setIsOpen(false);
     setSearchTerm('');
-  };
-
-  const handleToggleOpen = (): void => {
-    if (!disabled) {
-      setIsOpen(!isOpen);
-    }
   };
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setSearchTerm(event.target.value);
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent): void => {
-    switch (event.key) {
-      case 'Escape':
-        setIsOpen(false);
-        setSearchTerm('');
-        break;
-      case 'Enter':
-        if (reportOptions.length === 1) {
-          handleOptionSelect(reportOptions[0].value);
-        }
-        break;
-    }
-  };
-
   // ==================== RENDER HELPERS ====================
 
   const renderOptionContent = (option: ReportTypeOption): React.ReactNode => (
-    <div className='flex items-start space-x-3 p-3'>
-      <div className='flex-shrink-0'>
-        <span className='text-xl' role='img' aria-label={option.label}>
-          {option.icon}
-        </span>
-      </div>
-
-      <div className='flex-1 min-w-0'>
-        <div className='flex items-center space-x-2'>
-          <h4 className='text-sm font-medium text-gray-900 truncate'>{option.label}</h4>
-
-          {showCategory && (
-            <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800'>
-              {option.category}
-            </span>
-          )}
-
-          {option.isSchedulable && (
-            <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800'>
-              Schedulable
-            </span>
-          )}
-        </div>
-
-        {showDescription && <p className='text-sm text-gray-500 mt-1 line-clamp-2'>{option.description}</p>}
-
-        {showEstimatedTime && (
-          <div className='flex items-center space-x-4 mt-2 text-xs text-gray-400'>
-            <span>Est. {option.estimatedTime} min</span>
-            <span className='capitalize'>{option.complexity} complexity</span>
-          </div>
+    <Box sx={{ py: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', color: 'primary.main' }}>{getIconComponent(option.icon)}</Box>
+        <Typography variant='body2' sx={{ fontWeight: 600 }}>
+          {option.label}
+        </Typography>
+        {showCategory && (
+          <Chip
+            label={ReportTypeUtils.getCategoryDisplayName(option.category)}
+            size='small'
+            variant='outlined'
+            sx={{ ml: 'auto', fontSize: '0.7rem', height: 20 }}
+          />
         )}
-      </div>
-    </div>
+      </Box>
+
+      {showDescription && (
+        <Typography variant='caption' color='text.secondary' sx={{ display: 'block', ml: 3 }}>
+          {option.description}
+        </Typography>
+      )}
+
+      {showEstimatedTime && (
+        <Typography variant='caption' color='text.secondary' sx={{ display: 'block', ml: 3, mt: 0.5 }}>
+          Est. {option.estimatedTime} minutes
+        </Typography>
+      )}
+    </Box>
   );
 
-  const renderSelectedDisplay = (): React.ReactNode => {
-    if (!selectedOption) {
-      return <span className='text-gray-400 truncate'>{placeholder}</span>;
-    }
+  const renderMenuItems = (): React.ReactNode[] => {
+    const items: React.ReactNode[] = [];
 
-    return (
-      <div className='flex items-center space-x-2 truncate'>
-        <span className='text-lg' role='img' aria-label={selectedOption.label}>
-          {selectedOption.icon}
-        </span>
-        <span className='text-gray-900 truncate'>{selectedOption.label}</span>
-        {showCategory && (
-          <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800'>
-            {selectedOption.category}
-          </span>
-        )}
-      </div>
+    // Add search field
+    items.push(
+      <Box key='search' sx={{ p: 1 }}>
+        <TextField
+          size='small'
+          placeholder='Search report types...'
+          value={searchTerm}
+          onChange={handleSearchChange}
+          fullWidth
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position='start'>
+                <Search fontSize='small' />
+              </InputAdornment>
+            ),
+          }}
+          onClick={(e) => e.stopPropagation()}
+        />
+      </Box>
     );
+
+    // Add grouped options
+    Object.entries(groupedOptions).forEach(([category, options]) => {
+      if (showCategory) {
+        items.push(
+          <ListSubheader key={category} sx={{ bgcolor: 'grey.50', fontWeight: 600 }}>
+            {ReportTypeUtils.getCategoryDisplayName(category as ReportCategory)}
+          </ListSubheader>
+        );
+      }
+
+      options.forEach((option) => {
+        items.push(
+          <MenuItem
+            key={option.value}
+            value={option.value}
+            sx={{
+              whiteSpace: 'normal',
+              minHeight: showDescription ? 80 : 48,
+              alignItems: 'flex-start',
+            }}
+          >
+            {renderOptionContent(option)}
+          </MenuItem>
+        );
+      });
+    });
+
+    return items;
   };
 
   // ==================== RENDER ====================
 
   return (
-    <div className={`relative ${className}`} data-testid={dataTestId}>
-      {/* Selector Button */}
-      <button
-        type='button'
-        onClick={handleToggleOpen}
-        disabled={disabled}
-        className={`
-          w-full px-3 py-2 text-left bg-white border rounded-lg shadow-sm
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-          transition-colors duration-200
-          ${
-            disabled
-              ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200'
-              : 'hover:border-gray-400 border-gray-300'
-          }
-          ${error ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''}
-          ${isOpen ? 'ring-2 ring-blue-500 border-blue-500' : ''}
-        `}
-        aria-expanded={isOpen}
-        aria-haspopup='listbox'
-        aria-required={required}
-        aria-invalid={!!error}
+    <FormControl fullWidth error={!!error} disabled={disabled} className={className} data-testid={dataTestId}>
+      <InputLabel required={required}>{placeholder}</InputLabel>
+      <Select
+        value={value || ''}
+        onChange={(e) => handleOptionSelect(e.target.value as ReportType)}
+        label={placeholder}
+        renderValue={(selected) => {
+          if (!selected) return '';
+          const option = selectedOption;
+          if (!option) return selected;
+
+          return (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', color: 'primary.main' }}>
+                {getIconComponent(option.icon)}
+              </Box>
+              <Typography>{option.label}</Typography>
+            </Box>
+          );
+        }}
+        MenuProps={{
+          PaperProps: {
+            style: {
+              maxHeight: 400,
+              width: 350,
+            },
+          },
+        }}
       >
-        <div className='flex items-center justify-between'>
-          <div className='flex-1 min-w-0'>{renderSelectedDisplay()}</div>
-
-          <div className='flex-shrink-0 ml-2'>
-            <svg
-              className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
-                isOpen ? 'transform rotate-180' : ''
-              }`}
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
-            </svg>
-          </div>
-        </div>
-      </button>
-
-      {/* Dropdown Panel */}
-      {isOpen && (
-        <div className='absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-hidden'>
-          {/* Search Input */}
-          <div className='p-3 border-b border-gray-100'>
-            <input
-              type='text'
-              value={searchTerm}
-              onChange={handleSearchChange}
-              onKeyDown={handleKeyDown}
-              placeholder='Search reports...'
-              className='w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-              autoFocus
-            />
-          </div>
-
-          {/* Options List */}
-          <div className='max-h-80 overflow-y-auto'>
-            {Object.entries(groupedOptions).length === 0 ? (
-              <div className='p-6 text-center text-gray-500'>
-                <p>No reports found matching your criteria.</p>
-              </div>
-            ) : (
-              Object.entries(groupedOptions).map(([category, options]) => (
-                <div key={category}>
-                  {showCategory && (
-                    <div className='px-3 py-2 bg-gray-50 border-b border-gray-100'>
-                      <h3 className='text-xs font-semibold text-gray-700 uppercase tracking-wide'>
-                        {category.replace('_', ' ')}
-                      </h3>
-                    </div>
-                  )}
-
-                  {options.map((option) => (
-                    <button
-                      key={option.value}
-                      type='button'
-                      onClick={() => handleOptionSelect(option.value)}
-                      className={`
-                        w-full text-left hover:bg-gray-50 focus:outline-none focus:bg-gray-50
-                        transition-colors duration-150 border-b border-gray-50 last:border-b-0
-                        ${selectedOption?.value === option.value ? 'bg-blue-50 hover:bg-blue-100' : ''}
-                      `}
-                    >
-                      {renderOptionContent(option)}
-                    </button>
-                  ))}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <p className='mt-2 text-sm text-red-600' role='alert'>
-          {error}
-        </p>
-      )}
-
-      {/* Click Outside Handler */}
-      {isOpen && <div className='fixed inset-0 z-40' onClick={() => setIsOpen(false)} aria-hidden='true' />}
-    </div>
+        {renderMenuItems()}
+      </Select>
+      {error && <FormHelperText>{error}</FormHelperText>}
+    </FormControl>
   );
 };
 

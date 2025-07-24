@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Container,
@@ -483,6 +483,9 @@ export const OrdersPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
+  // Refresh trigger to force data reload after mutations
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [tabValue, setTabValue] = useState(0);
   const [createOrderModalOpen, setCreateOrderModalOpen] = useState(false);
   const [viewOrderModalOpen, setViewOrderModalOpen] = useState(false);
@@ -490,30 +493,27 @@ export const OrdersPage: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
 
-  /**
-   * Load orders from service
-   */
-  const loadOrders = useCallback(async () => {
+  // SINGLE effect to handle all data loading - COMPLETELY PREVENTS INFINITE LOOPS
+  useEffect(() => {
     if (!currentAgency) return;
 
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await OrderService.getOrders(currentAgency.id, page, 10, filters);
-      setOrders(response.orders);
-      setTotal(response.total);
-      setTotalPages(response.totalPages);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load orders');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentAgency, filters, page]);
+    const timeoutId = setTimeout(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await OrderService.getOrders(currentAgency.id, page, 10, filters);
+        setOrders(response.orders);
+        setTotal(response.total);
+        setTotalPages(response.totalPages);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load orders');
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
 
-  // Load orders on mount and when dependencies change
-  useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
+    return () => clearTimeout(timeoutId);
+  }, [currentAgency?.id, page, filters, refreshTrigger]);
 
   /**
    * Handle search
@@ -548,7 +548,7 @@ export const OrdersPage: React.FC = () => {
       setLoading(true);
       await OrderService.createOrder(currentAgency.id, orderData, user.id);
       setCreateOrderModalOpen(false);
-      await loadOrders();
+      setRefreshTrigger((prev) => prev + 1);
     } catch (err: any) {
       setError(err.message || 'Failed to create order');
     } finally {
@@ -626,7 +626,7 @@ export const OrdersPage: React.FC = () => {
     try {
       setLoading(true);
       await OrderService.updateOrderStatus(order.id, status, user.id);
-      await loadOrders();
+      setRefreshTrigger((prev) => prev + 1);
     } catch (err: any) {
       setError(err.message || 'Failed to update order status');
     } finally {

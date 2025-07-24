@@ -119,6 +119,25 @@ export interface ListAgenciesResult {
  */
 export class AgencyService {
   /**
+   * Get agency API with fallback support
+   * @returns Agency API object or throws an error
+   */
+  private static getAgencyAPI(): any {
+    if (window.electronAPI?.agency) {
+      console.log('✅ AgencyService: Using main electronAPI.agency');
+      return window.electronAPI.agency;
+    } else if ((window as any).__mockElectronAPI?.agency) {
+      console.log('🔧 AgencyService: Using fallback __mockElectronAPI.agency');
+      return (window as any).__mockElectronAPI.agency;
+    } else {
+      console.error('❌ AgencyService: No agency API available');
+      console.error('❌ Available APIs:', window.electronAPI ? Object.keys(window.electronAPI) : 'electronAPI missing');
+      console.error('❌ Fallback available:', !!(window as any).__mockElectronAPI?.agency);
+      throw new Error('Agency API not available. Please refresh the page.');
+    }
+  }
+
+  /**
    * Get current user ID from auth store with fallback mechanisms
    * @returns User ID or throws an error with helpful message
    */
@@ -184,6 +203,14 @@ export class AgencyService {
     try {
       console.log('📋 AgencyService: Fetching agencies with params:', params);
 
+      // Get agency API with fallback support
+      const agencyAPI = this.getAgencyAPI();
+
+      if (!agencyAPI.getAgencies) {
+        console.error('❌ AgencyService: getAgencies method not available in agency API');
+        throw new Error('Agency getAgencies method not available.');
+      }
+
       // Get current user ID with robust fallback
       const requestedBy = this.getCurrentUserId();
 
@@ -208,7 +235,7 @@ export class AgencyService {
       console.log('📋 AgencyService: Sending request data to backend:', requestData);
 
       // Call IPC API with proper parameters
-      const response = await window.electronAPI.agency.getAgencies(requestData);
+      const response = await agencyAPI.getAgencies(requestData);
 
       console.log('📋 AgencyService: Raw response from IPC:', response);
 
@@ -395,7 +422,8 @@ export class AgencyService {
       console.log('📤 AgencyService: Sending request data:', requestData);
 
       // Call IPC API
-      const response = await window.electronAPI.agency.createAgency(requestData);
+      const agencyAPI = this.getAgencyAPI();
+      const response = await agencyAPI.createAgency(requestData);
 
       if (!response.success) {
         throw new Error(response.error || 'Failed to create agency');
@@ -511,7 +539,8 @@ export class AgencyService {
       console.log('📤 AgencyService.updateAgency: Sending request data:', requestData);
 
       // Call IPC API
-      const response = await window.electronAPI.agency.updateAgency(requestData);
+      const agencyAPI = this.getAgencyAPI();
+      const response = await agencyAPI.updateAgency(requestData);
 
       console.log('📥 AgencyService.updateAgency: Response received:', response);
 
@@ -566,7 +595,8 @@ export class AgencyService {
       console.log('📤 AgencyService.switchAgency: Sending request data:', requestData);
 
       // Call IPC API
-      const response = await window.electronAPI.agency.switchAgency(agencyId, agencyName);
+      const agencyAPI = this.getAgencyAPI();
+      const response = await agencyAPI.switchAgency(agencyId, agencyName);
 
       console.log('📥 AgencyService.switchAgency: Response received:', response);
 

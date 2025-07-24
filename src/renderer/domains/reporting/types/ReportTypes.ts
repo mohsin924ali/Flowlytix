@@ -24,6 +24,7 @@ export interface ReportParameter {
   readonly name: string;
   readonly type: 'string' | 'number' | 'boolean' | 'date' | 'array' | 'object';
   readonly label: string;
+  readonly displayName?: string; // Added for ReportConfigForm compatibility
   readonly description?: string;
   readonly required: boolean;
   readonly defaultValue?: unknown;

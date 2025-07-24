@@ -111,6 +111,41 @@ export function useAgencies(params: UseAgenciesParams = {}): UseAgenciesReturn {
           return;
         }
 
+        // Wait for electronAPI.agency to be available
+        let retryCount = 0;
+        const maxRetries = 5; // Reduced retries since mock should be faster now
+
+        while (retryCount < maxRetries) {
+          // Check for agency API in main electronAPI
+          if (window.electronAPI?.agency) {
+            console.log(`✅ useAgencies: Agency API found in electronAPI`);
+            break;
+          }
+
+          // Check for fallback API and use it if available
+          if ((window as any).__mockElectronAPI?.agency) {
+            console.log(`🔧 useAgencies: Using fallback __mockElectronAPI.agency`);
+            // Don't try to modify the non-extensible electronAPI object
+            // Instead, we'll use the fallback API directly in AgencyService
+            break;
+          }
+
+          console.log(`⏳ useAgencies: Waiting for agency API... (attempt ${retryCount + 1}/${maxRetries})`);
+          await new Promise((resolve) => setTimeout(resolve, 200));
+          retryCount++;
+        }
+
+        // Final check with clear error message
+        if (!window.electronAPI?.agency && !(window as any).__mockElectronAPI?.agency) {
+          console.error('❌ useAgencies: Agency API not available');
+          console.error(
+            '❌ Available APIs:',
+            window.electronAPI ? Object.keys(window.electronAPI) : 'electronAPI missing'
+          );
+          console.error('❌ Fallback API available:', !!(window as any).__mockElectronAPI?.agency);
+          throw new Error('Agency API not available. Please refresh the page.');
+        }
+
         const loadParams: ListAgenciesParams = {
           page: customParams?.page ?? page,
           pageSize: customParams?.pageSize ?? pageSize,

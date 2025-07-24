@@ -17,6 +17,9 @@ import {
   AccountBalance,
   SupervisorAccount,
   Map,
+  Assignment,
+  Schedule,
+  History,
 } from '@mui/icons-material';
 import type { NavigationRoute } from '../types/navigation.types';
 
@@ -54,6 +57,12 @@ export const ROUTES = {
   ANALYTICS_SALES: '/analytics/sales',
   ANALYTICS_CUSTOMERS: '/analytics/customers',
   ANALYTICS_PRODUCTS: '/analytics/products',
+
+  REPORTS: '/reports',
+  REPORTS_DASHBOARD: '/reports',
+  REPORTS_GENERATE: '/reports/generate',
+  REPORTS_SCHEDULED: '/reports/scheduled',
+  REPORTS_HISTORY: '/reports/history',
 
   AGENCIES: '/agencies',
   AGENCIES_LIST: '/agencies',
@@ -162,6 +171,49 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
         icon: Inventory,
         requiresAuth: true,
         description: 'Product performance analytics',
+      },
+    ],
+  },
+  {
+    id: 'reports',
+    label: 'navigation.reports',
+    path: ROUTES.REPORTS,
+    icon: Assignment,
+    requiresAuth: true,
+    description: 'Generate and manage reports',
+    group: 'insights',
+    children: [
+      {
+        id: 'reports-dashboard',
+        label: 'navigation.reports_overview',
+        path: ROUTES.REPORTS_DASHBOARD,
+        icon: Assessment,
+        requiresAuth: true,
+        description: 'Reports overview and quick actions',
+      },
+      {
+        id: 'reports-generate',
+        label: 'navigation.generate_reports',
+        path: ROUTES.REPORTS_GENERATE,
+        icon: Assignment,
+        requiresAuth: true,
+        description: 'Generate new reports',
+      },
+      {
+        id: 'reports-scheduled',
+        label: 'navigation.scheduled_reports',
+        path: ROUTES.REPORTS_SCHEDULED,
+        icon: Schedule,
+        requiresAuth: true,
+        description: 'Manage scheduled reports',
+      },
+      {
+        id: 'reports-history',
+        label: 'navigation.reports_history',
+        path: ROUTES.REPORTS_HISTORY,
+        icon: History,
+        requiresAuth: true,
+        description: 'View report generation history',
       },
     ],
   },

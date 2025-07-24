@@ -378,6 +378,8 @@ const en = {
     loading_inventory_data: 'Loading inventory data...',
     overall_health: 'Overall Health',
     healthy_stock: 'Healthy Stock',
+    total_products: 'Total Products',
+    low_stock: 'Low Stock',
     total_inventory_value: 'Total Inventory Value',
     products_need_attention: '{{count}} products need attention',
   },

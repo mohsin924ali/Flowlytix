@@ -255,8 +255,23 @@ export class ReportFileService {
     const urlId = ReportFileService.generateUrlId();
     const expiresAt = new Date(Date.now() + ReportFileService.DOWNLOAD_URL_TTL);
 
-    // Create blob URL
-    const blobUrl = URL.createObjectURL(stored.blob);
+    // Process blob for download (decrypt/decompress if needed)
+    let downloadBlob = stored.blob;
+
+    // Decrypt if encrypted
+    if (stored.metadata.isEncrypted) {
+      downloadBlob = await ReportFileService.decryptBlob(downloadBlob);
+      console.log(`🔓 File Service: Decrypted file for download URL generation`);
+    }
+
+    // Decompress if compressed
+    if (stored.metadata.isCompressed) {
+      downloadBlob = await ReportFileService.decompressBlob(downloadBlob);
+      console.log(`📦 File Service: Decompressed file for download URL generation`);
+    }
+
+    // Create blob URL with the processed blob
+    const blobUrl = URL.createObjectURL(downloadBlob);
 
     // Store URL mapping
     stored.downloadUrls.set(urlId, { url: blobUrl, expiresAt });
@@ -264,14 +279,14 @@ export class ReportFileService {
     // Clean up expired URLs
     ReportFileService.cleanupExpiredUrls(stored.downloadUrls);
 
-    const downloadUrl = `/api/reports/download/${fileId}/${urlId}`;
-
     console.log(`✅ File Service: Generated download URL for file ${fileId}`, {
       urlId,
       expiresAt,
+      blobUrl: blobUrl.substring(0, 50) + '...',
     });
 
-    return downloadUrl;
+    // Return the actual blob URL instead of a fake API URL
+    return blobUrl;
   }
 
   /**
@@ -360,9 +375,9 @@ export class ReportFileService {
     }
 
     // Clean up blob URLs
-    for (const [urlId, urlData] of stored.downloadUrls) {
+    stored.downloadUrls.forEach((urlData) => {
       URL.revokeObjectURL(urlData.url);
-    }
+    });
 
     // Remove from storage
     const success = ReportFileService.fileStorage.delete(fileId);
@@ -394,35 +409,35 @@ export class ReportFileService {
     const allFiles: FileMetadata[] = [];
     const now = new Date();
 
-    for (const [fileId, stored] of ReportFileService.fileStorage) {
+    ReportFileService.fileStorage.forEach((stored, fileId) => {
       const metadata = stored.metadata;
 
       // Skip expired files
       if (metadata.expiresAt < now) {
         ReportFileService.fileStorage.delete(fileId);
-        continue;
+        return;
       }
 
       // Filter by agency
       if (metadata.agencyId !== agencyId) {
-        continue;
+        return;
       }
 
       // Apply additional filters
       if (options.userId && metadata.userId !== options.userId) {
-        continue;
+        return;
       }
 
       if (options.reportType && metadata.reportType !== options.reportType) {
-        continue;
+        return;
       }
 
       if (options.format && metadata.format !== options.format) {
-        continue;
+        return;
       }
 
       allFiles.push(metadata);
-    }
+    });
 
     // Sort by creation date (newest first)
     allFiles.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -448,15 +463,15 @@ export class ReportFileService {
     let spaceFreed = 0;
     const errors: string[] = [];
 
-    for (const [fileId, stored] of ReportFileService.fileStorage) {
+    ReportFileService.fileStorage.forEach((stored, fileId) => {
       try {
         if (stored.metadata.expiresAt < now) {
           spaceFreed += stored.metadata.fileSize;
 
           // Clean up blob URLs
-          for (const [urlId, urlData] of stored.downloadUrls) {
+          stored.downloadUrls.forEach((urlData) => {
             URL.revokeObjectURL(urlData.url);
-          }
+          });
 
           ReportFileService.fileStorage.delete(fileId);
           filesRemoved++;
@@ -466,7 +481,7 @@ export class ReportFileService {
         errors.push(errorMessage);
         console.error(`❌ File Service: ${errorMessage}`);
       }
-    }
+    });
 
     const result = { filesRemoved, spaceFreed, errors };
 
@@ -489,10 +504,10 @@ export class ReportFileService {
     let totalFiles = 0;
     let totalSize = 0;
 
-    for (const [, stored] of ReportFileService.fileStorage) {
+    ReportFileService.fileStorage.forEach((stored) => {
       totalFiles++;
       totalSize += stored.metadata.fileSize;
-    }
+    });
 
     const averageFileSize = totalFiles > 0 ? totalSize / totalFiles : 0;
     const quotaAvailable = ReportFileService.STORAGE_QUOTA - totalSize;
@@ -603,9 +618,9 @@ export class ReportFileService {
   private static getCurrentStorageUsage(): number {
     let totalSize = 0;
 
-    for (const [, stored] of ReportFileService.fileStorage) {
+    ReportFileService.fileStorage.forEach((stored) => {
       totalSize += stored.metadata.fileSize;
-    }
+    });
 
     return totalSize;
   }
@@ -616,12 +631,12 @@ export class ReportFileService {
   private static cleanupExpiredUrls(urlMap: Map<string, { url: string; expiresAt: Date }>): void {
     const now = new Date();
 
-    for (const [urlId, urlData] of urlMap) {
+    urlMap.forEach((urlData, urlId) => {
       if (urlData.expiresAt < now) {
         URL.revokeObjectURL(urlData.url);
         urlMap.delete(urlId);
       }
-    }
+    });
   }
 }
 
